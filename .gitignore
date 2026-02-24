@@ -1,0 +1,27 @@
+# Rosbag data (17 GB binary — share separately)
+rosbag2_*/
+*.db3
+*.bag
+
+# ROS2 colcon build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+.venv/
+
+# Editor / OS
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Secrets / credentials
+*.env
+secrets.yaml
