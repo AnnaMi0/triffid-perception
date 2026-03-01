@@ -26,11 +26,14 @@ services:
     # ── Mount workspace ──
     volumes:
       - ./src:/ws/src                          # source code (editable from host)
-      - ./2_rosbag2_active_20260220_164742:/ws/rosbag:ro   # rosbag (read-only)
+      - ./rosbag2_active_20260220_170131:/ws/rosbag:ro     # rosbag (read-only)
       - ./install:/ws/install                  # persist build artifacts
       - ./build:/ws/build                      # persist build artifacts
       - ./log:/ws/log                          # persist logs
       - ./cyclonedds.xml:/ws/cyclonedds.xml:ro # DDS config
+      - ./best.pt:/ws/best.pt:ro               # YOLO model weights
+      - ./samples:/ws/samples                  # collected output samples
+      - ./output_rosbag:/ws/output_rosbag        # recorded output rosbag
 
     # ── Networking ──
     network_mode: host    # shares host network so ROS2 DDS works seamlessly

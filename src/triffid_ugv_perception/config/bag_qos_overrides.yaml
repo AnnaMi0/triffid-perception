@@ -39,3 +39,9 @@
   depth: 100
   reliability: reliable
   durability: volatile
+
+/fix:
+  history: keep_last
+  depth: 10
+  reliability: reliable
+  durability: volatile

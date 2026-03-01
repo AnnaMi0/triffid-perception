@@ -274,10 +274,12 @@ class TestDepthGridSampling:
     """Tests for the depth grid creation logic from _depth_grid_to_rgb_frame."""
 
     def test_grid_shape_default_steps(self):
-        """Default steps (64, 48) on a 640×480 image → known grid size."""
+        """Default steps (64, 48) on a 640×480 image → known grid size.
+        Actual code starts at step//2 to avoid edges."""
         w, h = 640, 480
-        us = np.arange(0, w, 64)   # [0, 64, 128, ..., 576]  → 10 points
-        vs = np.arange(0, h, 48)   # [0, 48, 96, ..., 432]   → 10 points
+        step_u, step_v = 64, 48
+        us = np.arange(step_u // 2, w, step_u)   # [32, 96, ..., 608]  → 10 points
+        vs = np.arange(step_v // 2, h, step_v)   # [24, 72, ..., 456]  → 10 points
         assert len(us) == 10
         assert len(vs) == 10
         uu, vv = np.meshgrid(us, vs)
@@ -285,27 +287,31 @@ class TestDepthGridSampling:
         total = uu.size
         assert total == 100
 
-    def test_grid_covers_image_corners(self):
-        """Grid includes pixel (0, 0)."""
-        us = np.arange(0, 640, 64)
-        vs = np.arange(0, 480, 48)
-        assert us[0] == 0
-        assert vs[0] == 0
+    def test_grid_avoids_edges(self):
+        """Grid starts at half-step offset, not at pixel 0."""
+        step_u, step_v = 64, 48
+        us = np.arange(step_u // 2, 640, step_u)
+        vs = np.arange(step_v // 2, 480, step_v)
+        assert us[0] == 32
+        assert vs[0] == 24
+        assert us[-1] < 640
+        assert vs[-1] < 480
 
     def test_grid_within_bounds(self):
         """All grid coordinates must be within image bounds."""
         w, h = 640, 480
         for step_u, step_v in [(64, 48), (32, 24), (128, 96), (1, 1)]:
-            us = np.arange(0, w, step_u)
-            vs = np.arange(0, h, step_v)
+            us = np.arange(step_u // 2, w, step_u)
+            vs = np.arange(step_v // 2, h, step_v)
             assert np.all(us >= 0) and np.all(us < w)
             assert np.all(vs >= 0) and np.all(vs < h)
 
     def test_all_zero_depth_returns_empty(self):
         """If entire depth image is zero, no valid points should remain."""
         depth = np.zeros((480, 640), dtype=np.uint16)
-        us = np.arange(0, 640, 64)
-        vs = np.arange(0, 480, 48)
+        step_u, step_v = 64, 48
+        us = np.arange(step_u // 2, 640, step_u)
+        vs = np.arange(step_v // 2, 480, step_v)
         uu, vv = np.meshgrid(us, vs)
         z_mm = depth[vv.ravel(), uu.ravel()]
         valid = z_mm > 0
@@ -316,8 +322,9 @@ class TestDepthGridSampling:
         depth = np.zeros((480, 640), dtype=np.uint16)
         # Set a patch of valid depth
         depth[40:100, 60:130] = 2500  # 2.5m
-        us = np.arange(0, 640, 64)
-        vs = np.arange(0, 480, 48)
+        step_u, step_v = 64, 48
+        us = np.arange(step_u // 2, 640, step_u)
+        vs = np.arange(step_v // 2, 480, step_v)
         uu, vv = np.meshgrid(us, vs)
         z_mm = depth[vv.ravel(), uu.ravel()]
         valid = z_mm > 0
@@ -469,6 +476,167 @@ class TestCrossCameraPipeline:
             (pts_rgb[:, 2] > 0)
         )
         assert int(np.sum(inside)) == 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  5b.  MASK-BASED DEPTH MATCHING
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestMaskBasedDepthMatching:
+    """Tests for the mask-based depth filtering (replaces bbox matching)."""
+
+    def test_mask_selects_correct_points(self):
+        """Points whose projected pixel falls inside the mask are selected."""
+        rgb_h, rgb_w = 720, 1280
+
+        # Create a simple mask: True in a horizontal strip
+        mask = np.zeros((rgb_h, rgb_w), dtype=bool)
+        mask[300:400, 400:800] = True
+
+        # Projected pixel coordinates
+        rgb_pixels = np.array([
+            [500.0, 350.0],   # inside mask
+            [600.0, 350.0],   # inside mask
+            [100.0, 350.0],   # outside (left)
+            [500.0, 100.0],   # outside (above)
+            [ -1.0,  -1.0],   # invalid (behind camera)
+        ])
+        pts_rgb = np.array([
+            [1.0, 0.0, 3.0],
+            [1.5, 0.0, 3.5],
+            [0.2, 0.0, 4.0],
+            [1.0, 1.0, 5.0],
+            [0.0, 0.0, -1.0],
+        ])
+
+        px_u = rgb_pixels[:, 0].astype(int)
+        px_v = rgb_pixels[:, 1].astype(int)
+        in_bounds = (
+            (px_u >= 0) & (px_u < rgb_w) &
+            (px_v >= 0) & (px_v < rgb_h)
+        )
+        inside = np.zeros(len(rgb_pixels), dtype=bool)
+        inside[in_bounds] = mask[px_v[in_bounds], px_u[in_bounds]]
+
+        assert int(np.sum(inside)) == 2
+        matched = pts_rgb[inside]
+        median_pt = np.median(matched, axis=0)
+        np.testing.assert_allclose(median_pt, [1.25, 0.0, 3.25])
+
+    def test_empty_mask_selects_nothing(self):
+        """All-False mask → no depth points matched."""
+        rgb_h, rgb_w = 720, 1280
+        mask = np.zeros((rgb_h, rgb_w), dtype=bool)
+        rgb_pixels = np.array([[500.0, 350.0], [600.0, 400.0]])
+
+        px_u = rgb_pixels[:, 0].astype(int)
+        px_v = rgb_pixels[:, 1].astype(int)
+        in_bounds = (
+            (px_u >= 0) & (px_u < rgb_w) &
+            (px_v >= 0) & (px_v < rgb_h)
+        )
+        inside = np.zeros(len(rgb_pixels), dtype=bool)
+        inside[in_bounds] = mask[px_v[in_bounds], px_u[in_bounds]]
+
+        assert int(np.sum(inside)) == 0
+
+    def test_full_mask_selects_all_valid(self):
+        """All-True mask → all in-bounds points matched."""
+        rgb_h, rgb_w = 720, 1280
+        mask = np.ones((rgb_h, rgb_w), dtype=bool)
+        rgb_pixels = np.array([
+            [500.0, 350.0],
+            [600.0, 400.0],
+            [ -1.0,  -1.0],   # out of bounds
+        ])
+
+        px_u = rgb_pixels[:, 0].astype(int)
+        px_v = rgb_pixels[:, 1].astype(int)
+        in_bounds = (
+            (px_u >= 0) & (px_u < rgb_w) &
+            (px_v >= 0) & (px_v < rgb_h)
+        )
+        inside = np.zeros(len(rgb_pixels), dtype=bool)
+        inside[in_bounds] = mask[px_v[in_bounds], px_u[in_bounds]]
+
+        assert int(np.sum(inside)) == 2  # only the 2 in-bounds points
+
+    def test_bbox_fallback_when_no_mask(self):
+        """When mask is None, fallback bbox logic should be used."""
+        rgb_pixels = np.array([
+            [500.0, 300.0],   # inside bbox
+            [100.0, 100.0],   # outside bbox
+        ])
+        bbox = (400, 250, 700, 400)
+        x1, y1, x2, y2 = bbox
+
+        # Bbox matching (fallback)
+        inside = (
+            (rgb_pixels[:, 0] >= x1) & (rgb_pixels[:, 0] <= x2) &
+            (rgb_pixels[:, 1] >= y1) & (rgb_pixels[:, 1] <= y2)
+        )
+        assert int(np.sum(inside)) == 1
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  5c.  BODY → OPTICAL COORDINATE CONVERSION
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestBodyToOpticalConversion:
+    """Tests for the ROS body (X fwd, Y left, Z up) → optical
+    (X right, Y down, Z forward) coordinate conversion used in
+    _project_to_rgb."""
+
+    @staticmethod
+    def _body_to_optical(pts):
+        """Convert body-frame points to optical-frame points."""
+        X_opt = -pts[:, 1]   # right  = −Y_body
+        Y_opt = -pts[:, 2]   # down   = −Z_body
+        Z_opt =  pts[:, 0]   # forward = X_body
+        return np.column_stack([X_opt, Y_opt, Z_opt])
+
+    def test_forward_point_maps_to_z(self):
+        """Point at (1,0,0) body → (0,0,1) optical."""
+        pts = np.array([[1.0, 0.0, 0.0]])
+        opt = self._body_to_optical(pts)
+        np.testing.assert_allclose(opt[0], [0.0, 0.0, 1.0])
+
+    def test_left_point_maps_to_minus_x(self):
+        """Point at (0,1,0) body → (-1,0,0) optical."""
+        pts = np.array([[0.0, 1.0, 0.0]])
+        opt = self._body_to_optical(pts)
+        np.testing.assert_allclose(opt[0], [-1.0, 0.0, 0.0])
+
+    def test_up_point_maps_to_minus_y(self):
+        """Point at (0,0,1) body → (0,-1,0) optical."""
+        pts = np.array([[0.0, 0.0, 1.0]])
+        opt = self._body_to_optical(pts)
+        np.testing.assert_allclose(opt[0], [0.0, -1.0, 0.0])
+
+    def test_forward_point_projects_to_centre(self):
+        """Point 5m forward in body frame should project to image centre."""
+        fx, fy, cx, cy = 500.0, 500.0, 640.0, 360.0
+        pts = np.array([[5.0, 0.0, 0.0]])
+        opt = self._body_to_optical(pts)
+        u = fx * opt[0, 0] / opt[0, 2] + cx
+        v = fy * opt[0, 1] / opt[0, 2] + cy
+        np.testing.assert_allclose([u, v], [cx, cy])
+
+    def test_object_left_of_camera_projects_left(self):
+        """Object to the left (positive Y body) projects to left side of image."""
+        fx, fy, cx, cy = 500.0, 500.0, 640.0, 360.0
+        pts = np.array([[5.0, 2.0, 0.0]])  # 5m forward, 2m left
+        opt = self._body_to_optical(pts)
+        u = fx * opt[0, 0] / opt[0, 2] + cx
+        assert u < cx, "Object left of camera should project to u < cx"
+
+    def test_object_above_camera_projects_up(self):
+        """Object above (positive Z body) projects to upper half of image."""
+        fx, fy, cx, cy = 500.0, 500.0, 640.0, 360.0
+        pts = np.array([[5.0, 0.0, 1.0]])  # 5m forward, 1m up
+        opt = self._body_to_optical(pts)
+        v = fy * opt[0, 1] / opt[0, 2] + cy
+        assert v < cy, "Object above camera should project to v < cy"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -798,44 +966,66 @@ class TestGeoJSONSchema:
     """Tests for the GeoJSON output format (RFC-7946 + SimpleStyle)."""
 
     REQUIRED_PROPERTIES = [
-        'name', 'category', 'source', 'track_id',
-        'confidence', 'local_frame',
+        'class', 'id', 'confidence',
+        'category', 'detection_type', 'source',
+        'local_frame',
         'marker-color', 'marker-size', 'marker-symbol',
     ]
 
     @staticmethod
     def _make_geojson(detections, origin_set=False):
-        """Build a GeoJSON FeatureCollection like the bridge does."""
+        """Build a GeoJSON FeatureCollection like the bridge does.
+
+        Each detection dict must include 'coordinates' (lon, lat).
+        Optionally includes 'size' (sx, sy, sz) and 'position' (x, y, z)
+        — when size.x > 0 and size.y > 0 a Polygon footprint is emitted.
+        """
+        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge
         features = []
         for det in detections:
             lon, lat = det['coordinates']
-            colors = {
-                'person': '#ff0000', 'car': '#0000ff', 'truck': '#00008b',
-                'bus': '#000080', 'bicycle': '#00ff00', 'motorcycle': '#008000',
-            }
-            symbols = {
-                'person': 'pitch', 'car': 'car', 'truck': 'truck',
-                'bus': 'bus', 'bicycle': 'bicycle',
-            }
             cls = det.get('class_name', 'unknown')
+            sx, sy, _sz = det.get('size', (0.0, 0.0, 0.0))
+            pos_x, pos_y, _pz = det.get('position', (lon, lat, 0.0))
+
+            has_extent = (sx > 0.0 and sy > 0.0)
+
+            if has_extent:
+                half_x, half_y = sx / 2.0, sy / 2.0
+                ring = [
+                    [pos_x + half_x, pos_y + half_y],
+                    [pos_x + half_x, pos_y - half_y],
+                    [pos_x - half_x, pos_y - half_y],
+                    [pos_x - half_x, pos_y + half_y],
+                    [pos_x + half_x, pos_y + half_y],  # closed
+                ]
+                geometry = {"type": "Polygon", "coordinates": [ring]}
+            else:
+                geometry = {"type": "Point", "coordinates": [lon, lat]}
+
             feature = {
                 "type": "Feature",
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [lon, lat]
-                },
+                "id": det.get('track_id', ''),
+                "geometry": geometry,
                 "properties": {
-                    "name": cls,
-                    "category": "detection",
-                    "source": "ugv",
-                    "track_id": det.get('track_id', ''),
+                    "class": cls,
+                    "id": det.get('track_id', ''),
                     "confidence": det.get('confidence', 0.0),
+                    "category": GeoJSONBridge._class_category(cls),
+                    "detection_type": "seg",
+                    "source": "ugv",
                     "local_frame": not origin_set,
-                    "marker-color": colors.get(cls, '#808080'),
+                    "marker-color": GeoJSONBridge._class_color(cls),
                     "marker-size": "medium",
-                    "marker-symbol": symbols.get(cls, 'marker'),
+                    "marker-symbol": GeoJSONBridge._class_symbol(cls),
                 }
             }
+            if has_extent:
+                feature["properties"]["stroke"] = feature["properties"]["marker-color"]
+                feature["properties"]["stroke-width"] = 2
+                feature["properties"]["stroke-opacity"] = 1.0
+                feature["properties"]["fill"] = feature["properties"]["marker-color"]
+                feature["properties"]["fill-opacity"] = 0.25
             features.append(feature)
         return {"type": "FeatureCollection", "features": features}
 
@@ -897,7 +1087,7 @@ class TestGeoJSONSchema:
         assert len(gj['features']) == 0
 
     def test_marker_color_for_known_classes(self):
-        for cls, expected_color in [('person', '#ff0000'), ('car', '#0000ff')]:
+        for cls, expected_color in [('Flame', '#ff0000'), ('Civilian vehicle', '#0000ff')]:
             dets = [{'coordinates': (0, 0), 'class_name': cls,
                      'confidence': 0.9, 'track_id': '1'}]
             gj = self._make_geojson(dets)
@@ -909,6 +1099,119 @@ class TestGeoJSONSchema:
         gj = self._make_geojson(dets)
         assert gj['features'][0]['properties']['marker-color'] == '#808080'
         assert gj['features'][0]['properties']['marker-symbol'] == 'marker'
+
+    def test_category_varies_by_class(self):
+        """Category should reflect semantic class grouping, not a constant."""
+        cases = [
+            ('Flame', 'hazard'), ('First responder', 'person'),
+            ('Civilian vehicle', 'vehicle'), ('Green tree', 'nature'),
+            ('Building', 'infrastructure'), ('Fence', 'obstacle'),
+            ('Helmet', 'equipment'), ('alien', 'unknown'),
+        ]
+        for cls, expected_cat in cases:
+            dets = [{'coordinates': (0, 0), 'class_name': cls,
+                     'confidence': 0.9, 'track_id': '1'}]
+            gj = self._make_geojson(dets)
+            cat = gj['features'][0]['properties']['category']
+            assert cat == expected_cat, f'{cls}: expected {expected_cat}, got {cat}'
+
+    # ── Polygon geometry tests ──────────────────────────────────────
+
+    def test_polygon_emitted_when_size_nonzero(self):
+        """Detection with nonzero bbox size → Polygon geometry."""
+        dets = [{'coordinates': (0, 0), 'class_name': 'Building',
+                 'confidence': 0.8, 'track_id': '1',
+                 'size': (2.0, 3.0, 4.0), 'position': (5.0, 6.0, 0.0)}]
+        gj = self._make_geojson(dets)
+        geom = gj['features'][0]['geometry']
+        assert geom['type'] == 'Polygon'
+
+    def test_point_emitted_when_size_zero(self):
+        """Detection with zero bbox size → Point geometry (fallback)."""
+        dets = [{'coordinates': (1.0, 2.0), 'class_name': 'Flame',
+                 'confidence': 0.9, 'track_id': '1',
+                 'size': (0.0, 0.0, 0.0)}]
+        gj = self._make_geojson(dets)
+        geom = gj['features'][0]['geometry']
+        assert geom['type'] == 'Point'
+
+    def test_point_emitted_when_size_absent(self):
+        """Detection without size field → Point geometry."""
+        dets = [{'coordinates': (1.0, 2.0), 'class_name': 'Flame',
+                 'confidence': 0.9, 'track_id': '1'}]
+        gj = self._make_geojson(dets)
+        assert gj['features'][0]['geometry']['type'] == 'Point'
+
+    def test_polygon_ring_is_closed(self):
+        """RFC-7946: first and last coordinate of a ring must be identical."""
+        dets = [{'coordinates': (0, 0), 'class_name': 'Road',
+                 'confidence': 0.7, 'track_id': '1',
+                 'size': (1.0, 2.0, 0.0), 'position': (3.0, 4.0, 0.0)}]
+        gj = self._make_geojson(dets)
+        ring = gj['features'][0]['geometry']['coordinates'][0]
+        assert len(ring) == 5, 'Polygon ring must have 5 vertices (4 + close)'
+        assert ring[0] == ring[-1], 'Ring is not closed'
+
+    def test_polygon_corners_match_extent(self):
+        """Polygon corners should be centre ± half-extent."""
+        sx, sy = 4.0, 6.0
+        cx, cy = 10.0, 20.0
+        dets = [{'coordinates': (0, 0), 'class_name': 'Green grass',
+                 'confidence': 0.6, 'track_id': '1',
+                 'size': (sx, sy, 0.0), 'position': (cx, cy, 0.0)}]
+        gj = self._make_geojson(dets)
+        ring = gj['features'][0]['geometry']['coordinates'][0]
+        xs = [p[0] for p in ring[:-1]]
+        ys = [p[1] for p in ring[:-1]]
+        np.testing.assert_allclose(max(xs) - min(xs), sx)
+        np.testing.assert_allclose(max(ys) - min(ys), sy)
+
+    def test_polygon_has_simplestyle_fill_properties(self):
+        """Polygon features should carry stroke/fill SimpleStyle props."""
+        dets = [{'coordinates': (0, 0), 'class_name': 'Flame',
+                 'confidence': 0.9, 'track_id': '1',
+                 'size': (1.0, 1.0, 1.0), 'position': (0.0, 0.0, 0.0)}]
+        gj = self._make_geojson(dets)
+        props = gj['features'][0]['properties']
+        assert 'stroke' in props
+        assert 'stroke-width' in props
+        assert 'fill' in props
+        assert 'fill-opacity' in props
+        assert props['stroke'] == props['marker-color']
+        assert props['fill'] == props['marker-color']
+
+    def test_point_lacks_fill_properties(self):
+        """Point features should NOT have stroke/fill properties."""
+        dets = [{'coordinates': (0, 0), 'class_name': 'Flame',
+                 'confidence': 0.9, 'track_id': '1'}]
+        gj = self._make_geojson(dets)
+        props = gj['features'][0]['properties']
+        assert 'stroke' not in props
+        assert 'fill' not in props
+
+    def test_mixed_point_and_polygon(self):
+        """FeatureCollection can contain both Point and Polygon features."""
+        dets = [
+            {'coordinates': (1, 2), 'class_name': 'Flame',
+             'confidence': 0.9, 'track_id': '1'},
+            {'coordinates': (3, 4), 'class_name': 'Road',
+             'confidence': 0.8, 'track_id': '2',
+             'size': (5.0, 10.0, 0.1), 'position': (3.0, 4.0, 0.0)},
+        ]
+        gj = self._make_geojson(dets)
+        types = [f['geometry']['type'] for f in gj['features']]
+        assert 'Point' in types
+        assert 'Polygon' in types
+
+    def test_polygon_serialisable(self):
+        """Polygon GeoJSON must be JSON-serialisable."""
+        dets = [{'coordinates': (0, 0), 'class_name': 'Building',
+                 'confidence': 0.8, 'track_id': '1',
+                 'size': (3.0, 2.0, 5.0), 'position': (1.0, 1.0, 0.0)}]
+        gj = self._make_geojson(dets)
+        json_str = json.dumps(gj)
+        parsed = json.loads(json_str)
+        assert parsed['features'][0]['geometry']['type'] == 'Polygon'
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -966,15 +1269,18 @@ class TestFrameConstants:
         from triffid_ugv_perception.ugv_node import BASE_FRAME
         assert BASE_FRAME == 'b2/base_link'
 
-    def test_target_classes_include_person(self):
+    def test_target_classes_include_water(self):
         from triffid_ugv_perception.ugv_node import TARGET_CLASSES
         assert 0 in TARGET_CLASSES
-        assert TARGET_CLASSES[0] == 'person'
+        assert TARGET_CLASSES[0] == 'Water'
 
-    def test_target_classes_include_vehicles(self):
+    def test_target_classes_include_key_classes(self):
         from triffid_ugv_perception.ugv_node import TARGET_CLASSES
-        assert 2 in TARGET_CLASSES  # car
-        assert 7 in TARGET_CLASSES  # truck
+        # Verify a selection of important TRIFFID classes exist
+        class_names = set(TARGET_CLASSES.values())
+        for expected in ('Flame', 'Smoke', 'First responder', 'Building',
+                         'Road', 'Citizen', 'Debris', 'Green tree'):
+            assert expected in class_names, f'{expected} not in TARGET_CLASSES'
 
     def test_grid_step_defaults(self):
         from triffid_ugv_perception.ugv_node import (
@@ -1237,8 +1543,8 @@ class TestPipelineMathValidation:
         """Given image size and grid steps, count should be predictable."""
         w, h = 640, 480
         step_u, step_v = 64, 48
-        expected_cols = len(range(0, w, step_u))  # 10
-        expected_rows = len(range(0, h, step_v))  # 10
+        expected_cols = len(range(step_u // 2, w, step_u))  # 10
+        expected_rows = len(range(step_v // 2, h, step_v))  # 10
         expected_total = expected_cols * expected_rows  # 100
         assert expected_total == 100
 
@@ -1256,19 +1562,31 @@ class TestSimpleStyleHelpers:
     _symbol = staticmethod(GeoJSONBridge._class_symbol)
 
     def test_person_color(self):
-        assert self._color('person') == '#ff0000'
+        assert self._color('First responder') == '#1e90ff'
 
     def test_car_color(self):
-        assert self._color('car') == '#0000ff'
+        assert self._color('Civilian vehicle') == '#0000ff'
 
     def test_unknown_class_default_color(self):
         assert self._color('spaceship') == '#808080'
 
     def test_person_symbol(self):
-        assert self._symbol('person') == 'pitch'
+        assert self._symbol('First responder') == 'pitch'
 
     def test_unknown_class_default_symbol(self):
         assert self._symbol('spaceship') == 'marker'
+
+    def test_fire_classes_have_red_tones(self):
+        """Fire-related classes should have red/orange colors."""
+        for cls in ('Flame', 'Smoke', 'Burnt tree'):
+            color = self._color(cls)
+            assert color != '#808080', f'{cls} has default color'
+
+    def test_nature_classes_have_green_or_brown(self):
+        """Green vegetation should be greenish."""
+        for cls in ('Green tree', 'Green grass', 'Green plant'):
+            color = self._color(cls)
+            assert color != '#808080', f'{cls} has default color'
 
     def test_all_target_classes_have_colors(self):
         from triffid_ugv_perception.ugv_node import TARGET_CLASSES
@@ -1279,8 +1597,164 @@ class TestSimpleStyleHelpers:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  Entry point
+#  BBOX → 3-D CORNERS  (back-projection fallback for sparse depth)
 # ═══════════════════════════════════════════════════════════════════════════
+
+class TestBboxTo3DCorners:
+    """Tests for UGVPerceptionNode._bbox_to_3d_corners."""
+
+    fn = staticmethod(UGVPerceptionNode._bbox_to_3d_corners)
+
+    # Use actual RGB intrinsics from the bag
+    class _FakeInfo:
+        k = [
+            642.0186767578125, 0.0, 646.3067626953125,
+            0.0, 641.4913330078125, 364.65814208984375,
+            0.0, 0.0, 1.0,
+        ]
+
+    def setup_method(self):
+        # Monkey-patch: _bbox_to_3d_corners reads self.rgb_camera_info
+        self._dummy = type('obj', (object,), {'rgb_camera_info': self._FakeInfo()})()
+
+    def _call(self, u1, v1, u2, v2, depth):
+        # Bind to the dummy self
+        return UGVPerceptionNode._bbox_to_3d_corners(self._dummy, u1, v1, u2, v2, depth)
+
+    def test_returns_8x3(self):
+        corners = self._call(100, 100, 300, 300, 5.0)
+        assert corners.shape == (8, 3)
+
+    def test_x_equals_depth(self):
+        """All X (forward) values should equal the input depth."""
+        corners = self._call(50, 50, 200, 200, 3.0)
+        np.testing.assert_allclose(corners[:, 0], 3.0)
+
+    def test_nonzero_yz_extent(self):
+        """Y and Z extent must be positive for any non-degenerate bbox."""
+        corners = self._call(100, 100, 500, 400, 4.0)
+        extent = np.ptp(corners, axis=0)
+        assert extent[1] > 0.1, "Y extent should be positive"
+        assert extent[2] > 0.1, "Z extent should be positive"
+
+    def test_principal_point_bbox_centered(self):
+        """A bbox centred on the principal point should give symmetric Y, Z."""
+        cx = self._FakeInfo.k[2]
+        cy = self._FakeInfo.k[5]
+        half = 50.0
+        corners = self._call(cx - half, cy - half, cx + half, cy + half, 5.0)
+        y_extent = np.ptp(corners[:, 1])
+        z_extent = np.ptp(corners[:, 2])
+        assert y_extent > 0
+        assert z_extent > 0
+
+    def test_larger_bbox_larger_extent(self):
+        """A wider 2-D bbox at the same depth should give larger Y extent."""
+        small = self._call(300, 200, 400, 300, 5.0)
+        large = self._call(100, 200, 600, 300, 5.0)
+        assert np.ptp(large[:, 1]) > np.ptp(small[:, 1])
+
+    def test_farther_depth_larger_extent(self):
+        """Same pixel bbox at greater depth → proportionally larger extent."""
+        near = self._call(200, 200, 400, 400, 2.0)
+        far  = self._call(200, 200, 400, 400, 8.0)
+        assert np.ptp(far[:, 1]) > np.ptp(near[:, 1])
+        assert np.ptp(far[:, 2]) > np.ptp(near[:, 2])
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  3-D NMS DEDUPLICATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestNMS3D:
+    """Tests for UGVPerceptionNode._nms_3d (static method)."""
+
+    nms = staticmethod(UGVPerceptionNode._nms_3d)
+
+    @staticmethod
+    def _det(x, y, z, conf, cls='Building'):
+        return {
+            'position': (x, y, z),
+            'extent': (1.0, 1.0, 1.0),
+            'class_id': 0,
+            'class_name': cls,
+            'confidence': conf,
+            'bbox': [0, 0, 100, 100],
+            'n_depth_pts': 5,
+        }
+
+    def test_empty_list(self):
+        assert self.nms([], dist_thresh=0.5) == []
+
+    def test_single_detection_kept(self):
+        dets = [self._det(1, 2, 3, 0.9)]
+        result = self.nms(dets, dist_thresh=0.5)
+        assert len(result) == 1
+
+    def test_identical_position_keeps_highest_conf(self):
+        dets = [
+            self._det(2.0, 1.0, -0.4, 0.62, 'Destroyed building'),
+            self._det(2.0, 1.0, -0.4, 0.36, 'Building'),
+        ]
+        result = self.nms(dets, dist_thresh=0.5)
+        assert len(result) == 1
+        assert result[0]['confidence'] == 0.62
+
+    def test_close_positions_suppressed(self):
+        """Detections within dist_thresh should be merged."""
+        dets = [
+            self._det(2.0, 1.0, 0.0, 0.8),
+            self._det(2.1, 1.05, 0.0, 0.5),  # ~0.12m away
+        ]
+        result = self.nms(dets, dist_thresh=0.5)
+        assert len(result) == 1
+        assert result[0]['confidence'] == 0.8
+
+    def test_far_apart_both_kept(self):
+        """Detections far apart should both survive."""
+        dets = [
+            self._det(0.0, 0.0, 0.0, 0.9),
+            self._det(5.0, 5.0, 0.0, 0.7),
+        ]
+        result = self.nms(dets, dist_thresh=0.5)
+        assert len(result) == 2
+
+    def test_three_at_same_spot(self):
+        """Three overlapping → only the best survives."""
+        dets = [
+            self._det(1.0, 1.0, 1.0, 0.3, 'A'),
+            self._det(1.0, 1.0, 1.0, 0.9, 'B'),
+            self._det(1.0, 1.0, 1.0, 0.6, 'C'),
+        ]
+        result = self.nms(dets, dist_thresh=0.5)
+        assert len(result) == 1
+        assert result[0]['class_name'] == 'B'
+
+    def test_two_clusters(self):
+        """Two clusters each with 2 detections → 2 survivors."""
+        dets = [
+            self._det(0.0, 0.0, 0.0, 0.8),
+            self._det(0.1, 0.0, 0.0, 0.5),
+            self._det(5.0, 5.0, 0.0, 0.7),
+            self._det(5.1, 5.0, 0.0, 0.3),
+        ]
+        result = self.nms(dets, dist_thresh=0.5)
+        assert len(result) == 2
+
+    def test_order_independence(self):
+        """Result should not depend on input order."""
+        dets_a = [
+            self._det(1.0, 1.0, 1.0, 0.4, 'X'),
+            self._det(1.0, 1.0, 1.0, 0.9, 'Y'),
+        ]
+        dets_b = list(reversed(dets_a))
+        r_a = self.nms(dets_a, dist_thresh=0.5)
+        r_b = self.nms(dets_b, dist_thresh=0.5)
+        assert len(r_a) == len(r_b) == 1
+        assert r_a[0]['class_name'] == r_b[0]['class_name'] == 'Y'
+
+
+#  Entry point
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '--tb=short'])

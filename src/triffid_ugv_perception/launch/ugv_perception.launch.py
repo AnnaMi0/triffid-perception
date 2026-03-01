@@ -1,22 +1,3 @@
-"""
-Launch file for UGV perception pipeline.
-
-Usage (inside Docker container):
-    ros2 launch triffid_ugv_perception ugv_perception.launch.py
-
-With parameters:
-    ros2 launch triffid_ugv_perception ugv_perception.launch.py \
-        model_path:=yolo11n.pt \
-        confidence_threshold:=0.4 \
-        depth_grid_step_u:=32 \
-        depth_grid_step_v:=24
-
-Frame defaults (from rosbag):
-    target_frame  = b2/base_link
-    depth_frame   = f_depth_optical_frame
-    rgb_frame     = f_oc_link
-"""
-
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
@@ -25,8 +6,8 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     return LaunchDescription([
-        # -- Shared arguments --
-        DeclareLaunchArgument('model_path', default_value='yolo11n.pt'),
+        # Shared arguments
+        DeclareLaunchArgument('model_path', default_value='/ws/best.pt'),
         DeclareLaunchArgument('confidence_threshold', default_value='0.35'),
         DeclareLaunchArgument('target_frame', default_value='b2/base_link'),
 
@@ -35,11 +16,7 @@ def generate_launch_description():
         DeclareLaunchArgument('depth_grid_step_v', default_value='48'),
         DeclareLaunchArgument('use_dummy_detections', default_value='false'),
 
-        # -- Static TF publishers --
-        # These transforms come from the robot URDF / tf_static in the
-        # rosbag.  The bag records /tf_static with VOLATILE durability,
-        # so the perception node often misses them due to DDS discovery
-        # timing.  Publishing them here guarantees availability.
+        # Static TF publishers
 
         # b2/base_link -> f_oc_link  (front USB RGB camera)
         Node(
@@ -93,7 +70,7 @@ def generate_launch_description():
             ],
         ),
 
-        # -- UGV Perception Node --
+        # UGV Perception Node
         Node(
             package='triffid_ugv_perception',
             executable='ugv_node',
@@ -107,5 +84,13 @@ def generate_launch_description():
                 'depth_grid_step_v': LaunchConfiguration('depth_grid_step_v'),
                 'use_dummy_detections': LaunchConfiguration('use_dummy_detections'),
             }],
+        ),
+
+        # GeoJSON Bridge Node
+        Node(
+            package='triffid_ugv_perception',
+            executable='geojson_bridge',
+            name='geojson_bridge',
+            output='screen',
         ),
     ])

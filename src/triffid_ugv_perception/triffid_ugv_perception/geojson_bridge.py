@@ -33,7 +33,7 @@ from std_msgs.msg import String
 
 
 class GeoJSONBridge(Node):
-    """Convert ROS2 detections to GeoJSON and push to TRIFFID API."""
+    # Convert ROS2 detections to GeoJSON and push to TRIFFID API.
 
     def __init__(self):
         super().__init__('geojson_bridge')
@@ -56,7 +56,7 @@ class GeoJSONBridge(Node):
         # UGV 3D detections (in b2/base_link)
         self.sub_ugv = self.create_subscription(
             Detection3DArray,
-            '/ugv/perception/detections_3d',
+            '/ugv/perception/front/detections_3d',
             self.ugv_callback,
             10,
         )
@@ -71,7 +71,7 @@ class GeoJSONBridge(Node):
         # Publishers
         self.pub_geojson = self.create_publisher(
             String,
-            '/triffid/geojson',
+            '/triffid/front/geojson',
             10,
         )
 
@@ -91,7 +91,7 @@ class GeoJSONBridge(Node):
     # GPS origin
 
     def gps_callback(self, msg: NavSatFix):
-        """Use first valid GPS fix as the local frame origin."""
+        # Use first valid GPS fix as the local frame origin.
         if self.origin_set:
             return
         if msg.latitude != 0.0 and msg.longitude != 0.0:
@@ -106,19 +106,18 @@ class GeoJSONBridge(Node):
     # Coordinate conversion
 
     def local_to_gps(self, x, y, z=0.0):
-        """Convert local map-frame coordinates (metres) to [lon, lat].
+        # Convert local map-frame coordinates (metres) to [lon, lat].
 
-        Uses equirectangular approximation — accurate to ~1m for
-        displacements under ~1km from the origin.
+        # Uses equirectangular approximation — accurate to ~1m for
+        # displacements under ~1km from the origin.
 
-        Args:
-            x: east offset in metres
-            y: north offset in metres
-            z: altitude offset (not used in 2D GeoJSON)
+        # Args:
+        #     x: east offset in metres
+        #     y: north offset in metres
+        #     z: altitude offset (not used in 2D GeoJSON)
 
-        Returns:
-            (longitude, latitude) tuple
-        """
+        # Returns:
+        #     (longitude, latitude) tuple
         if not self.origin_set:
             # Fall back: return raw coordinates (not valid GPS)
             return (x, y)
@@ -137,40 +136,63 @@ class GeoJSONBridge(Node):
 
     # Detection to GeoJSON conversion
 
-    def detections_to_geojson(self, detections, source='ugv'):
-        """Convert a list of detection dicts to a GeoJSON FeatureCollection.
-
-        Each detection becomes a GeoJSON Point Feature with properties:
-          - name: class name
-          - category: "detection"
-          - source: "ugv"
-          - track_id: persistent tracking ID
-          - confidence: detection score
-          - local_frame: True if coordinates are local (no GPS), False if WGS-84
-
-        Compatible with the TRIFFID API (RFC-7946, SimpleStyle spec).
-        """
+    def detections_to_geojson(self, detections, source='ugv',
+                               detection_type='seg'):
+        
         features = []
         for det in detections:
             lon, lat = det['coordinates']
+            sx, sy, _sz = det.get('size', (0.0, 0.0, 0.0))
+            pos_x, pos_y, _pos_z = det.get('position', (0.0, 0.0, 0.0))
+
+            has_extent = (sx > 0.0 and sy > 0.0)
+
+            if has_extent:
+                # Build ground-plane polygon from centre ± half-extent
+                half_x, half_y = sx / 2.0, sy / 2.0
+                corners = [
+                    (pos_x + half_x, pos_y + half_y),
+                    (pos_x + half_x, pos_y - half_y),
+                    (pos_x - half_x, pos_y - half_y),
+                    (pos_x - half_x, pos_y + half_y),
+                ]
+                ring = [list(self.local_to_gps(cx, cy)) for cx, cy in corners]
+                ring.append(ring[0])  # close the ring (RFC-7946)
+                geometry = {
+                    "type": "Polygon",
+                    "coordinates": [ring],
+                }
+            else:
+                geometry = {
+                    "type": "Point",
+                    "coordinates": [lon, lat],
+                }
+
+            class_name = det.get('class_name', 'unknown')
             feature = {
                 "type": "Feature",
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [lon, lat]
-                },
+                "id": det.get('track_id', ''),
+                "geometry": geometry,
                 "properties": {
-                    "name": det.get('class_name', 'unknown'),
-                    "category": "detection",
-                    "source": source,
-                    "track_id": det.get('track_id', ''),
+                    "class": class_name,
+                    "id": det.get('track_id', ''),
                     "confidence": det.get('confidence', 0.0),
+                    "category": self._class_category(class_name),
+                    "detection_type": detection_type,
+                    "source": source,
                     "local_frame": not self.origin_set,
-                    "marker-color": self._class_color(det.get('class_name', '')),
+                    "marker-color": self._class_color(class_name),
                     "marker-size": "medium",
-                    "marker-symbol": self._class_symbol(det.get('class_name', '')),
+                    "marker-symbol": self._class_symbol(class_name),
                 }
             }
+            # Add SimpleStyle polygon properties when using Polygon geometry
+            if has_extent:
+                feature["properties"]["stroke"] = feature["properties"]["marker-color"]
+                feature["properties"]["stroke-width"] = 2
+                feature["properties"]["stroke-opacity"] = 1.0
+                feature["properties"]["fill"] = feature["properties"]["marker-color"]
+                feature["properties"]["fill-opacity"] = 0.25
             features.append(feature)
 
         return {
@@ -181,13 +203,18 @@ class GeoJSONBridge(Node):
     # Callbacks
 
     def ugv_callback(self, msg: Detection3DArray):
-        """Process UGV 3D detections (b2/base_link) → GeoJSON."""
+        # Process UGV 3D detections (b2/base_link) → GeoJSON.
         detections = []
         for det in msg.detections:
             # Extract 3D position (in b2/base_link, metres)
             x = det.bbox.center.position.x
             y = det.bbox.center.position.y
             z = det.bbox.center.position.z
+
+            # 3D bbox extent (metres, in base_link axes)
+            sx = det.bbox.size.x
+            sy = det.bbox.size.y
+            sz = det.bbox.size.z
 
             # Convert to GPS if origin is set, otherwise emit local coords
             lon, lat = self.local_to_gps(x, y, z)
@@ -201,6 +228,8 @@ class GeoJSONBridge(Node):
 
             detections.append({
                 'coordinates': (lon, lat),
+                'size': (sx, sy, sz),
+                'position': (x, y, z),
                 'class_name': class_name,
                 'confidence': confidence,
                 'track_id': det.id,
@@ -209,13 +238,15 @@ class GeoJSONBridge(Node):
         if not detections:
             return
 
-        geojson = self.detections_to_geojson(detections, source='ugv')
+        geojson = self.detections_to_geojson(
+            detections, source='ugv', detection_type='seg',
+        )
         self._publish(geojson)
 
     # Publishing
 
     def _publish(self, geojson: dict):
-        """Publish GeoJSON to ROS2 topic and optionally to the TRIFFID API."""
+        # Publish GeoJSON to ROS2 topic and optionally to the TRIFFID API.
         json_str = json.dumps(geojson, indent=2)
 
         # ROS2 topic
@@ -238,7 +269,7 @@ class GeoJSONBridge(Node):
             ).start()
 
     def _send_to_api(self, json_str: str):
-        """PUT GeoJSON to the TRIFFID mapping API."""
+        # PUT GeoJSON to the TRIFFID mapping API.
         try:
             req = Request(
                 self.api_url,
@@ -265,29 +296,145 @@ class GeoJSONBridge(Node):
 
     @staticmethod
     def _class_color(class_name: str) -> str:
-        """Map class name to a SimpleStyle marker color."""
+        # Map TRIFFID class name to a SimpleStyle marker color
         colors = {
-            'person': '#ff0000',
-            'car': '#0000ff',
-            'truck': '#00008b',
-            'bus': '#000080',
-            'bicycle': '#00ff00',
-            'motorcycle': '#008000',
-            'debris': '#ff8c00',
-            'chair': '#ff8c00',
-            'couch': '#ffd700',
+            # Fire / hazard (reds)
+            'Flame': '#ff0000',
+            'Smoke': '#ff4500',
+            'Burnt tree': '#8b0000',
+            'Burnt grass': '#a52a2a',
+            'Burnt plant': '#b22222',
+            'Fire hose': '#dc143c',
+            'Fire hydrant': '#ff6347',
+            'Fire truck': '#ff0000',
+            'Extinguisher': '#ff1493',
+            # People (blues)
+            'First responder': '#1e90ff',
+            'Citizen': '#4169e1',
+            'Military personnel': '#000080',
+            # Vehicles (dark blues)
+            'Civilian vehicle': '#0000ff',
+            'Destroyed vehicle': '#00008b',
+            'Ambulance': '#4682b4',
+            'Police vehicle': '#191970',
+            'Army vehicle': '#2f4f4f',
+            'Boat': '#5f9ea0',
+            'Bicycle': '#00ff00',
+            'aerial vehicle': '#87ceeb',
+            # Nature (greens)
+            'Green tree': '#228b22',
+            'Green plant': '#32cd32',
+            'Green grass': '#7cfc00',
+            'Dry tree': '#daa520',
+            'Dry grass': '#bdb76b',
+            'Dry plant': '#f0e68c',
+            'Animal': '#ff8c00',
+            # Infrastructure (greys)
+            'Building': '#708090',
+            'Destroyed building': '#696969',
+            'Wall': '#808080',
+            'Road': '#a9a9a9',
+            'Pavement': '#c0c0c0',
+            'Dirt road': '#d2b48c',
+            'Window': '#b0c4de',
+            'Door': '#8b4513',
+            'Stairs': '#a0522d',
+            'Pole': '#778899',
+            'Tower': '#556b2f',
+            'Silo': '#6b8e23',
+            # Obstacles (oranges / yellows)
+            'Debris': '#ff8c00',
+            'Fence': '#daa520',
+            'Barrier': '#ffd700',
+            'Cone': '#ff7f50',
+            'Hole in the ground': '#8b4513',
+            'Mud': '#a0522d',
+            'Water': '#00bfff',
+            # Equipment (purples)
+            'Helmet': '#9370db',
+            'SCBA': '#8a2be2',
+            'Boot': '#4b0082',
+            'Mask': '#9400d3',
+            'Glove': '#da70d6',
+            'Protective glasses': '#ba55d3',
+            'Ladder': '#ff8c00',
+            'Ax': '#cd853f',
+            'Shovel': '#d2691e',
+            'Chainsaw': '#b8860b',
+            'Bag': '#bc8f8f',
+            'Barrel': '#8b8682',
+            'Furniture': '#deb887',
+            'Tank': '#2e8b57',
+            'Crane': '#b8860b',
+            'Excavator': '#daa520',
+            'Lifesaver': '#ff4500',
         }
         return colors.get(class_name, '#808080')
 
     @staticmethod
+    def _class_category(class_name: str) -> str:
+        """Map TRIFFID class name to a semantic category."""
+        categories = {
+            # Hazard
+            'Flame': 'hazard', 'Smoke': 'hazard',
+            'Burnt tree': 'hazard', 'Burnt grass': 'hazard', 'Burnt plant': 'hazard',
+            # People
+            'First responder': 'person', 'Citizen': 'person',
+            'Military personnel': 'person',
+            # Vehicles
+            'Civilian vehicle': 'vehicle', 'Destroyed vehicle': 'vehicle',
+            'Ambulance': 'vehicle', 'Police vehicle': 'vehicle',
+            'Fire truck': 'vehicle', 'Army vehicle': 'vehicle',
+            'Boat': 'vehicle', 'Bicycle': 'vehicle', 'aerial vehicle': 'vehicle',
+            # Nature
+            'Green tree': 'nature', 'Green plant': 'nature',
+            'Green grass': 'nature', 'Dry tree': 'nature',
+            'Dry grass': 'nature', 'Dry plant': 'nature', 'Animal': 'nature',
+            # Infrastructure
+            'Building': 'infrastructure', 'Destroyed building': 'infrastructure',
+            'Wall': 'infrastructure', 'Road': 'infrastructure',
+            'Pavement': 'infrastructure', 'Dirt road': 'infrastructure',
+            'Window': 'infrastructure', 'Door': 'infrastructure',
+            'Stairs': 'infrastructure', 'Pole': 'infrastructure',
+            'Tower': 'infrastructure', 'Silo': 'infrastructure',
+            # Obstacle
+            'Debris': 'obstacle', 'Fence': 'obstacle', 'Barrier': 'obstacle',
+            'Cone': 'obstacle', 'Hole in the ground': 'obstacle',
+            'Mud': 'obstacle', 'Water': 'obstacle',
+            # Equipment
+            'Fire hose': 'equipment', 'Fire hydrant': 'equipment',
+            'Extinguisher': 'equipment', 'Helmet': 'equipment',
+            'SCBA': 'equipment', 'Boot': 'equipment', 'Mask': 'equipment',
+            'Glove': 'equipment', 'Protective glasses': 'equipment',
+            'Ladder': 'equipment', 'Ax': 'equipment', 'Shovel': 'equipment',
+            'Chainsaw': 'equipment', 'Bag': 'equipment', 'Barrel': 'equipment',
+            'Furniture': 'equipment', 'Tank': 'equipment', 'Crane': 'equipment',
+            'Excavator': 'equipment', 'Lifesaver': 'equipment',
+        }
+        return categories.get(class_name, 'unknown')
+
+    @staticmethod
     def _class_symbol(class_name: str) -> str:
-        """Map class name to a Maki icon name (SimpleStyle)."""
+        # Map TRIFFID class name to a Maki icon name - TO CHANGE.
         symbols = {
-            'person': 'pitch',
-            'car': 'car',
-            'truck': 'truck',
-            'bus': 'bus',
-            'bicycle': 'bicycle',
+            'First responder': 'pitch',
+            'Citizen': 'pitch',
+            'Military personnel': 'pitch',
+            'Civilian vehicle': 'car',
+            'Destroyed vehicle': 'car',
+            'Ambulance': 'hospital',
+            'Police vehicle': 'police',
+            'Fire truck': 'fire-station',
+            'Army vehicle': 'car',
+            'Boat': 'harbor',
+            'Bicycle': 'bicycle',
+            'aerial vehicle': 'airfield',
+            'Flame': 'fire-station',
+            'Smoke': 'fire-station',
+            'Building': 'building',
+            'Destroyed building': 'building',
+            'Water': 'water',
+            'Animal': 'dog-park',
         }
         return symbols.get(class_name, 'marker')
 

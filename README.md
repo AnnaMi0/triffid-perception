@@ -1,7 +1,7 @@
 # TRIFFID UGV Perception
 
 Real-time 3D object detection pipeline for the TRIFFID UGV platform.  
-Fuses RGB and depth from separate cameras via cross-camera projection, runs YOLOv11 for 2D detection, back-projects to 3D, tracks objects across frames, and publishes results as ROS 2 messages and GeoJSON.
+Fuses RGB and depth from separate cameras via cross-camera projection, runs a fine-tuned YOLOv11l-seg model for 2D detection, back-projects to 3D, tracks objects across frames, and publishes results as ROS 2 messages and GeoJSON.
 
 ---
 
@@ -15,10 +15,11 @@ Fuses RGB and depth from separate cameras via cross-camera projection, runs YOLO
 6. [Node Descriptions](#node-descriptions)
 7. [Parameters](#parameters)
 8. [Docker Setup](#docker-setup)
-9. [Quick Start](#quick-start)
+9. [Quick Start (`run.sh`)](#quick-start-runsh)
 10. [Running the Integration Test](#running-the-integration-test)
 11. [Rosbag Datasets](#rosbag-datasets)
 12. [Project Structure](#project-structure)
+13. [Interface Specification](#interface-specification)
 
 ---
 
@@ -53,7 +54,7 @@ Fuses RGB and depth from separate cameras via cross-camera projection, runs YOLO
  │ Detection3D → GeoJSON │
  │ Local or GPS coords   │
  │ Optional API PUT      │
- │ /triffid/geojson      │
+ │ /triffid/front/geojson │
  └───────────────────────┘
 ```
 
@@ -96,8 +97,9 @@ The robot also publishes `/tf_static` with the full transform chain, `/dog_odom`
 
 | Topic | Type | Node | Description |
 |---|---|---|---|
-| `/ugv/perception/detections_3d` | `vision_msgs/Detection3DArray` | `ugv_node` | 3D detections in `b2/base_link` frame |
-| `/triffid/geojson` | `std_msgs/String` | `geojson_bridge` | GeoJSON FeatureCollection (RFC 7946) |
+| `/ugv/perception/front/detections_3d` | `vision_msgs/Detection3DArray` | `ugv_node` | 3D detections in `b2/base_link` frame |
+| `/ugv/perception/front/segmentation` | `sensor_msgs/Image` | `ugv_node` | Semantic label map (`mono8`, pixel = class ID) |
+| `/triffid/front/geojson` | `std_msgs/String` | `geojson_bridge` | GeoJSON FeatureCollection (RFC 7946) |
 
 ### Detection3DArray Message Structure
 
@@ -107,8 +109,19 @@ Each `Detection3D` in the array contains:
 - **`header.stamp`**: Copied from the triggering RGB frame (rosbag time, not wall clock)
 - **`id`**: Persistent tracking ID (positive integer, never reused)
 - **`bbox.center.position`**: Median 3D position (x, y, z) in metres relative to `b2/base_link`
-- **`results[0].hypothesis.class_id`**: Class name string (`person`, `car`, `chair`, etc.)
+- **`bbox.size`**: 3D bounding box extent (x, y, z) in metres in `b2/base_link`
+- **`results[0].hypothesis.class_id`**: Class name string (e.g. `First responder`, `Civilian vehicle`, `Flame`, `Debris`)
 - **`results[0].hypothesis.score`**: YOLO confidence (0–1)
+
+### Segmentation Topic (`mono8`)
+
+The segmentation topic publishes a `sensor_msgs/Image` with encoding `mono8` (1280×720).
+Each pixel value is a 1-based class ID from the YOLO model:
+
+- `0` = background (no detection)
+- `1`–`63` = `TARGET_CLASSES[pixel_value - 1]` (e.g. pixel 15 → class ID 14 → `Building`)
+
+When masks overlap, the highest-confidence detection’s class ID wins.
 
 ---
 
@@ -146,7 +159,7 @@ Z_optical =  X_body   (forward = forward)
 
 The core processing runs on every RGB frame in `rgb_callback`:
 
-1. **YOLO Detection** — Run YOLOv11n on the RGB image. Filter for `TARGET_CLASSES` (COCO IDs: 0=person, 1=bicycle, 2=car, 3=motorcycle, 5=bus, 7=truck, 56=chair, 57=couch). Or use a full-image dummy bbox for testing without YOLO.
+1. **YOLO Detection** — Run the fine-tuned YOLOv11l-seg model on the RGB image. The model detects 63 disaster-response classes (see `classes.txt`): people (citizens, first responders, military personnel), vehicles (civilian, police, army, fire truck, ambulance, excavator), hazards (flame, smoke, debris, destroyed buildings), terrain (roads, grass, mud), equipment (helmets, SCBA, fire hose, extinguisher), and more. Or use a full-image dummy bbox for testing without YOLO.
 
 2. **Depth Grid Sampling** — Sample the depth image on a coarse grid (default 64×48 px step → ~100 points). Discard zero-depth pixels. Back-project valid samples to 3D points in `f_depth_optical_frame` using the depth camera's intrinsics from `CameraInfo.K`.
 
@@ -154,13 +167,13 @@ The core processing runs on every RGB frame in `rgb_callback`:
 
 4. **Pinhole Projection to RGB** — Convert the 3D points (now in `f_oc_link` body frame) to optical convention, then project onto the RGB image plane using the RGB `CameraInfo.K`. Points behind the camera (Z_optical ≤ 0) are assigned sentinel pixel values (−1, −1).
 
-5. **Bbox Matching** — For each YOLO detection bbox, find which projected depth points fall inside it. If none do, the detection is skipped (no depth evidence).
+5. **Mask-based Depth Matching** — For each detection, use the instance segmentation mask (not the bounding box) to select which projected depth points belong to the object. This gives pixel-precise matching and eliminates background depth contamination. Falls back to bbox matching if no mask is available.
 
 6. **Median 3D Position** — Take the median of matched 3D points in `f_oc_link` as the object's position. Transform this point to `b2/base_link` via TF.
 
 7. **IoU Tracking** — Use greedy IoU matching on 2D bboxes across frames to assign persistent track IDs. New detections get new IDs (never reused). Tracks are retired after `max_age=10` frames without a match.
 
-8. **Publish** — Emit a `Detection3DArray` with all tracked detections for this frame.
+8. **Publish** — Emit a `Detection3DArray` with all tracked detections and a per-pixel semantic label map on `/ugv/perception/front/segmentation` (`mono8`, pixel = 1-based class ID, 0 = background).
 
 ---
 
@@ -168,9 +181,12 @@ The core processing runs on every RGB frame in `rgb_callback`:
 
 ### `ugv_node` (main perception)
 
-The core pipeline node. Subscribes to RGB, depth, CameraInfo, and TF. Publishes `Detection3DArray`.
+The core pipeline node. Subscribes to RGB, depth, CameraInfo, and TF. Publishes `Detection3DArray` and segmentation overlay.
 
-- Uses `ultralytics` YOLO for 2D object detection
+- Uses fine-tuned `yolo11l-seg` (ultralytics) for 2D detection + instance segmentation (63 classes)
+- Segmentation masks used for pixel-precise depth matching (not rectangular bboxes)
+- Publishes semantic segmentation label map on `/ugv/perception/front/segmentation` (mono8, only when subscribed)
+- 3D NMS deduplication: overlapping detections at the same 3D position are merged (highest confidence kept)
 - Cross-camera depth–RGB fusion via 3D projection
 - IoU-based 2D bbox tracker for persistent object IDs
 - Frame synchronisation: uses latest available depth image when an RGB frame arrives (not strict time-sync)
@@ -192,12 +208,13 @@ All parameters are declared on `ugv_node` and configurable via the launch file:
 
 | Parameter | Default | Description |
 |---|---|---|
-| `model_path` | `yolo11n.pt` | YOLO model file (auto-downloaded by ultralytics) |
+| `model_path` | `/ws/best.pt` | YOLO model weights file (mounted from host) |
 | `confidence_threshold` | `0.35` | Minimum YOLO confidence to accept a detection |
 | `target_frame` | `b2/base_link` | Output frame for 3D positions |
 | `depth_grid_step_u` | `64` | Horizontal step (px) for depth grid sampling |
 | `depth_grid_step_v` | `48` | Vertical step (px) for depth grid sampling |
 | `use_dummy_detections` | `false` | Bypass YOLO with a full-image dummy bbox (for testing) |
+| `yolo_imgsz` | `1280` | YOLO input resolution (pixels) |
 
 ### GeoJSON Bridge Parameters
 
@@ -234,10 +251,31 @@ The pipeline runs inside a Docker container based on `ros:humble-perception-jamm
 | `./build/` | `/ws/build/` | Build artifacts (persisted) |
 | `./log/` | `/ws/log/` | Build logs |
 | `./cyclonedds.xml` | `/ws/cyclonedds.xml` | DDS configuration |
+| `./best.pt` | `/ws/best.pt` | YOLO model weights (read-only) |
 
 ---
 
-## Quick Start
+## Quick Start (`run.sh`)
+
+The all-in-one `run.sh` script wraps Docker operations:
+
+```bash
+cd ~/hua_ws
+./run.sh build          # Build the workspace inside Docker
+./run.sh start          # Launch pipeline (ugv_node + geojson_bridge + rosbag)
+./run.sh stop           # Stop everything
+./run.sh restart        # Rebuild + restart
+./run.sh logs           # Tail node logs
+./run.sh sample [SEC]   # Collect output samples (default: 15s)
+./run.sh test           # Run integration test
+./run.sh unit           # Run unit tests
+./run.sh shell          # Open a bash shell in the container
+./run.sh status         # Check topic rates
+```
+
+Environment variables: `BAG_RATE` (default 1.0), `BAG_START` (offset sec), `YOLO_IMGSZ` (default 1280), `TIMEOUT` (test timeout).
+
+### Manual Quick Start
 
 ### 1. Build the container
 
@@ -282,12 +320,12 @@ sudo docker compose exec perception bash -c "
 ```bash
 # Echo 3D detections:
 sudo docker compose exec perception bash -c "
-  ROS_DOMAIN_ID=42 ros2 topic echo /ugv/perception/detections_3d --once
+  ROS_DOMAIN_ID=42 ros2 topic echo /ugv/perception/front/detections_3d --once
 "
 
 # Echo GeoJSON:
 sudo docker compose exec perception bash -c "
-  ROS_DOMAIN_ID=42 ros2 topic echo /triffid/geojson --once
+  ROS_DOMAIN_ID=42 ros2 topic echo /triffid/front/geojson --once
 "
 ```
 
@@ -318,7 +356,7 @@ sudo docker compose exec perception bash -c "
 
 | # | Check | Requirement |
 |---|---|---|
-| 1 | Rosbag exists and contains metadata + db3 | Replayable dataset |
+| 1 | Output rosbag recorded | Replayable dataset |
 | 2 | All expected topics receive messages | Topic liveness |
 | 3 | Message types match spec | Interface definitions |
 | 4 | CameraInfo valid (frame, resolution, intrinsics) | Sensor validation |
@@ -327,6 +365,8 @@ sudo docker compose exec perception bash -c "
 | 7 | Detection fields populated (id, class, score, frame_id) | Interface definitions |
 | 8 | 3D positions finite, non-zero, within 30m range | Depth pipeline sanity |
 | 9 | Persistent tracking IDs, no duplicates per frame | Tracking correctness |
+| 10 | GeoJSON RFC-7946 valid, required properties present | GeoJSON schema |
+| 11 | Segmentation label map (mono8) published | Segmentation output |
 
 ### Options
 
@@ -353,7 +393,7 @@ The rosbag is not included in the repository (17+ GB binary). Mount it via `dock
 
 ### Note on YOLO detection
 
-The pipeline detects COCO classes: person, bicycle, car, motorcycle, bus, truck, chair, couch. If the recorded scene contains none of these objects (e.g., empty corridors, stairs), the pipeline will publish empty `Detection3DArray` messages — this is expected behaviour, not a bug. Use `use_dummy_detections:=true` to test the depth pipeline independently.
+The pipeline detects 63 disaster-response classes using a fine-tuned YOLOv11l-seg model (see `classes.txt` for the full list). If the recorded scene contains none of the trained classes, the pipeline will publish empty `Detection3DArray` messages — this is expected behaviour, not a bug. Use `use_dummy_detections:=true` to test the depth pipeline independently.
 
 ---
 
@@ -381,6 +421,16 @@ hua_ws/
         │   ├── ugv_node.py               # Main perception node
         │   ├── tracker.py                # IoU-based 2D bbox tracker
         │   └── geojson_bridge.py         # Detection3D → GeoJSON + API
+        ├── scripts/
+        │   └── collect_samples.py        # Output sample collector
         └── test/
-            └── integration_test.py       # 9-check end-to-end test
+            ├── integration_test.py       # End-to-end integration test
+            └── test_unit.py              # 148 unit tests
 ```
+
+---
+
+## Interface Specification
+
+For integration partners: the full frozen interface document is in **[INTERFACE.md](INTERFACE.md)**.
+It specifies every topic, message field, frame convention, GeoJSON schema, class list, and encoding in a single reference.

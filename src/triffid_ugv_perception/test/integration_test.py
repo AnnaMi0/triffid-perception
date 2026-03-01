@@ -1,33 +1,4 @@
 #!/usr/bin/env python3
-"""
-TRIFFID Integration Test  (UGV only)
-======================================
-Automated end-to-end test that verifies the full UGV perception pipeline
-using the rosbag dataset.  Checks all 6 integration requirements:
-
-  1. Interface definitions  – correct topic names, message types, QoS
-  2. Interface document     – (README; not tested programmatically)
-  3. Replayable dataset     – rosbag plays and topics appear
-  4. Run from recorded data – pipeline produces outputs without hardware
-  5. Timestamp consistency  – output stamps match input stamps, depth-RGB sync
-  6. Coordinate frames      – TF tree, GeoJSON coordinate validity
-
-Frame hierarchy (from rosbag):
-  f_depth_optical_frame  →  f_oc_link  →  b2/base_link
-
-Usage:
-
-sudo docker compose exec perception bash -c '
-cd /ws && source install/setup.bash &&
-python3 /ws/src/triffid_ugv_perception/test/integration_test.py --timeout 60
-'
-
-    # Or with nodes already running:
-    python3 .../integration_test.py --no-launch --timeout 25
-    # Or specific checks:
-    python3 .../integration_test.py --check timestamps
-    python3 .../integration_test.py --check geojson
-"""
 
 import argparse
 import json
@@ -52,11 +23,18 @@ from geometry_msgs.msg import TransformStamped
 
 # Constants
 ROSBAG_PATH = '/ws/rosbag'
+OUTPUT_BAG_PATH = '/ws/output_rosbag'
 TIMEOUT_SEC = 30.0          # max time to wait for the full pipeline
 BAG_PLAY_RATE = 1.0         # playback rate
 
-# QoS override file — needed so ros2 bag play publishes /tf_static
-# with TRANSIENT_LOCAL durability (otherwise TF2 never receives static
+# Output topics that must be recorded into the output rosbag
+OUTPUT_TOPICS = [
+    '/ugv/perception/front/detections_3d',
+    '/triffid/front/geojson',
+    '/ugv/perception/front/segmentation',
+]
+
+# QoS override file — needed so ros2 bag play publishes /tf_static, with TRANSIENT_LOCAL durability (otherwise TF2 never receives static
 # transforms and frames like f_oc_link are invisible).
 QOS_OVERRIDES = '/ws/src/triffid_ugv_perception/config/bag_qos_overrides.yaml'
 
@@ -71,14 +49,12 @@ EXPECTED_TOPICS = {
     '/camera_front/camera_info': 'sensor_msgs/msg/CameraInfo',
     '/camera_front/realsense_front/depth/image_rect_raw': 'sensor_msgs/msg/Image',
     '/camera_front/realsense_front/depth/camera_info': 'sensor_msgs/msg/CameraInfo',
-    '/ugv/perception/detections_3d': 'vision_msgs/msg/Detection3DArray',
+    '/ugv/perception/front/detections_3d': 'vision_msgs/msg/Detection3DArray',
 }
 
 
 # Test harness node
-
 class IntegrationTestNode(Node):
-    """Subscribes to all pipeline topics and records data for validation."""
 
     def __init__(self):
         super().__init__('integration_test')
@@ -91,8 +67,7 @@ class IntegrationTestNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # Publish known static transforms from the rosbag so the
-        # perception pipeline has TF available regardless of DDS
+        # Publish known static transforms from the rosbag so the perception pipeline has TF available regardless of DDS
         # /tf_static delivery race conditions.
         self._publish_static_transforms()
 
@@ -112,7 +87,9 @@ class IntegrationTestNode(Node):
         self._sub(CameraInfo, '/camera_front/realsense_front/depth/camera_info',
                   QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                              durability=DurabilityPolicy.VOLATILE))
-        self._sub(Detection3DArray, '/ugv/perception/detections_3d', 10)
+        self._sub(Detection3DArray, '/ugv/perception/front/detections_3d', 10)
+        self._sub(String, '/triffid/front/geojson', 10)
+        self._sub(Image, '/ugv/perception/front/segmentation', sensor_qos)
 
     def _sub(self, msg_type, topic, qos):
         self.received[topic] = []
@@ -127,11 +104,9 @@ class IntegrationTestNode(Node):
         return time.monotonic() - self._start_time
 
     def _publish_static_transforms(self):
-        """Broadcast the required static TFs extracted from the rosbag.
+        # Broadcast the required static TFs extracted from the rosbag so the perception pipeline has TF available regardless of DDS
+        # QoS race conditions (VOLATILE vs TRANSIENT_LOCAL).
 
-        This avoids relying on /tf_static from ros2 bag play, which has
-        DDS QoS race conditions (VOLATILE vs TRANSIENT_LOCAL).
-        """
         self.static_broadcaster = StaticTransformBroadcaster(self)
 
         def _make_tf(parent, child, t, q):
@@ -169,17 +144,41 @@ class IntegrationTestNode(Node):
 
 # Checks
 
-def check_rosbag_exists(node: IntegrationTestNode):
-    """Requirement #3: replayable dataset exists."""
-    exists = os.path.isdir(ROSBAG_PATH)
-    if exists:
-        files = os.listdir(ROSBAG_PATH)
-        has_meta = any('metadata' in f for f in files)
-        has_db = any(f.endswith('.db3') for f in files)
-        if has_meta and has_db:
-            return True, f'Rosbag found at {ROSBAG_PATH} ({len(files)} files)'
-        return False, f'Rosbag directory exists but missing metadata/db3: {files}'
-    return False, f'Rosbag not found at {ROSBAG_PATH}'
+def check_output_rosbag(node: IntegrationTestNode):
+    """Requirement #3: pipeline records a replayable output rosbag."""
+    if not os.path.isdir(OUTPUT_BAG_PATH):
+        return False, f'Output rosbag not found at {OUTPUT_BAG_PATH}'
+
+    files = os.listdir(OUTPUT_BAG_PATH)
+    has_meta = any('metadata' in f for f in files)
+    has_db = any(f.endswith('.db3') for f in files)
+    if not (has_meta and has_db):
+        return False, f'Output rosbag missing metadata/db3: {files}'
+
+    # Read metadata to verify recorded topics
+    meta_file = os.path.join(OUTPUT_BAG_PATH, 'metadata.yaml')
+    if os.path.isfile(meta_file):
+        import yaml
+        with open(meta_file) as f:
+            meta = yaml.safe_load(f)
+        topics_in_bag = []
+        for topic_info in meta.get('rosbag2_bagfile_information', {}).get('topics_with_message_count', []):
+            t = topic_info.get('topic_metadata', {}).get('name', '')
+            count = topic_info.get('message_count', 0)
+            if t:
+                topics_in_bag.append((t, count))
+
+        missing = [t for t in OUTPUT_TOPICS if not any(bt == t for bt, _ in topics_in_bag)]
+        if missing:
+            return False, f'Output bag missing topics: {missing}'
+
+        detail_parts = [f'{t} ({c} msgs)' for t, c in topics_in_bag]
+        return True, f'Output rosbag recorded: {" | ".join(detail_parts)}'
+
+    # No metadata file — just check files exist
+    db_files = [f for f in files if f.endswith('.db3')]
+    total_size = sum(os.path.getsize(os.path.join(OUTPUT_BAG_PATH, f)) for f in files)
+    return True, f'Output rosbag at {OUTPUT_BAG_PATH}: {len(db_files)} db3, {total_size/1024:.0f} KB'
 
 
 def check_topic_liveness(node: IntegrationTestNode):
@@ -205,7 +204,7 @@ def check_message_types(node: IntegrationTestNode):
         '/camera_front/camera_info': CameraInfo,
         '/camera_front/realsense_front/depth/image_rect_raw': Image,
         '/camera_front/realsense_front/depth/camera_info': CameraInfo,
-        '/ugv/perception/detections_3d': Detection3DArray,
+        '/ugv/perception/front/detections_3d': Detection3DArray,
     }
     errors = []
     for topic, expected_type in type_map.items():
@@ -221,8 +220,8 @@ def check_message_types(node: IntegrationTestNode):
 
 
 def check_timestamps(node: IntegrationTestNode):
-    """Requirement #5: detection timestamps come from input images, not wall clock."""
-    det_msgs = node.received.get('/ugv/perception/detections_3d', [])
+    # Requirement #5: detection timestamps come from input images, not wall clock.
+    det_msgs = node.received.get('/ugv/perception/front/detections_3d', [])
     rgb_msgs = node.received.get('/camera_front/raw_image', [])
 
     if not det_msgs:
@@ -230,13 +229,11 @@ def check_timestamps(node: IntegrationTestNode):
     if not rgb_msgs:
         return False, 'No RGB messages received'
 
-    # Detection stamps should be from the rosbag era (2026-02-20),
-    # NOT from wall-clock now.
+    # Detection stamps should be from the rosbag era (2026-02-20)
     det_stamp = det_msgs[0].header.stamp
     det_t = det_stamp.sec + det_stamp.nanosec * 1e-9
 
-    # Check that detection stamp looks like a rosbag timestamp (year ~2026)
-    # rather than zero or current wall clock with big offset
+    # Check that detection stamp looks like a rosbag timestamp, instead of zero or current wall clock with big offset
     rgb_stamp = rgb_msgs[0].header.stamp
     rgb_t = rgb_stamp.sec + rgb_stamp.nanosec * 1e-9
 
@@ -271,9 +268,8 @@ def check_timestamps(node: IntegrationTestNode):
 
 
 def check_detection_fields(node: IntegrationTestNode):
-    """Requirement #1: Detection3D messages have all required fields populated.
-    Also verifies frame_id is b2/base_link (not map)."""
-    det_msgs = node.received.get('/ugv/perception/detections_3d', [])
+    # Requirement #1: Detection3D messages have all required fields populated, verifies frame_id is b2/base_link (not map)
+    det_msgs = node.received.get('/ugv/perception/front/detections_3d', [])
     if not det_msgs:
         return False, 'No detections received'
 
@@ -317,12 +313,15 @@ def check_detection_fields(node: IntegrationTestNode):
 
 
 def check_geojson(node: IntegrationTestNode):
-    """Requirement #6: GeoJSON output is valid RFC-7946."""
-    geojson_msgs = node.received.get('/triffid/geojson', [])
+    # Requirement #6: GeoJSON output is valid RFC-7946
+    geojson_msgs = node.received.get('/triffid/front/geojson', [])
     if not geojson_msgs:
         return False, 'No GeoJSON messages received'
 
     errors = []
+    point_count = 0
+    polygon_count = 0
+
     for i, msg in enumerate(geojson_msgs[:5]):
         try:
             data = json.loads(msg.data)
@@ -341,23 +340,42 @@ def check_geojson(node: IntegrationTestNode):
                 continue
 
             geom = feat.get('geometry', {})
-            if geom.get('type') != 'Point':
-                errors.append(f'msg[{i}].features[{j}]: geometry type={geom.get("type")}')
-                continue
+            geom_type = geom.get('type')
 
-            coords = geom.get('coordinates', [])
-            if len(coords) < 2:
-                errors.append(f'msg[{i}].features[{j}]: coordinates has <2 elements')
-                continue
+            if geom_type == 'Point':
+                coords = geom.get('coordinates', [])
+                if len(coords) < 2:
+                    errors.append(f'msg[{i}].features[{j}]: Point has <2 coords')
+                    continue
+                lon, lat = coords[0], coords[1]
+                if not (math.isfinite(lon) and math.isfinite(lat)):
+                    errors.append(f'msg[{i}].features[{j}]: non-finite Point coords')
+                point_count += 1
 
-            lon, lat = coords[0], coords[1]
-            # Sanity: coordinates should be finite numbers
-            if not (math.isfinite(lon) and math.isfinite(lat)):
-                errors.append(f'msg[{i}].features[{j}]: non-finite coords ({lon}, {lat})')
+            elif geom_type == 'Polygon':
+                rings = geom.get('coordinates', [])
+                if not rings or len(rings[0]) < 4:
+                    errors.append(f'msg[{i}].features[{j}]: Polygon ring has <4 vertices')
+                    continue
+                ring = rings[0]
+                # RFC-7946: ring must be closed
+                if ring[0] != ring[-1]:
+                    errors.append(f'msg[{i}].features[{j}]: Polygon ring not closed')
+                # All vertices must be finite
+                for k, pt in enumerate(ring):
+                    if len(pt) < 2 or not (math.isfinite(pt[0]) and math.isfinite(pt[1])):
+                        errors.append(f'msg[{i}].features[{j}]: non-finite Polygon vertex {k}')
+                        break
+                polygon_count += 1
+
+            else:
+                errors.append(f'msg[{i}].features[{j}]: unexpected geometry type={geom_type}')
+                continue
 
             # Check required SimpleStyle properties
             props = feat.get('properties', {})
-            for key in ('name', 'category', 'source', 'track_id', 'confidence',
+            for key in ('class', 'id', 'confidence',
+                        'category', 'source',
                         'marker-color', 'marker-size', 'marker-symbol'):
                 if key not in props:
                     errors.append(f'msg[{i}].features[{j}]: missing property "{key}"')
@@ -370,11 +388,14 @@ def check_geojson(node: IntegrationTestNode):
         len(json.loads(m.data).get('features', []))
         for m in geojson_msgs[:5]
     )
-    return True, f'{len(geojson_msgs)} GeoJSON msgs, {total_features} total features, all valid RFC-7946'
+    return True, (
+        f'{len(geojson_msgs)} GeoJSON msgs, {total_features} features '
+        f'({polygon_count} Polygons, {point_count} Points), all valid RFC-7946'
+    )
 
 
 def check_camera_info(node: IntegrationTestNode):
-    """Verify both CameraInfo topics deliver valid intrinsics."""
+    # verify both CameraInfo topics deliver valid intrinsics
     rgb_infos = node.received.get('/camera_front/camera_info', [])
     depth_infos = node.received.get(
         '/camera_front/realsense_front/depth/camera_info', [])
@@ -414,8 +435,7 @@ def check_camera_info(node: IntegrationTestNode):
 
 
 def check_tf_tree(node: IntegrationTestNode):
-    """Verify that the two required TF transforms are available:
-    f_depth_optical_frame → f_oc_link  and  f_oc_link → b2/base_link."""
+    # Verify that the two required TF transforms are available: f_depth_optical_frame → f_oc_link  and  f_oc_link → b2/base_link
     required = [
         (DEPTH_FRAME, RGB_FRAME),
         (RGB_FRAME, BASE_FRAME),
@@ -438,9 +458,8 @@ def check_tf_tree(node: IntegrationTestNode):
 
 
 def check_3d_positions(node: IntegrationTestNode):
-    """Verify that 3D positions in detections are finite, non-zero,
-    and within a plausible range from b2/base_link."""
-    det_msgs = node.received.get('/ugv/perception/detections_3d', [])
+    # verify that 3D positions in detections are finite, non-zero, within a plausible range from b2/base_link
+    det_msgs = node.received.get('/ugv/perception/front/detections_3d', [])
     if not det_msgs:
         return False, 'No detections received'
 
@@ -486,9 +505,8 @@ def check_3d_positions(node: IntegrationTestNode):
 
 
 def check_tracking(node: IntegrationTestNode):
-    """Verify tracking IDs are persistent positive integers with no
-    duplicate IDs within a single frame and consistent class assignment."""
-    det_msgs = node.received.get('/ugv/perception/detections_3d', [])
+    # Verify tracking IDs are persistent positive integers with no duplicate IDs within a single frame and consistent class assignment.# 
+    det_msgs = node.received.get('/ugv/perception/front/detections_3d', [])
     if not det_msgs:
         return False, 'No detections received'
 
@@ -531,10 +549,36 @@ def check_tracking(node: IntegrationTestNode):
                   f'no duplicates, classes consistent')
 
 
-# Runner
+def check_segmentation(node: IntegrationTestNode):
+    # Verify segmentation overlay images are published and valid.
+    seg_msgs = node.received.get('/ugv/perception/front/segmentation', [])
+    if not seg_msgs:
+        return False, 'No segmentation messages received (is anything subscribed?)'
 
+    errors = []
+    for i, msg in enumerate(seg_msgs[:5]):
+        if msg.encoding not in ('bgr8', 'rgb8'):
+            errors.append(f'msg[{i}]: encoding={msg.encoding}, expected bgr8/rgb8')
+        if msg.width == 0 or msg.height == 0:
+            errors.append(f'msg[{i}]: zero dimensions {msg.width}x{msg.height}')
+        expected_step = msg.width * 3  # 3 bytes per pixel for bgr8/rgb8
+        if msg.step < expected_step:
+            errors.append(f'msg[{i}]: step={msg.step} < expected {expected_step}')
+        if len(msg.data) == 0:
+            errors.append(f'msg[{i}]: empty data')
+
+    if errors:
+        unique = list(set(errors))
+        return False, f'{len(unique)} issue(s): {"; ".join(unique[:5])}'
+
+    sample = seg_msgs[0]
+    return True, (f'{len(seg_msgs)} segmentation msgs, '
+                  f'{sample.width}x{sample.height} {sample.encoding}')
+
+
+# Runner
 ALL_CHECKS = {
-    'rosbag':       ('Req 3: Replayable dataset',      check_rosbag_exists),
+    'rosbag':       ('Req 3: Output rosbag recorded',   check_output_rosbag),
     'topics':       ('Req 4: Topic liveness',           check_topic_liveness),
     'types':        ('Req 1: Message types',            check_message_types),
     'camera_info':  ('CameraInfo validation',           check_camera_info),
@@ -543,13 +587,14 @@ ALL_CHECKS = {
     'fields':       ('Req 1: Detection field validity', check_detection_fields),
     'positions':    ('Depth: 3D position sanity',       check_3d_positions),
     'tracking':     ('Tracking: Persistent IDs',        check_tracking),
+    'geojson':      ('Req 6: GeoJSON RFC-7946',         check_geojson),
+    'segmentation': ('Segmentation label map',         check_segmentation),
 }
 
 
 def print_results(results):
-    """Pretty-print test results."""
     print('\n' + '=' * 72)
-    print('  TRIFFID INTEGRATION TEST RESULTS')
+    print('  INTEGRATION TEST RESULTS')
     print('=' * 72)
 
     passed = 0
@@ -593,12 +638,7 @@ def main():
     rclpy.init()
     node = IntegrationTestNode()
 
-    # Run the rosbag check first (no data needed)
     results = {}
-    ok, detail = check_rosbag_exists(node)
-    results['rosbag'] = (ok, detail)
-    if not ok:
-        node.get_logger().error(f'Rosbag check failed: {detail}')
 
     # Launch perception nodes
     launch_proc = None
@@ -614,6 +654,17 @@ def main():
         # Give nodes time to initialise
         time.sleep(8)
         node.get_logger().info('Perception nodes launched.')
+
+    # Start output rosbag recorder
+    import shutil
+    if os.path.isdir(OUTPUT_BAG_PATH):
+        shutil.rmtree(OUTPUT_BAG_PATH)
+    record_proc = subprocess.Popen(
+        ['ros2', 'bag', 'record', '-o', OUTPUT_BAG_PATH] + OUTPUT_TOPICS,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    node.get_logger().info(f'Recording output rosbag to {OUTPUT_BAG_PATH}')
 
     # Start rosbag player
     bag_proc = None
@@ -651,7 +702,15 @@ def main():
     except KeyboardInterrupt:
         node.get_logger().info('Interrupted.')
 
-    # Stop rosbag
+    # Stop output recorder
+    record_proc.send_signal(signal.SIGINT)
+    try:
+        record_proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        record_proc.kill()
+    node.get_logger().info('Output rosbag recording stopped.')
+
+    # Stop rosbag player
     if bag_proc is not None:
         bag_proc.send_signal(signal.SIGINT)
         bag_proc.wait(timeout=5)
@@ -674,8 +733,6 @@ def main():
         checks_to_run = {args.check: ALL_CHECKS[args.check]}
 
     for name, (label, fn) in checks_to_run.items():
-        if name == 'rosbag':
-            continue  # already done
         try:
             ok, detail = fn(node)
             results[name] = (ok, detail)

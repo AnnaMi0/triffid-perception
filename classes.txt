@@ -1,0 +1,66 @@
+model: yolo11l-seg
+
+names:
+  0: Water
+  1: Fence
+  2: Green tree
+  3: Helmet
+  4: Flame
+  5: Smoke
+  6: First responder
+  7: Destroyed vehicle
+  8: Fire hose
+  9: SCBA
+  10: Boot
+  11: Green plant
+  12: Mask
+  13: Window
+  14: Building
+  15: Destroyed building
+  16: Debris
+  17: Ladder
+  18: Dirt road
+  19: Dry tree
+  20: Wall
+  21: Civilian vehicle
+  22: Road
+  23: Citizen
+  24: Green grass
+  25: Pole
+  26: Boat
+  27: Pavement
+  28: Dry grass
+  29: Animal
+  30: Excavator
+  31: Door
+  32: Mud
+  33: Barrier
+  34: Hole in the ground
+  35: Bag
+  36: Burnt tree
+  37: Ambulance
+  38: Fire truck
+  39: Cone
+  40: Bicycle
+  41: Tower
+  42: Silo
+  43: Military personnel
+  44: Burnt grass
+  45: Ax
+  46: Glove
+  47: Crane
+  48: Stairs
+  49: Dry plant
+  50: Furniture
+  51: Tank
+  52: Protective glasses
+  53: Barrel
+  54: Shovel
+  55: Fire hydrant
+  56: Police vehicle
+  57: Burnt plant
+  58: Army vehicle
+  59: Chainsaw
+  60: aerial vehicle
+  61: Lifesaver
+  62: Extinguisher

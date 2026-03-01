@@ -25,7 +25,8 @@ Topic mapping (from rosbag):
   IN:  /camera_front/realsense_front/depth/image_rect_raw   (sensor_msgs/Image, 16UC1 mm, 640×480, frame: f_depth_optical_frame)
   IN:  /camera_front/realsense_front/depth/camera_info      (sensor_msgs/CameraInfo, frame: f_depth_optical_frame)
   IN:  /tf, /tf_static
-  OUT: /ugv/perception/detections_3d                        (vision_msgs/Detection3DArray, frame: b2/base_link)
+  OUT: /ugv/perception/front/detections_3d                   (vision_msgs/Detection3DArray, frame: b2/base_link)
+  OUT: /ugv/perception/front/segmentation                     (sensor_msgs/Image, bgr8, annotated masks)
 """
 
 import rclpy
@@ -51,24 +52,79 @@ except ImportError:
     _HAS_YOLO = False
 
 
-# COCO classes of interest – outdoor vehicles/people + indoor furniture
+# TRIFFID custom model classes (yolo11l-seg fine-tuned)
 TARGET_CLASSES = {
-    0: 'person',
-    1: 'bicycle',
-    2: 'car',
-    3: 'motorcycle',
-    5: 'bus',
-    7: 'truck',
-    56: 'chair',
-    57: 'couch',
+    0: 'Water',
+    1: 'Fence',
+    2: 'Green tree',
+    3: 'Helmet',
+    4: 'Flame',
+    5: 'Smoke',
+    6: 'First responder',
+    7: 'Destroyed vehicle',
+    8: 'Fire hose',
+    9: 'SCBA',
+    10: 'Boot',
+    11: 'Green plant',
+    12: 'Mask',
+    13: 'Window',
+    14: 'Building',
+    15: 'Destroyed building',
+    16: 'Debris',
+    17: 'Ladder',
+    18: 'Dirt road',
+    19: 'Dry tree',
+    20: 'Wall',
+    21: 'Civilian vehicle',
+    22: 'Road',
+    23: 'Citizen',
+    24: 'Green grass',
+    25: 'Pole',
+    26: 'Boat',
+    27: 'Pavement',
+    28: 'Dry grass',
+    29: 'Animal',
+    30: 'Excavator',
+    31: 'Door',
+    32: 'Mud',
+    33: 'Barrier',
+    34: 'Hole in the ground',
+    35: 'Bag',
+    36: 'Burnt tree',
+    37: 'Ambulance',
+    38: 'Fire truck',
+    39: 'Cone',
+    40: 'Bicycle',
+    41: 'Tower',
+    42: 'Silo',
+    43: 'Military personnel',
+    44: 'Burnt grass',
+    45: 'Ax',
+    46: 'Glove',
+    47: 'Crane',
+    48: 'Stairs',
+    49: 'Dry plant',
+    50: 'Furniture',
+    51: 'Tank',
+    52: 'Protective glasses',
+    53: 'Barrel',
+    54: 'Shovel',
+    55: 'Fire hydrant',
+    56: 'Police vehicle',
+    57: 'Burnt plant',
+    58: 'Army vehicle',
+    59: 'Chainsaw',
+    60: 'aerial vehicle',
+    61: 'Lifesaver',
+    62: 'Extinguisher',
 }
 
-# ---------- Frame IDs (from bag tf_static) ----------
+# Frame IDs (from bag tf_static)
 DEPTH_FRAME = 'f_depth_optical_frame'
 RGB_FRAME = 'f_oc_link'
 BASE_FRAME = 'b2/base_link'
 
-# ---------- Depth grid sampling defaults ----------
+# Depth grid sampling defaults
 DEFAULT_GRID_STEP_U = 64   # pixels between horizontal samples (640/64 ≈ 10)
 DEFAULT_GRID_STEP_V = 48   # pixels between vertical samples   (480/48 ≈ 10)
 
@@ -80,12 +136,13 @@ class UGVPerceptionNode(Node):
         super().__init__('ugv_perception_node')
 
         # ── Parameters ──────────────────────────────────────────────
-        self.declare_parameter('model_path', 'yolo11n.pt')
+        self.declare_parameter('model_path', '/ws/best.pt')
         self.declare_parameter('confidence_threshold', 0.35)
         self.declare_parameter('target_frame', BASE_FRAME)
         self.declare_parameter('depth_grid_step_u', DEFAULT_GRID_STEP_U)
         self.declare_parameter('depth_grid_step_v', DEFAULT_GRID_STEP_V)
         self.declare_parameter('use_dummy_detections', False)
+        self.declare_parameter('yolo_imgsz', 1280)
 
         self.model_path = self.get_parameter('model_path').value
         self.conf_thresh = self.get_parameter('confidence_threshold').value
@@ -93,6 +150,7 @@ class UGVPerceptionNode(Node):
         self.grid_step_u = self.get_parameter('depth_grid_step_u').value
         self.grid_step_v = self.get_parameter('depth_grid_step_v').value
         self.use_dummy = self.get_parameter('use_dummy_detections').value
+        self.yolo_imgsz = self.get_parameter('yolo_imgsz').value
 
         # ── YOLO model ──────────────────────────────────────────────
         if _HAS_YOLO:
@@ -160,17 +218,23 @@ class UGVPerceptionNode(Node):
             reliable_qos,
         )
 
-        # ── Publisher ────────────────────────────────────────────────
+        # ── Publishers ───────────────────────────────────────────────
         self.pub_det3d = self.create_publisher(
             Detection3DArray,
-            '/ugv/perception/detections_3d',
+            '/ugv/perception/front/detections_3d',
+            10,
+        )
+        self.pub_seg = self.create_publisher(
+            Image,
+            '/ugv/perception/front/segmentation',
             10,
         )
 
         self.get_logger().info('UGV Perception node started (cross-camera pipeline).')
         self.get_logger().info(f'  RGB topic:       /camera_front/raw_image  (frame: {RGB_FRAME})')
         self.get_logger().info(f'  Depth topic:     /camera_front/realsense_front/depth/image_rect_raw  (frame: {DEPTH_FRAME})')
-        self.get_logger().info(f'  Output topic:    /ugv/perception/detections_3d  (frame: {self.target_frame})')
+        self.get_logger().info(f'  Output topic:    /ugv/perception/front/detections_3d  (frame: {self.target_frame})')
+        self.get_logger().info(f'  Seg topic:       /ugv/perception/front/segmentation  (mono8 label map)')
         self.get_logger().info(f'  Depth grid step: {self.grid_step_u}×{self.grid_step_v}')
         if self.use_dummy:
             self.get_logger().warn('*** DUMMY DETECTION MODE — bypassing YOLO ***')
@@ -260,14 +324,26 @@ class UGVPerceptionNode(Node):
 
         for det in raw_detections:
             x1, y1, x2, y2 = det['bbox']
+            mask = det.get('mask')  # may be None (dummy mode)
 
-            # Find grid points whose RGB projection lands inside this bbox
-            # Note: points behind the camera already have pixel coords (-1,-1)
-            # from _project_to_rgb, so no need for an extra Z check here.
-            inside = (
-                (rgb_pixels[:, 0] >= x1) & (rgb_pixels[:, 0] <= x2) &
-                (rgb_pixels[:, 1] >= y1) & (rgb_pixels[:, 1] <= y2)
-            )
+            if mask is not None:
+                # Use segmentation mask for precise depth matching:
+                # find projected depth points whose RGB pixel lands
+                # inside the instance mask (pixel-accurate).
+                px_u = rgb_pixels[:, 0].astype(int)
+                px_v = rgb_pixels[:, 1].astype(int)
+                in_bounds = (
+                    (px_u >= 0) & (px_u < rgb_w) &
+                    (px_v >= 0) & (px_v < rgb_h)
+                )
+                inside = np.zeros(len(rgb_pixels), dtype=bool)
+                inside[in_bounds] = mask[px_v[in_bounds], px_u[in_bounds]]
+            else:
+                # Fallback to bbox matching (dummy mode / no mask)
+                inside = (
+                    (rgb_pixels[:, 0] >= x1) & (rgb_pixels[:, 0] <= x2) &
+                    (rgb_pixels[:, 1] >= y1) & (rgb_pixels[:, 1] <= y2)
+                )
 
             n_inside = int(np.sum(inside))
             if n_inside == 0:
@@ -284,14 +360,56 @@ class UGVPerceptionNode(Node):
                 msg.header.stamp,
             )
 
+            # ── Compute 3D bbox extent in base_link ─────────────────
+            # Try point-cloud extent first; fall back to bbox
+            # back-projection when too few depth points.
+            pt_min_cam = np.min(matched_pts, axis=0)
+            pt_max_cam = np.max(matched_pts, axis=0)
+            cloud_extent = pt_max_cam - pt_min_cam
+
+            if np.any(cloud_extent > 1e-3):
+                # Enough spread in the matched points
+                corners_cam = np.array([
+                    [pt_min_cam[0], pt_min_cam[1], pt_min_cam[2]],
+                    [pt_min_cam[0], pt_min_cam[1], pt_max_cam[2]],
+                    [pt_min_cam[0], pt_max_cam[1], pt_min_cam[2]],
+                    [pt_min_cam[0], pt_max_cam[1], pt_max_cam[2]],
+                    [pt_max_cam[0], pt_min_cam[1], pt_min_cam[2]],
+                    [pt_max_cam[0], pt_min_cam[1], pt_max_cam[2]],
+                    [pt_max_cam[0], pt_max_cam[1], pt_min_cam[2]],
+                    [pt_max_cam[0], pt_max_cam[1], pt_max_cam[2]],
+                ])
+            else:
+                # All matched points cluster in ~one cell — estimate
+                # extent by back-projecting the 2D bbox corners at
+                # the median depth (forward distance in f_oc_link).
+                corners_cam = self._bbox_to_3d_corners(
+                    x1, y1, x2, y2, median_pt[0]
+                )
+
+            corners_base = self._transform_points_batch(
+                corners_cam, RGB_FRAME, self.target_frame,
+                msg.header.stamp,
+            )
+            if corners_base is not None:
+                extent_base = tuple(
+                    float(v) for v in np.ptp(corners_base, axis=0)
+                )
+            else:
+                extent_base = (0.0, 0.0, 0.0)
+
             detections_3d.append({
                 'position': pt_base,
+                'extent': extent_base,
                 'class_id': det['class_id'],
                 'class_name': det['class_name'],
                 'confidence': det['confidence'],
                 'bbox': det['bbox'],
                 'n_depth_pts': n_inside,
             })
+
+        # ── Step 5.5: 3-D NMS — deduplicate overlapping detections ───
+        detections_3d = self._nms_3d(detections_3d, dist_thresh=0.5)
 
         # ── Step 6: Track across frames (IoU on RGB bboxes) ─────────
         tracked = self.tracker.update(detections_3d)
@@ -310,6 +428,11 @@ class UGVPerceptionNode(Node):
                 d3d.bbox.center.position.y = float(t['position'][1])
                 d3d.bbox.center.position.z = float(t['position'][2])
 
+            ext = t.get('extent', (0.0, 0.0, 0.0))
+            d3d.bbox.size.x = float(ext[0])
+            d3d.bbox.size.y = float(ext[1])
+            d3d.bbox.size.z = float(ext[2])
+
             hyp = ObjectHypothesisWithPose()
             hyp.hypothesis.class_id = str(t['class_name'])
             hyp.hypothesis.score = float(t['confidence'])
@@ -319,6 +442,9 @@ class UGVPerceptionNode(Node):
             det_array.detections.append(d3d)
 
         self.pub_det3d.publish(det_array)
+
+        # ── Step 8: Publish segmentation label map (mono8) ───────────
+        self._publish_segmentation(cv_image, raw_detections, msg.header)
 
         if tracked:
             self.get_logger().info(
@@ -330,23 +456,45 @@ class UGVPerceptionNode(Node):
     # ─── YOLO detection ────────────────────────────────────────────
 
     def _detect(self, cv_image):
-        """Run YOLO on a BGR image.  Returns list of detection dicts."""
+        """Run YOLO-seg on a BGR image.
+
+        Returns list of detection dicts, each containing:
+          bbox, class_id, class_name, confidence, mask (H×W bool ndarray or None)
+        """
         if self.model is None:
             return []
 
-        results = self.model(cv_image, conf=self.conf_thresh, verbose=False)
+        results = self.model(
+            cv_image, conf=self.conf_thresh, imgsz=self.yolo_imgsz, verbose=False,
+        )
         detections = []
         for r in results:
-            for box in r.boxes:
+            masks_data = r.masks  # may be None if model produced no masks
+            for i, box in enumerate(r.boxes):
                 cls_id = int(box.cls[0])
                 if cls_id not in TARGET_CLASSES:
                     continue
                 x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+
+                # Extract per-instance binary mask (resized to input image)
+                mask = None
+                if masks_data is not None and i < len(masks_data.data):
+                    mask = masks_data.data[i].cpu().numpy().astype(bool)
+                    # Resize mask to match the input image dimensions
+                    h, w = cv_image.shape[:2]
+                    if mask.shape != (h, w):
+                        import cv2
+                        mask = cv2.resize(
+                            mask.astype(np.uint8), (w, h),
+                            interpolation=cv2.INTER_NEAREST,
+                        ).astype(bool)
+
                 detections.append({
                     'bbox': (float(x1), float(y1), float(x2), float(y2)),
                     'class_id': cls_id,
                     'class_name': TARGET_CLASSES[cls_id],
                     'confidence': float(box.conf[0]),
+                    'mask': mask,
                 })
         return detections
 
@@ -359,9 +507,40 @@ class UGVPerceptionNode(Node):
         return [{
             'bbox': (0.0, 0.0, float(w), float(h)),
             'class_id': 0,
-            'class_name': 'person',
+            'class_name': 'Water',
             'confidence': 0.99,
+            'mask': None,
         }]
+
+    # ─── Segmentation label-map publisher ──────────────────────────
+
+    def _publish_segmentation(self, cv_image, detections, header):
+        """Publish a semantic segmentation label image (mono8).
+
+        Each pixel value is the 1-based YOLO class ID of the detection
+        that covers it (0 = background).  With 63 classes this fits
+        comfortably in uint8.  When masks overlap, the higher-confidence
+        detection wins.
+        """
+        if self.pub_seg.get_subscription_count() == 0:
+            return  # no subscribers, skip
+
+        h, w = cv_image.shape[:2]
+        label_img = np.zeros((h, w), dtype=np.uint8)
+
+        # Sort ascending by confidence so higher-conf overwrites lower
+        sorted_dets = sorted(detections,
+                             key=lambda d: d['confidence'])
+        for det in sorted_dets:
+            mask = det.get('mask')
+            if mask is None:
+                continue
+            # class_id is 0-based from YOLO; store as 1-based (0 = bg)
+            label_img[mask] = det['class_id'] + 1
+
+        seg_msg = self.bridge.cv2_to_imgmsg(label_img, encoding='mono8')
+        seg_msg.header = header
+        self.pub_seg.publish(seg_msg)
 
     # ─── Cross-camera depth → RGB-frame geometry ───────────────────
 
@@ -502,7 +681,75 @@ class UGVPerceptionNode(Node):
             )
             return point_cam
 
+    def _bbox_to_3d_corners(self, u1, v1, u2, v2, depth_fwd):
+        """Back-project 2D bbox corners to 3D at a given forward depth.
+
+        Uses the RGB camera intrinsics to convert (u, v) pixel corners
+        into f_oc_link body-frame 3D points at ``depth_fwd`` (the X
+        component in f_oc_link = forward distance).
+
+        Optical-to-body mapping:
+            X_body = Z_opt = depth_fwd
+            Y_body = −X_opt = −(u − cx) * depth / fx
+            Z_body = −Y_opt = −(v − cy) * depth / fy
+
+        Returns np.ndarray (8, 3) – axis-aligned bounding box corners.
+        """
+        fx = self.rgb_camera_info.k[0]
+        fy = self.rgb_camera_info.k[4]
+        cx = self.rgb_camera_info.k[2]
+        cy = self.rgb_camera_info.k[5]
+
+        # Back-project the four bbox corners
+        y_left  = -((u1 - cx) * depth_fwd / fx)
+        y_right = -((u2 - cx) * depth_fwd / fx)
+        z_top   = -((v1 - cy) * depth_fwd / fy)
+        z_bot   = -((v2 - cy) * depth_fwd / fy)
+
+        y_min, y_max = min(y_left, y_right), max(y_left, y_right)
+        z_min, z_max = min(z_top, z_bot), max(z_top, z_bot)
+
+        # X (forward) has negligible spread — use a thin slab
+        x_fwd = float(depth_fwd)
+        return np.array([
+            [x_fwd, y_min, z_min],
+            [x_fwd, y_min, z_max],
+            [x_fwd, y_max, z_min],
+            [x_fwd, y_max, z_max],
+            [x_fwd, y_min, z_min],
+            [x_fwd, y_min, z_max],
+            [x_fwd, y_max, z_min],
+            [x_fwd, y_max, z_max],
+        ])
+
     # ─── Helpers ────────────────────────────────────────────────────
+
+    @staticmethod
+    def _nms_3d(detections, dist_thresh=0.5):
+        """Suppress duplicate 3-D detections at (nearly) identical positions.
+
+        When several YOLO predictions overlap the same region (e.g.
+        "Destroyed building" and "Building"), they match the same sparse
+        depth points and produce identical 3-D positions.  This function
+        keeps only the highest-confidence detection within *dist_thresh*
+        metres (Euclidean in base_link).
+        """
+        if len(detections) <= 1:
+            return detections
+
+        # Sort by confidence descending — greedy NMS
+        dets = sorted(detections, key=lambda d: d['confidence'], reverse=True)
+        keep = []
+        for det in dets:
+            pos = np.array(det['position'])
+            suppressed = False
+            for kept in keep:
+                if np.linalg.norm(pos - np.array(kept['position'])) < dist_thresh:
+                    suppressed = True
+                    break
+            if not suppressed:
+                keep.append(det)
+        return keep
 
     def _publish_empty(self, stamp):
         """Publish an empty Detection3DArray (keeps downstream aware)."""
