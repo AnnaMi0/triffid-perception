@@ -5,7 +5,7 @@
 FROM ros:humble-perception-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV ROS_DOMAIN_ID=0
+ENV ROS_DOMAIN_ID=42
 
 # ── System deps ──────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -28,6 +28,15 @@ RUN pip3 install --no-cache-dir \
 # ── Workspace setup ──────────────────────────────────────────
 WORKDIR /ws
 # src/ is bind-mounted at runtime via docker-compose
+
+# Ensure ROS2 + workspace overlay are sourced in every shell
+# (docker compose exec runs non-interactive bash, which skips .bashrc)
+# BASH_ENV is sourced by every non-interactive bash invocation.
+ENV BASH_ENV=/etc/triffid_ros_env.sh
+RUN echo '#!/bin/bash'                                          >  /etc/triffid_ros_env.sh && \
+    echo 'source /opt/ros/humble/setup.bash'                    >> /etc/triffid_ros_env.sh && \
+    echo '[ -f /ws/install/setup.bash ] && source /ws/install/setup.bash' >> /etc/triffid_ros_env.sh && \
+    chmod +x /etc/triffid_ros_env.sh
 
 # ── Entrypoint ───────────────────────────────────────────────
 COPY docker_entrypoint.sh /docker_entrypoint.sh

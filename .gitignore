@@ -1,7 +1,8 @@
 # Rosbag data (17 GB binary — share separately)
-rosbag2_*/
+rosbag2_active_*/
 *.db3
 *.bag
+rosbag.zip
 
 # ROS2 colcon build artifacts
 build/

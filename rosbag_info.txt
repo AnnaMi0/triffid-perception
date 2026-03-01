@@ -1,0 +1,857 @@
+
+triffid@triffid-gs:~$ ros2 topic echo /camera_front/realsense_front/depth/image_rect_raw --once
+header:
+  stamp:
+    sec: 1771602322
+    nanosec: 903154297
+  frame_id: f_depth_optical_frame
+height: 480
+width: 640
+encoding: 16UC1
+is_bigendian: 0
+step: 1280
+data:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+
+
+
+triffid@triffid-gs:~$ 
+ros2 topic echo /camera_front/realsense_front/depth/image_rect_raw --once
+header:
+  stamp:
+    sec: 1771602319
+    nanosec: 41927246
+  frame_id: f_depth_optical_frame
+height: 480
+width: 640
+encoding: 16UC1
+is_bigendian: 0
+step: 1280
+data:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /camera_front/realsense_front/depth/camera_info --once
+header:
+  stamp:
+    sec: 1771602337
+    nanosec: 892383057
+  frame_id: f_depth_optical_frame
+height: 480
+width: 640
+distortion_model: plumb_bob
+d:
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+k:
+- 391.5248718261719
+- 0.0
+- 319.7847900390625
+- 0.0
+- 391.5248718261719
+- 237.64898681640625
+- 0.0
+- 0.0
+- 1.0
+r:
+- 1.0
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+p:
+- 391.5248718261719
+- 0.0
+- 319.7847900390625
+- 0.0
+- 0.0
+- 391.5248718261719
+- 237.64898681640625
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+- 0.0
+binning_x: 0
+binning_y: 0
+roi:
+  x_offset: 0
+  y_offset: 0
+  height: 0
+  width: 0
+  do_rectify: false
+---
+
+
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /camera_front/raw_image --once
+header:
+  stamp:
+    sec: 1771602332
+    nanosec: 46096607
+  frame_id: f_oc_link
+height: 720
+width: 1280
+encoding: bgr8
+is_bigendian: 0
+step: 3840
+data:
+- 44
+- 50
+- 34
+- 45
+- 51
+- 35
+- 46
+- 52
+- 36
+- 46
+- 52
+- 36
+- 45
+- 47
+- 54
+- 33
+- 49
+- 56
+- '...'
+---
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /tf --once
+transforms:
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/FL_thigh
+  child_frame_id: b2/FL_calf
+  transform:
+    translation:
+      x: 0.0
+      y: -8.8203e-05
+      z: -0.35
+    rotation:
+      x: 0.0
+      y: -0.6975369624761114
+      z: 0.0
+      w: 0.7165488022316414
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/base_link
+  child_frame_id: b2/FL_hip
+  transform:
+    translation:
+      x: 0.3285
+      y: 0.072
+      z: 0.0
+    rotation:
+      x: -0.024256621686462785
+      y: 0.0
+      z: 0.0
+      w: 0.9997057648650225
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/FL_hip
+  child_frame_id: b2/FL_thigh
+  transform:
+    translation:
+      x: 0.0
+      y: 0.11973
+      z: 0.0
+    rotation:
+      x: 0.0
+      y: 0.39653129314110697
+      z: 0.0
+      w: 0.9180212053976974
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/FR_thigh
+  child_frame_id: b2/FR_calf
+  transform:
+    translation:
+      x: 0.0
+      y: 8.8203e-05
+      z: -0.35
+    rotation:
+      x: 0.0
+      y: -0.7034892877560922
+      z: 0.0
+      w: 0.7107058618109366
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/base_link
+  child_frame_id: b2/FR_hip
+  transform:
+    translation:
+      x: 0.3285
+      y: -0.072
+      z: 0.0
+    rotation:
+      x: 0.038430582652099456
+      y: 0.0
+      z: 0.0
+      w: 0.999261272299202
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/FR_hip
+  child_frame_id: b2/FR_thigh
+  transform:
+    translation:
+      x: 0.0
+      y: -0.11973
+      z: 0.0
+    rotation:
+      x: 0.0
+      y: 0.38729943422130797
+      z: 0.0
+      w: 0.9219539838038853
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/RL_thigh
+  child_frame_id: b2/RL_calf
+  transform:
+    translation:
+      x: 0.0
+      y: -8.8203e-05
+      z: -0.35
+    rotation:
+      x: 0.0
+      y: -0.7145710825550503
+      z: 0.0
+      w: 0.6995628406198428
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/base_link
+  child_frame_id: b2/RL_hip
+  transform:
+    translation:
+      x: -0.3285
+      y: 0.072
+      z: 0.0
+    rotation:
+      x: -0.025262797119194956
+      y: 0.0
+      z: 0.0
+      w: 0.9996808446107761
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/RL_hip
+  child_frame_id: b2/RL_thigh
+  transform:
+    translation:
+      x: 0.0
+      y: 0.11973
+      z: 0.0
+    rotation:
+      x: 0.0
+      y: 0.40309272095830445
+      z: 0.0
+      w: 0.915159143706946
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/RR_thigh
+  child_frame_id: b2/RR_calf
+  transform:
+    translation:
+      x: 0.0
+      y: 8.8203e-05
+      z: -0.35
+    rotation:
+      x: 0.0
+      y: -0.7189610753369354
+      z: 0.0
+      w: 0.6950503378535668
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/base_link
+  child_frame_id: b2/RR_hip
+  transform:
+    translation:
+      x: -0.3285
+      y: -0.072
+      z: 0.0
+    rotation:
+      x: 0.0324025349397362
+      y: 0.0
+      z: 0.0
+      w: 0.9994748999997344
+- header:
+    stamp:
+      sec: 1771602308
+      nanosec: 814268293
+    frame_id: b2/RR_hip
+  child_frame_id: b2/RR_thigh
+  transform:
+    translation:
+      x: 0.0
+      y: -0.11973
+      z: 0.0
+    rotation:
+      x: 0.0
+      y: 0.40119823474799904
+      z: 0.0
+      w: 0.9159912534708449
+---
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /tf_static --once
+transforms:
+- header:
+    stamp:
+      sec: 1771601031
+      nanosec: 833586654
+    frame_id: b2/base_link
+  child_frame_id: f_oc_link
+  transform:
+    translation:
+      x: 0.3993
+      y: 0.0
+      z: -0.01576
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+---
+
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /fix --once
+(0 msgs)
+
+
+
+
+^Ctriffid@triffid-gs:~ros2 topic echo /dog_odom --once
+header:
+  stamp:
+    sec: 1771602428
+    nanosec: 887972659
+  frame_id: odom
+child_frame_id: robot_center
+pose:
+  pose:
+    position:
+      x: 0.2539428472518921
+      y: -0.023146459832787514
+      z: 1.3075817823410034
+    orientation:
+      x: 0.0011695936555042863
+      y: -0.014597292058169842
+      z: 0.05408819764852524
+      w: 0.9984288811683655
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+twist:
+  twist:
+    linear:
+      x: 0.00010278213449055329
+      y: 2.729305606408161e-06
+      z: 0.003509409725666046
+    angular:
+      x: -0.06072006747126579
+      y: -0.009587379172444344
+      z: 0.13422329723834991
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+---
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /dog_imu_raw --once
+header:
+  stamp:
+    sec: 1771602461
+    nanosec: 258014495
+  frame_id: dog_imu_link
+orientation:
+  x: 0.009408456273376942
+  y: 0.009294661693274975
+  z: -0.04901071637868881
+  w: -0.9987107515335083
+orientation_covariance:
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+angular_velocity:
+  x: 0.0031957929022610188
+  y: 0.004261057358235121
+  z: -0.0021305286791175604
+angular_velocity_covariance:
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+linear_acceleration:
+  x: 0.2397194504737854
+  y: -0.22625206410884857
+  z: 9.774627685546875
+linear_acceleration_covariance:
+- -2.0754986618243265e-09
+- 7.816777225500005e-10
+- -1.710082671024793e-07
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+---
+
+
+
+triffid@triffid-gs:~$ ros2 run tf2_tools view_frames
+[INFO] [1772185931.859898248] [view_frames]: Listening to tf data for 5.0 seconds...
+[INFO] [1772185936.861516710] [view_frames]: Generating graph...
+[INFO] [1772185936.863010870] [view_frames]: Result:tf2_msgs.srv.FrameGraph_Response(frame_yaml="b2/FL_calf: \n  parent: 'b2/FL_thigh'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/FL_thigh: \n  parent: 'b2/FL_hip'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/FL_hip: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/FR_calf: \n  parent: 'b2/FR_thigh'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/FR_thigh: \n  parent: 'b2/FR_hip'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/FR_hip: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/RL_calf: \n  parent: 'b2/RL_thigh'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/RL_thigh: \n  parent: 'b2/RL_hip'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/RL_hip: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/RR_calf: \n  parent: 'b2/RR_thigh'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/RR_thigh: \n  parent: 'b2/RR_hip'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/RR_hip: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 500.228\n  most_recent_transform: 1771602307.146143\n  oldest_transform: 1771602302.658191\n  buffer_length: 4.488\nb2/FL_ee: \n  parent: 'b2/FL_foot'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/FL_foot: \n  parent: 'b2/FL_calf'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/FR_ee: \n  parent: 'b2/FR_foot'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/FR_foot: \n  parent: 'b2/FR_calf'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/RL_ee: \n  parent: 'b2/RL_foot'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/RL_foot: \n  parent: 'b2/RL_calf'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/RR_ee: \n  parent: 'b2/RR_foot'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/RR_foot: \n  parent: 'b2/RR_calf'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/body: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/f_dc_link_depth_frame: \n  parent: 'b2/f_dc_link_optical_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/f_dc_link_optical_frame: \n  parent: 'b2/f_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/f_dc_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/f_oc_link_depth_frame: \n  parent: 'b2/f_oc_link_optical_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/f_oc_link_optical_frame: \n  parent: 'b2/f_oc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/f_oc_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/r_dc_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/head_Link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/imu_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/lidar_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/logo_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/r_oc_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/tail_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/r_dc_link_depth_frame: \n  parent: 'b2/r_dc_link_optical_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/r_dc_link_optical_frame: \n  parent: 'b2/r_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/r_oc_link_depth_frame: \n  parent: 'b2/r_oc_link_optical_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nb2/r_oc_link_optical_frame: \n  parent: 'b2/r_oc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_infra1_frame: \n  parent: 'f_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_dc_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_infra1_optical_frame: \n  parent: 'f_aligned_depth_to_infra1_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_aligned_depth_to_infra1_frame: \n  parent: 'f_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_infra2_frame: \n  parent: 'f_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_infra2_optical_frame: \n  parent: 'f_infra2_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_depth_frame: \n  parent: 'f_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_depth_optical_frame: \n  parent: 'f_depth_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_accel_frame: \n  parent: 'f_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_accel_optical_frame: \n  parent: 'f_accel_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_gyro_frame: \n  parent: 'f_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_gyro_optical_frame: \n  parent: 'f_gyro_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nf_oc_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_dc_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nrslidar: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_infra1_frame: \n  parent: 'r_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_infra1_optical_frame: \n  parent: 'r_aligned_depth_to_infra1_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_aligned_depth_to_infra1_frame: \n  parent: 'r_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_infra2_frame: \n  parent: 'r_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_infra2_optical_frame: \n  parent: 'r_infra2_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_depth_frame: \n  parent: 'r_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_depth_optical_frame: \n  parent: 'r_depth_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_accel_frame: \n  parent: 'r_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_accel_optical_frame: \n  parent: 'r_accel_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_gyro_frame: \n  parent: 'r_dc_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_gyro_optical_frame: \n  parent: 'r_gyro_frame'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nr_oc_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\nimu_link: \n  parent: 'b2/base_link'\n  broadcaster: 'default_authority'\n  rate: 10000.000\n  most_recent_transform: 0.000000\n  oldest_transform: 0.000000\n  buffer_length: 0.000\n")
+[INFO] [1772185936.872513872] [view_frames]: Exporting graph in frames_2026-02-27_10.52.16.pdf file...
+
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /camera_front/camera_info --once
+header:
+  stamp:
+    sec: 1771602300
+    nanosec: 552174590
+  frame_id: f_oc_link
+height: 720
+width: 1280
+distortion_model: plumb_bob
+d:
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+k:
+- 500.0
+- 0.0
+- 640.0
+- 0.0
+- 500.0
+- 360.0
+- 0.0
+- 0.0
+- 1.0
+r:
+- 1.0
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+p:
+- 500.0
+- 0.0
+- 640.0
+- 0.0
+- 0.0
+- 500.0
+- 360.0
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+- 0.0
+binning_x: 0
+binning_y: 0
+roi:
+  x_offset: 0
+  y_offset: 0
+  height: 0
+  width: 0
+  do_rectify: false
+---
+
+
+triffid@triffid-gs:~$ ros2 run tf2_ros tf2_echo f_depth_optical_frame f_oc_link
+[INFO] [1772186968.752748618] [tf2_echo]: Waiting for transform f_depth_optical_frame ->  f_oc_link: Invalid frame ID "f_depth_optical_frame" passed to canTransform argument target_frame - frame does not exist
+At time 0.0
+- Translation: [0.025, 0.071, 0.039]
+- Rotation: in Quaternion (xyzw) [0.653, -0.653, 0.271, 0.271]
+- Rotation: in RPY (radian) [3.142, -0.785, -1.571]
+- Rotation: in RPY (degree) [180.000, -45.000, -90.000]
+- Matrix:
+  0.000 -1.000 -0.000  0.025
+ -0.707  0.000 -0.707  0.071
+  0.707  0.000 -0.707  0.039
+  0.000  0.000  0.000  1.000
+At time 0.0
+- Translation: [0.025, 0.071, 0.039]
+- Rotation: in Quaternion (xyzw) [0.653, -0.653, 0.271, 0.271]
+- Rotation: in RPY (radian) [3.142, -0.785, -1.571]
+- Rotation: in RPY (degree) [180.000, -45.000, -90.000]
+- Matrix:
+  0.000 -1.000 -0.000  0.025
+ -0.707  0.000 -0.707  0.071
+  0.707  0.000 -0.707  0.039
+  0.000  0.000  0.000  1.000
+At time 0.0
+- Translation: [0.025, 0.071, 0.039]
+- Rotation: in Quaternion (xyzw) [0.653, -0.653, 0.271, 0.271]
+- Rotation: in RPY (radian) [3.142, -0.785, -1.571]
+- Rotation: in RPY (degree) [180.000, -45.000, -90.000]
+- Matrix:
+  0.000 -1.000 -0.000  0.025
+ -0.707  0.000 -0.707  0.071
+  0.707  0.000 -0.707  0.039
+  0.000  0.000  0.000  1.000
+At time 0.0
+- Translation: [0.025, 0.071, 0.039]
+- Rotation: in Quaternion (xyzw) [0.653, -0.653, 0.271, 0.271]
+- Rotation: in RPY (radian) [3.142, -0.785, -1.571]
+- Rotation: in RPY (degree) [180.000, -45.000, -90.000]
+- Matrix:
+  0.000 -1.000 -0.000  0.025
+ -0.707  0.000 -0.707  0.071
+  0.707  0.000 -0.707  0.039
+  0.000  0.000  0.000  1.000
+At time 0.0
+- Translation: [0.025, 0.071, 0.039]
+- Rotation: in Quaternion (xyzw) [0.653, -0.653, 0.271, 0.271]
+- Rotation: in RPY (radian) [3.142, -0.785, -1.571]
+- Rotation: in RPY (degree) [180.000, -45.000, -90.000]
+- Matrix:
+  0.000 -1.000 -0.000  0.025
+ -0.707  0.000 -0.707  0.071
+  0.707  0.000 -0.707  0.039
+  0.000  0.000  0.000  1.000
+At time 0.0
+- Translation: [0.025, 0.071, 0.039]
+- Rotation: in Quaternion (xyzw) [0.653, -0.653, 0.271, 0.271]
+- Rotation: in RPY (radian) [3.142, -0.785, -1.571]
+- Rotation: in RPY (degree) [180.000, -45.000, -90.000]
+- Matrix:
+  0.000 -1.000 -0.000  0.025
+ -0.707  0.000 -0.707  0.071
+  0.707  0.000 -0.707  0.039
+  0.000  0.000  0.000  1.000
+At time 0.0
+- Translation: [0.025, 0.071, 0.039]
+- Rotation: in Quaternion (xyzw) [0.653, -0.653, 0.271, 0.271]
+- Rotation: in RPY (radian) [3.142, -0.785, -1.571]
+- Rotation: in RPY (degree) [180.000, -45.000, -90.000]
+- Matrix:
+  0.000 -1.000 -0.000  0.025
+ -0.707  0.000 -0.707  0.071
+  0.707  0.000 -0.707  0.039
+  0.000  0.000  0.000  1.000
+^C[INFO] [1772186976.248903480] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+
+
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /dog_odom --once
+header:
+  stamp:
+    sec: 1771602620
+    nanosec: 180200900
+  frame_id: odom
+child_frame_id: robot_center
+pose:
+  pose:
+    position:
+      x: 0.2402026653289795
+      y: -0.28456786274909973
+      z: 1.9777860641479492
+    orientation:
+      x: 0.0005697495653294027
+      y: 0.007594795431941748
+      z: -0.7872239351272583
+      w: -0.6166203618049622
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+twist:
+  twist:
+    linear:
+      x: -0.06631488353013992
+      y: -0.03046017326414585
+      z: -0.00040611220174469054
+    angular:
+      x: 0.06924217939376831
+      y: -0.023435814306139946
+      z: -0.2045307457447052
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+---
+triffid@triffid-gs:~$ 
+
+
+
+
+triffid@triffid-gs:~$ ros2 topic echo /camera_front/realsense_front/infra1/camera_info --once
+header:
+  stamp:
+    sec: 1771602467
+    nanosec: 546583984
+  frame_id: f_infra1_optical_frame
+height: 480
+width: 640
+distortion_model: plumb_bob
+d:
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+k:
+- 391.5248718261719
+- 0.0
+- 319.7847900390625
+- 0.0
+- 391.5248718261719
+- 237.64898681640625
+- 0.0
+- 0.0
+- 1.0
+r:
+- 1.0
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+p:
+- 391.5248718261719
+- 0.0
+- 319.7847900390625
+- 0.0
+- 0.0
+- 391.5248718261719
+- 237.64898681640625
+- 0.0
+- 0.0
+- 0.0
+- 1.0
+- 0.0
+binning_x: 0
+binning_y: 0
+roi:
+  x_offset: 0
+  y_offset: 0
+  height: 0
+  width: 0
+  do_rectify: false
+---
+triffid@triffid-gs:~$ 

@@ -26,10 +26,11 @@ services:
     # ── Mount workspace ──
     volumes:
       - ./src:/ws/src                          # source code (editable from host)
-      - ./rosbag2_active_20260220_164455:/ws/rosbag:ro   # rosbag (read-only)
+      - ./2_rosbag2_active_20260220_164742:/ws/rosbag:ro   # rosbag (read-only)
       - ./install:/ws/install                  # persist build artifacts
       - ./build:/ws/build                      # persist build artifacts
       - ./log:/ws/log                          # persist logs
+      - ./cyclonedds.xml:/ws/cyclonedds.xml:ro # DDS config
 
     # ── Networking ──
     network_mode: host    # shares host network so ROS2 DDS works seamlessly
@@ -37,7 +38,8 @@ services:
 
     # ── Environment ──
     environment:
-      - ROS_DOMAIN_ID=0
+      - ROS_DOMAIN_ID=42
+      - CYCLONEDDS_URI=file:///ws/cyclonedds.xml
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
 

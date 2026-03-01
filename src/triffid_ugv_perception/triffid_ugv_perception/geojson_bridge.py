@@ -1,17 +1,20 @@
 """
 TRIFFID GeoJSON Bridge
 =======================
-Subscribes to detection topics (Detection3DArray / Detection2DArray)
+Subscribes to UGV detection topic (Detection3DArray in b2/base_link)
 and converts them to RFC-7946 GeoJSON, then:
   1. Publishes as a ROS2 String topic (for debugging / other nodes)
-  2. PUTs to the TRIFFID mapping API
+  2. Optionally PUTs to the TRIFFID mapping API
 
-Coordinate conversion:
-  - UGV detections are in local map frame (metres)
-  - We need the robot's GPS origin to convert local XY → lat/lon
-  - Uses simple equirectangular approximation (valid for small areas)
+Coordinate handling:
+  - Detections arrive in ``b2/base_link`` (local, metres).
+  - If a GPS origin is set (via /fix or parameters), local XY are
+    converted to lon/lat using an equirectangular approximation.
+  - If no GPS is available (current rosbags), the raw local (x, y)
+    are emitted as coordinates and a ``"local_frame": true`` property
+    is added so downstream consumers know they are **not** WGS-84.
 
-API endpoint: https://crispres.com/wp-json/map-manager/v1/features
+API endpoint (when enabled): https://crispres.com/wp-json/map-manager/v1/features
 """
 
 import json
@@ -24,7 +27,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
-from vision_msgs.msg import Detection3DArray, Detection2DArray
+from vision_msgs.msg import Detection3DArray
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String
 
@@ -50,21 +53,14 @@ class GeoJSONBridge(Node):
         self.origin_set = (self.origin_lat != 0.0 and self.origin_lon != 0.0)
 
         # Subscribers
-        # UGV 3D detections
+        # UGV 3D detections (in b2/base_link)
         self.sub_ugv = self.create_subscription(
             Detection3DArray,
             '/ugv/perception/detections_3d',
             self.ugv_callback,
             10,
         )
-        # UAV 2D detections (when available)
-        self.sub_uav = self.create_subscription(
-            Detection2DArray,
-            '/uav/perception/detections_2d',
-            self.uav_callback,
-            10,
-        )
-        # GPS fix — to set the local→GPS origin
+        # GPS fix — to set the local→GPS origin (may not exist in bag)
         self.sub_gps = self.create_subscription(
             NavSatFix,
             '/fix',
@@ -88,8 +84,8 @@ class GeoJSONBridge(Node):
             )
         else:
             self.get_logger().warn(
-                'GPS origin not set. Waiting for /fix topic or set '
-                'gps_origin_lat / gps_origin_lon parameters.'
+                'GPS origin not set — emitting local-frame coordinates. '
+                'Set gps_origin_lat / gps_origin_lon params or wait for /fix.'
             )
 
     # GPS origin
@@ -147,10 +143,10 @@ class GeoJSONBridge(Node):
         Each detection becomes a GeoJSON Point Feature with properties:
           - name: class name
           - category: "detection"
-          - source: "ugv" or "uav"
+          - source: "ugv"
           - track_id: persistent tracking ID
           - confidence: detection score
-          - timestamp: ROS timestamp as ISO-ish string
+          - local_frame: True if coordinates are local (no GPS), False if WGS-84
 
         Compatible with the TRIFFID API (RFC-7946, SimpleStyle spec).
         """
@@ -169,6 +165,7 @@ class GeoJSONBridge(Node):
                     "source": source,
                     "track_id": det.get('track_id', ''),
                     "confidence": det.get('confidence', 0.0),
+                    "local_frame": not self.origin_set,
                     "marker-color": self._class_color(det.get('class_name', '')),
                     "marker-size": "medium",
                     "marker-symbol": self._class_symbol(det.get('class_name', '')),
@@ -184,15 +181,15 @@ class GeoJSONBridge(Node):
     # Callbacks
 
     def ugv_callback(self, msg: Detection3DArray):
-        """Process UGV 3D detections → GeoJSON."""
+        """Process UGV 3D detections (b2/base_link) → GeoJSON."""
         detections = []
         for det in msg.detections:
-            # Extract 3D position (in map frame)
+            # Extract 3D position (in b2/base_link, metres)
             x = det.bbox.center.position.x
             y = det.bbox.center.position.y
             z = det.bbox.center.position.z
 
-            # Convert to GPS
+            # Convert to GPS if origin is set, otherwise emit local coords
             lon, lat = self.local_to_gps(x, y, z)
 
             # Extract class and confidence from results
@@ -213,38 +210,6 @@ class GeoJSONBridge(Node):
             return
 
         geojson = self.detections_to_geojson(detections, source='ugv')
-        self._publish(geojson)
-
-    def uav_callback(self, msg: Detection2DArray):
-        """Process UAV 2D detections → GeoJSON.
-
-        NOTE: UAV detections are 2D (pixel coords). To produce valid GeoJSON,
-        i need geo-projection (Step 5 in plan.md). For now, this is a
-        placeholder that publishes the raw data.
-        """
-        detections = []
-        for det in msg.detections:
-            class_name = 'unknown'
-            confidence = 0.0
-            if det.results:
-                class_name = det.results[0].hypothesis.class_id
-                confidence = det.results[0].hypothesis.score
-
-            # UAV 2D: no 3D position available yet
-            # This requires geo-projection from UAV GPS + camera model
-            # For now, skip if no GPS origin
-            # TODO: implement geo-projection (plan.md Step 5)
-            detections.append({
-                'coordinates': (0.0, 0.0),  # placeholder
-                'class_name': class_name,
-                'confidence': confidence,
-                'track_id': det.id,
-            })
-
-        if not detections:
-            return
-
-        geojson = self.detections_to_geojson(detections, source='uav')
         self._publish(geojson)
 
     # Publishing
@@ -309,6 +274,8 @@ class GeoJSONBridge(Node):
             'bicycle': '#00ff00',
             'motorcycle': '#008000',
             'debris': '#ff8c00',
+            'chair': '#ff8c00',
+            'couch': '#ffd700',
         }
         return colors.get(class_name, '#808080')
 

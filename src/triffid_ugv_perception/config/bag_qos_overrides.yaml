@@ -1,0 +1,41 @@
+# QoS overrides for ros2 bag play
+# Forces consistent QoS so subscribers can always connect.
+#
+# /tf_static MUST be TRANSIENT_LOCAL for TF2's TransformListener.
+# Sensor topics are forced to VOLATILE to match our VOLATILE subscribers.
+
+/tf_static:
+  history: keep_last
+  depth: 1
+  reliability: reliable
+  durability: transient_local
+
+/camera_front/raw_image:
+  history: keep_last
+  depth: 5
+  reliability: reliable
+  durability: volatile
+
+/camera_front/camera_info:
+  history: keep_last
+  depth: 10
+  reliability: reliable
+  durability: volatile
+
+/camera_front/realsense_front/depth/image_rect_raw:
+  history: keep_last
+  depth: 5
+  reliability: reliable
+  durability: volatile
+
+/camera_front/realsense_front/depth/camera_info:
+  history: keep_last
+  depth: 10
+  reliability: reliable
+  durability: volatile
+
+/tf:
+  history: keep_last
+  depth: 100
+  reliability: reliable
+  durability: volatile

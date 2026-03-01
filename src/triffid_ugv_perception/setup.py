@@ -15,6 +15,8 @@ setup(
         ('share/' + package_name, ['package.xml']),
         # Launch files
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
+        # Config files
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,7 +28,6 @@ setup(
         'console_scripts': [
             'ugv_node = triffid_ugv_perception.ugv_node:main',
             'geojson_bridge = triffid_ugv_perception.geojson_bridge:main',
-            'diagnostics = triffid_ugv_perception.diagnostics:main',
         ],
     },
 )

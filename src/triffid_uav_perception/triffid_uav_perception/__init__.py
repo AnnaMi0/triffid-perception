@@ -1,1 +1,0 @@
-# TRIFFID UAV Perception Package
