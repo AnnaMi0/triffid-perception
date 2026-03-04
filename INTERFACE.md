@@ -19,6 +19,7 @@ This document defines every published and consumed interface of the TRIFFID UGV 
 4. [Detection3DArray Schema](#4-detection3darray-schema)
 5. [Segmentation Image Schema](#5-segmentation-image-schema)
 6. [GeoJSON Schema](#6-geojson-schema)
+   - [MQTT Output](#mqtt-output)
 7. [Class List (63 classes)](#7-class-list-63-classes)
 8. [Category Mapping](#8-category-mapping)
 9. [Coordinate Conventions](#9-coordinate-conventions)
@@ -249,24 +250,27 @@ Additional values (e.g. `"bbox"`) may be added in future versions for bbox-only 
 
 ### MQTT Output
 
-The `geojson_bridge` node also publishes every GeoJSON FeatureCollection to a local **MQTT** broker (Mosquitto, running inside the Docker container).
+The `geojson_bridge` node also publishes every GeoJSON FeatureCollection to a local **MQTT** broker (Mosquitto, running inside the Docker container, started automatically by `run.sh start`).
 
 | Property | Value |
 |---|---|
 | **Broker** | `localhost:1883` (default, configurable via `mqtt_host` / `mqtt_port` parameters) |
 | **Topic** | `triffid/front/geojson` (configurable via `mqtt_topic` parameter) |
 | **QoS** | 0 (at most once) |
-| **Payload** | Compact JSON (no indentation) — identical schema to the ROS 2 `/triffid/front/geojson` topic |
+| **Payload** | Compact JSON (no indentation) — identical FeatureCollection schema to the ROS 2 `/triffid/front/geojson` topic |
 | **Enabled** | `true` by default; disable with `mqtt_enabled:=false` |
+| **Client** | `paho-mqtt` ≥ 2.0 (CallbackAPIVersion.VERSION2) |
 
 The MQTT output uses the `paho-mqtt` Python client. If the broker is unreachable at startup, MQTT is silently disabled and the node continues to publish on the ROS 2 topic.
 
-To subscribe from the command line:
+To subscribe from any terminal on the same host:
 ```bash
 mosquitto_sub -h localhost -t 'triffid/front/geojson'
+# or from outside the container if using host network:
+mosquitto_sub -h <robot-ip> -t 'triffid/front/geojson'
 ```
 
-The `collect_samples.py` script also captures an MQTT trace during sampling, saving every message as `mqtt_trace.jsonl` (one JSON object per line).
+The `collect_samples.py` script also captures an MQTT trace during sampling, saving every received message to `mqtt_trace.jsonl` — one complete FeatureCollection JSON object per line (JSONL format), suitable for replaying or post-processing.
 
 ---
 

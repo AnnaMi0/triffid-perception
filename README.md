@@ -49,13 +49,21 @@ Fuses RGB and depth from separate cameras via cross-camera projection, runs a fi
  └──────────┬──────────────────────┘
             │
             ▼
+ ┌──────────────────────────────────┐
+ │ geojson_bridge                   │
+ │ Detection3D → GeoJSON            │
+ │ GPS + heading rotation           │
+ │ Optional API PUT                 │
+ │                                  │
+ │ /triffid/front/geojson (ROS2)   │
+ │ triffid/front/geojson  (MQTT)   │
+ └──────────┬───────────────────────┘
+            │
+            ▼
  ┌──────────────────────┐
- │ geojson_bridge        │
- │ Detection3D → GeoJSON │
- │ Local or GPS coords   │
- │ Optional API PUT      │
- │ /triffid/front/geojson │
- └───────────────────────┘
+ │ Mosquitto broker     │
+ │ localhost:1883       │
+ └──────────────────────┘
 ```
 
 ---
@@ -101,6 +109,13 @@ The robot also publishes `/tf_static` with the full transform chain, `/dog_odom`
 | `/ugv/perception/front/detections_3d` | `vision_msgs/Detection3DArray` | `ugv_node` | 3D detections in `b2/base_link` frame |
 | `/ugv/perception/front/segmentation` | `sensor_msgs/Image` | `ugv_node` | Semantic label map (`mono8`, pixel = class ID) |
 | `/triffid/front/geojson` | `std_msgs/String` | `geojson_bridge` | GeoJSON FeatureCollection (RFC 7946) |
+
+> The same GeoJSON payload is also published as MQTT to `localhost:1883` on topic `triffid/front/geojson` (Mosquitto, running inside the container). See [GeoJSON Bridge Parameters](#geojson-bridge-parameters).
+
+**MQTT output**: `geojson_bridge` also publishes identical GeoJSON payloads to the local Mosquitto broker on topic `triffid/front/geojson` (port 1883). Subscribe from any host with:
+```bash
+mosquitto_sub -h localhost -t 'triffid/front/geojson'
+```
 
 ### Detection3DArray Message Structure
 
@@ -248,6 +263,8 @@ The pipeline runs inside a Docker container based on `ros:humble-perception-jamm
 - **IPC**: `host` (shared memory for fast DDS transport)
 - **ROS_DOMAIN_ID**: `42` (isolated from host's default domain 0)
 - **DDS**: CycloneDDS with increased fragment buffers for large images
+- **MQTT**: Mosquitto broker (`mosquitto` + `mosquitto-clients`) installed in image, started automatically by `run.sh start`
+- **MQTT broker**: Mosquitto (`mosquitto` + `mosquitto-clients`) installed in-image, started automatically by `run.sh start`
 
 ### Volumes
 
@@ -285,7 +302,13 @@ Environment variables: `BAG_RATE` (default 1.0), `BAG_START` (offset sec), `YOLO
 
 **Notes:**
 - `build` and `start` perform a clean build (`rm -rf build/* install/* log/*`) before `colcon build` to avoid stale artefact conflicts with bind-mounted directories.
-- `sample` saves single-frame snapshots of each output topic **and** a `geojson_merged.json` file that accumulates all GeoJSON detections over the sampling window, keeping only the highest-confidence observation per track ID. It also records an `mqtt_trace.jsonl` file with every MQTT GeoJSON message received during the window.
+- `sample` saves the following files to `./samples/`:
+  - `rgb_frame_0.jpg` … `rgb_frame_4.jpg` — 5 raw RGB frames
+  - `detections_3d.yaml` — first non-empty `Detection3DArray` message
+  - `segmentation.png` — first semantic label map (`mono8`)
+  - `geojson.json` — first non-empty GeoJSON `FeatureCollection`
+  - `geojson_merged.json` — all GeoJSON features accumulated over the window, deduplicated by track ID (highest confidence kept)
+  - `mqtt_trace.jsonl` — every MQTT GeoJSON message received during the window, one compact JSON object per line
 
 ### Manual Quick Start
 
@@ -332,13 +355,15 @@ sudo docker compose exec perception bash -c "
 ```bash
 # Echo 3D detections:
 sudo docker compose exec perception bash -c "
-  ROS_DOMAIN_ID=42 ros2 topic echo /ugv/perception/front/detections_3d --once
-"
+  ROS_DOMAIN_ID=42 ros2 topic echo /ugv/perception/front/detections_3d --once"
 
-# Echo GeoJSON:
+# Echo GeoJSON (ROS 2 topic):
 sudo docker compose exec perception bash -c "
-  ROS_DOMAIN_ID=42 ros2 topic echo /triffid/front/geojson --once
-"
+  ROS_DOMAIN_ID=42 ros2 topic echo /triffid/front/geojson --once"
+
+# Subscribe to GeoJSON via MQTT (from inside container):
+sudo docker compose exec perception bash -c "
+  mosquitto_sub -h localhost -t 'triffid/front/geojson'"
 ```
 
 ### Testing with Dummy Detections (no YOLO)
