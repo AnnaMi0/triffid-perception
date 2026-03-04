@@ -1,0 +1,293 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "61",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351631849673472,
+              49.72618168813778
+            ],
+            [
+              13.351634444055327,
+              49.72619263274605
+            ],
+            [
+              13.351652900690155,
+              49.72619080450537
+            ],
+            [
+              13.3516503063083,
+              49.72617985989711
+            ],
+            [
+              13.351631849673472,
+              49.72618168813778
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "61",
+        "confidence": 0.8280184864997864,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "67",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351617299400132,
+              49.726190061892716
+            ],
+            [
+              13.351620106594366,
+              49.7262019042671
+            ],
+            [
+              13.351689317069619,
+              49.72619504855331
+            ],
+            [
+              13.351686509875385,
+              49.726183206178916
+            ],
+            [
+              13.351617299400132,
+              49.726190061892716
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "67",
+        "confidence": 0.5012774467468262,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "69",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351604156069946,
+              49.72621446061707
+            ],
+            [
+              13.351604794927715,
+              49.726217155689895
+            ],
+            [
+              13.351616880328768,
+              49.72621595855824
+            ],
+            [
+              13.351616241471,
+              49.72621326348542
+            ],
+            [
+              13.351604156069946,
+              49.72621446061707
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "69",
+        "confidence": 0.6179772019386292,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "70",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351625159934594,
+              49.72620761246172
+            ],
+            [
+              13.35162813958859,
+              49.72622018237147
+            ],
+            [
+              13.35162951320457,
+              49.726220046306544
+            ],
+            [
+              13.351626533550574,
+              49.726207476396795
+            ],
+            [
+              13.351625159934594,
+              49.72620761246172
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "70",
+        "confidence": 0.7002910375595093,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "68",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351591589529612,
+              49.72619923840811
+            ],
+            [
+              13.351595169195743,
+              49.72621433951725
+            ],
+            [
+              13.351658573500188,
+              49.726208058939584
+            ],
+            [
+              13.351654993834057,
+              49.72619295783045
+            ],
+            [
+              13.351591589529612,
+              49.72619923840811
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "68",
+        "confidence": 0.5431573987007141,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "71",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35161509091269,
+              49.72619754803687
+            ],
+            [
+              13.351619668015077,
+              49.72621685691099
+            ],
+            [
+              13.351661287489378,
+              49.72621273425177
+            ],
+            [
+              13.35165671038699,
+              49.72619342537765
+            ],
+            [
+              13.35161509091269,
+              49.72619754803687
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "71",
+        "confidence": 0.36073729395866394,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    }
+  ]
+}

@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-tf2-ros \
     ros-humble-tf2-geometry-msgs \
     ros-humble-image-transport \
+    ros-humble-mqtt-client \
+    mosquitto \
+    mosquitto-clients \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Python deps (inside container, safe) ─────────────────────

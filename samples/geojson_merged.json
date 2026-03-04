@@ -1,0 +1,3557 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "1",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.353683883544777,
+              49.72730755181227
+            ],
+            [
+              13.353714694172186,
+              49.72731645712363
+            ],
+            [
+              13.353715261396138,
+              49.7273156370494
+            ],
+            [
+              13.353684450768728,
+              49.72730673173803
+            ],
+            [
+              13.353683883544777,
+              49.72730755181227
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "1",
+        "confidence": 0.9634652733802795,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "9",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352572350948472,
+              49.726884069984976
+            ],
+            [
+              13.352586742641835,
+              49.72688693136166
+            ],
+            [
+              13.352591257676249,
+              49.726877441823
+            ],
+            [
+              13.352576865982886,
+              49.726874580446314
+            ],
+            [
+              13.352572350948472,
+              49.726884069984976
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "9",
+        "confidence": 0.7842186689376831,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "12",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352585510651705,
+              49.7268859753772
+            ],
+            [
+              13.35262022775205,
+              49.72689287787984
+            ],
+            [
+              13.352620636276027,
+              49.72689201925868
+            ],
+            [
+              13.352585919175684,
+              49.726885116756044
+            ],
+            [
+              13.352585510651705,
+              49.7268859753772
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "12",
+        "confidence": 0.9057323932647705,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "16",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351557107442272,
+              49.72643086142087
+            ],
+            [
+              13.351584040747047,
+              49.726437483718925
+            ],
+            [
+              13.351584534784365,
+              49.72643664408911
+            ],
+            [
+              13.351557601479588,
+              49.72643002179107
+            ],
+            [
+              13.351557107442272,
+              49.72643086142087
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "16",
+        "confidence": 0.35382112860679626,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "19",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351815033164947,
+              49.726486312477896
+            ],
+            [
+              13.351816237018786,
+              49.726486761207255
+            ],
+            [
+              13.351817807514719,
+              49.72648500055631
+            ],
+            [
+              13.351816603660879,
+              49.72648455182695
+            ],
+            [
+              13.351815033164947,
+              49.726486312477896
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "19",
+        "confidence": 0.6920973658561707,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "25",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.353689292321922,
+              49.72717080548624
+            ],
+            [
+              13.353711480678458,
+              49.72717649823852
+            ],
+            [
+              13.353711993319932,
+              49.727175663282196
+            ],
+            [
+              13.353689804963397,
+              49.72716997052991
+            ],
+            [
+              13.353689292321922,
+              49.72717080548624
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "25",
+        "confidence": 0.6187595129013062,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "20",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351805686743626,
+              49.72644102203641
+            ],
+            [
+              13.351809440485448,
+              49.72644195022543
+            ],
+            [
+              13.351814141160201,
+              49.726434006296536
+            ],
+            [
+              13.351810387418379,
+              49.72643307810752
+            ],
+            [
+              13.351805686743626,
+              49.72644102203641
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "20",
+        "confidence": 0.6180299520492554,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "28",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.350717165038356,
+              49.7259980070286
+            ],
+            [
+              13.350737262808275,
+              49.72600311256637
+            ],
+            [
+              13.35074329793427,
+              49.725993185066514
+            ],
+            [
+              13.350723200164351,
+              49.72598807952875
+            ],
+            [
+              13.350717165038356,
+              49.7259980070286
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "28",
+        "confidence": 0.48695623874664307,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "20",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.350719768944613,
+              49.72599437774735
+            ],
+            [
+              13.350726376583971,
+              49.725996056319275
+            ],
+            [
+              13.350729029437037,
+              49.72599169250012
+            ],
+            [
+              13.350722421797677,
+              49.7259900139282
+            ],
+            [
+              13.350719768944613,
+              49.72599437774735
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Wall",
+        "id": "20",
+        "confidence": 0.9115747213363647,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#808080",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#808080",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#808080",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "45",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351592114279585,
+              49.72629893377446
+            ],
+            [
+              13.351611060633308,
+              49.72630440856464
+            ],
+            [
+              13.351619384249306,
+              49.72629237158933
+            ],
+            [
+              13.351600437895582,
+              49.72628689679916
+            ],
+            [
+              13.351592114279585,
+              49.72629893377446
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "45",
+        "confidence": 0.551051914691925,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "53",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351163216964832,
+              49.72608132868696
+            ],
+            [
+              13.351172567918532,
+              49.72608602205068
+            ],
+            [
+              13.351180070152427,
+              49.72607977594303
+            ],
+            [
+              13.351170719198727,
+              49.7260750825793
+            ],
+            [
+              13.351163216964832,
+              49.72608132868696
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "53",
+        "confidence": 0.5452700853347778,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "54",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351166434716692,
+              49.72608331613062
+            ],
+            [
+              13.351173146534581,
+              49.726086553021545
+            ],
+            [
+              13.35117481765215,
+              49.72608510502917
+            ],
+            [
+              13.351168105834262,
+              49.72608186813824
+            ],
+            [
+              13.351166434716692,
+              49.72608331613062
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "54",
+        "confidence": 0.7377510666847229,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "54",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351166502955671,
+              49.726083158507166
+            ],
+            [
+              13.351173305108814,
+              49.726086427683256
+            ],
+            [
+              13.351174900031339,
+              49.72608504094386
+            ],
+            [
+              13.351168097878197,
+              49.72608177176777
+            ],
+            [
+              13.351166502955671,
+              49.726083158507166
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "54",
+        "confidence": 0.5958152413368225,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "54",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351167430170454,
+              49.726083814629895
+            ],
+            [
+              13.351174252800616,
+              49.726087102992835
+            ],
+            [
+              13.351176760806629,
+              49.72608492855083
+            ],
+            [
+              13.351169938176467,
+              49.72608164018789
+            ],
+            [
+              13.351167430170454,
+              49.726083814629895
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "54",
+        "confidence": 0.5641765594482422,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "67",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351583736826399,
+              49.726190932108295
+            ],
+            [
+              13.351586560628071,
+              49.72620294584869
+            ],
+            [
+              13.351655018623646,
+              49.726196221854984
+            ],
+            [
+              13.351652194821973,
+              49.72618420811459
+            ],
+            [
+              13.351583736826399,
+              49.726190932108295
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "67",
+        "confidence": 0.5145041942596436,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "61",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351633507005563,
+              49.726182117283265
+            ],
+            [
+              13.351635800223974,
+              49.72619187368044
+            ],
+            [
+              13.351651491724738,
+              49.72619033244992
+            ],
+            [
+              13.351649198506326,
+              49.72618057605274
+            ],
+            [
+              13.351633507005563,
+              49.726182117283265
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "61",
+        "confidence": 0.7833907604217529,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "69",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351605377842697,
+              49.726214904876244
+            ],
+            [
+              13.35160577951653,
+              49.726216613779954
+            ],
+            [
+              13.351615095870864,
+              49.726215698720914
+            ],
+            [
+              13.35161469419703,
+              49.726213989817204
+            ],
+            [
+              13.351605377842697,
+              49.726214904876244
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "69",
+        "confidence": 0.47364556789398193,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "65",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351652474873346,
+              49.726192245841055
+            ],
+            [
+              13.351652683624339,
+              49.726193133963
+            ],
+            [
+              13.351654057505016,
+              49.72619299901945
+            ],
+            [
+              13.351653848754022,
+              49.72619211089751
+            ],
+            [
+              13.351652474873346,
+              49.726192245841055
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "65",
+        "confidence": 0.36984193325042725,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "68",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351591074002185,
+              49.72619927882684
+            ],
+            [
+              13.351594641251197,
+              49.72621445553134
+            ],
+            [
+              13.351658391442294,
+              49.72620819394158
+            ],
+            [
+              13.351654824193282,
+              49.72619301723709
+            ],
+            [
+              13.351591074002185,
+              49.72619927882684
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "68",
+        "confidence": 0.49505606293678284,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "61",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351302220125396,
+              49.72604167570928
+            ],
+            [
+              13.351297520613594,
+              49.72605600751297
+            ],
+            [
+              13.35131468803264,
+              49.72605835987453
+            ],
+            [
+              13.35131938754444,
+              49.72604402807084
+            ],
+            [
+              13.351302220125396,
+              49.72604167570928
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "61",
+        "confidence": 0.615939199924469,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "80",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351742016068474,
+              49.72628439748125
+            ],
+            [
+              13.351738225997218,
+              49.726289926981096
+            ],
+            [
+              13.351739496515902,
+              49.72629029088754
+            ],
+            [
+              13.351743286587158,
+              49.726284761387696
+            ],
+            [
+              13.351742016068474,
+              49.72628439748125
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Destroyed building",
+        "id": "80",
+        "confidence": 0.3897574543952942,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#696969",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#696969",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#696969",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "82",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351740862545237,
+              49.72628066131505
+            ],
+            [
+              13.351735120838821,
+              49.72628888266286
+            ],
+            [
+              13.351749515474745,
+              49.72629308359646
+            ],
+            [
+              13.35175525718116,
+              49.72628486224865
+            ],
+            [
+              13.351740862545237,
+              49.72628066131505
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "82",
+        "confidence": 0.7415618300437927,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "82",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351741024916851,
+              49.7262757765306
+            ],
+            [
+              13.351730897794432,
+              49.72628981570609
+            ],
+            [
+              13.351746588840387,
+              49.72629454551421
+            ],
+            [
+              13.351756715962805,
+              49.726280506338725
+            ],
+            [
+              13.351741024916851,
+              49.7262757765306
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "82",
+        "confidence": 0.6218444108963013,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "87",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351745095869353,
+              49.72626993478283
+            ],
+            [
+              13.351737683415001,
+              49.72628021062853
+            ],
+            [
+              13.351750719776545,
+              49.72628414022564
+            ],
+            [
+              13.351758132230897,
+              49.72627386437993
+            ],
+            [
+              13.351745095869353,
+              49.72626993478283
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "87",
+        "confidence": 0.6059092879295349,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "91",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351772468981844,
+              49.72626749666576
+            ],
+            [
+              13.351763325536922,
+              49.726269871811574
+            ],
+            [
+              13.351765888690782,
+              49.72627399507825
+            ],
+            [
+              13.351775032135702,
+              49.72627161993244
+            ],
+            [
+              13.351772468981844,
+              49.72626749666576
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "91",
+        "confidence": 0.48504775762557983,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "92",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35179187258187,
+              49.72627472877168
+            ],
+            [
+              13.351781025730963,
+              49.72626774009898
+            ],
+            [
+              13.351770277738,
+              49.72627471091329
+            ],
+            [
+              13.351781124588907,
+              49.72628169958598
+            ],
+            [
+              13.35179187258187,
+              49.72627472877168
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "92",
+        "confidence": 0.6960630416870117,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "92",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351783699616835,
+              49.72627240713121
+            ],
+            [
+              13.351772622433206,
+              49.72626833138552
+            ],
+            [
+              13.351765098182705,
+              49.72627687679138
+            ],
+            [
+              13.351776175366334,
+              49.726280952537074
+            ],
+            [
+              13.351783699616835,
+              49.72627240713121
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "92",
+        "confidence": 0.8570115566253662,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "98",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351801017402424,
+              49.72627610304681
+            ],
+            [
+              13.351785698981658,
+              49.72627046677774
+            ],
+            [
+              13.351779484672457,
+              49.72627752446333
+            ],
+            [
+              13.351794803093226,
+              49.72628316073239
+            ],
+            [
+              13.351801017402424,
+              49.72627610304681
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "98",
+        "confidence": 0.5818778872489929,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "99",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351745884737799,
+              49.72626981969231
+            ],
+            [
+              13.351735885527782,
+              49.726282124278164
+            ],
+            [
+              13.351738547831548,
+              49.7262830283511
+            ],
+            [
+              13.351748547041566,
+              49.726270723765246
+            ],
+            [
+              13.351745884737799,
+              49.72626981969231
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "99",
+        "confidence": 0.870346188545227,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "103",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351821719058197,
+              49.72624868775866
+            ],
+            [
+              13.35181169130279,
+              49.72624967738355
+            ],
+            [
+              13.35181284741808,
+              49.72625457270754
+            ],
+            [
+              13.351822875173486,
+              49.72625358308266
+            ],
+            [
+              13.351821719058197,
+              49.72624868775866
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "103",
+        "confidence": 0.6478778123855591,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "105",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351822135851586,
+              49.726247515556246
+            ],
+            [
+              13.351792330246012,
+              49.72625045702897
+            ],
+            [
+              13.351794823142894,
+              49.72626101266995
+            ],
+            [
+              13.351824628748469,
+              49.72625807119723
+            ],
+            [
+              13.351822135851586,
+              49.726247515556246
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "105",
+        "confidence": 0.3939899802207947,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "105",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351837109949345,
+              49.72625346602648
+            ],
+            [
+              13.351814635683096,
+              49.726248408565155
+            ],
+            [
+              13.351808042361577,
+              49.72626065203107
+            ],
+            [
+              13.351830516627826,
+              49.726265709492395
+            ],
+            [
+              13.351837109949345,
+              49.72625346602648
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "105",
+        "confidence": 0.5685194730758667,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "112",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35175362414079,
+              49.72625499592502
+            ],
+            [
+              13.351744073751338,
+              49.7262592209579
+            ],
+            [
+              13.351744858581677,
+              49.72625996229194
+            ],
+            [
+              13.351754408971129,
+              49.72625573725906
+            ],
+            [
+              13.35175362414079,
+              49.72625499592502
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "112",
+        "confidence": 0.6695127487182617,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "114",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351800506108,
+              49.72626472343893
+            ],
+            [
+              13.351799359300943,
+              49.72626523077924
+            ],
+            [
+              13.351800144131282,
+              49.72626597211328
+            ],
+            [
+              13.35180129093834,
+              49.72626546477297
+            ],
+            [
+              13.351800506108,
+              49.72626472343893
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "114",
+        "confidence": 0.4081776738166809,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "121",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351773728144387,
+              49.72623572229488
+            ],
+            [
+              13.351743608747109,
+              49.72625761524507
+            ],
+            [
+              13.351781171229725,
+              49.726279209759724
+            ],
+            [
+              13.351811290627003,
+              49.726257316809544
+            ],
+            [
+              13.351773728144387,
+              49.72623572229488
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "121",
+        "confidence": 0.6566532850265503,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "115",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351796207819085,
+              49.72624524401438
+            ],
+            [
+              13.351784131071115,
+              49.72625402226579
+            ],
+            [
+              13.351791014272164,
+              49.72625797938938
+            ],
+            [
+              13.351803091020134,
+              49.72624920113797
+            ],
+            [
+              13.351796207819085,
+              49.72624524401438
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "115",
+        "confidence": 0.4347059726715088,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "123",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351760056925846,
+              49.72624540049505
+            ],
+            [
+              13.351742906075474,
+              49.72625786697004
+            ],
+            [
+              13.351780743035185,
+              49.72627961928043
+            ],
+            [
+              13.351797893885557,
+              49.72626715280545
+            ],
+            [
+              13.351760056925846,
+              49.72624540049505
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "123",
+        "confidence": 0.8154399991035461,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "122",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351780980535397,
+              49.72622417818982
+            ],
+            [
+              13.351766456435392,
+              49.72623540599501
+            ],
+            [
+              13.351776022307913,
+              49.72624057689481
+            ],
+            [
+              13.35179054640792,
+              49.726229349089614
+            ],
+            [
+              13.351780980535397,
+              49.72622417818982
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "122",
+        "confidence": 0.6852462291717529,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "128",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351773781947779,
+              49.72623092920446
+            ],
+            [
+              13.351767594745573,
+              49.726235712199696
+            ],
+            [
+              13.351769330817444,
+              49.72623665064558
+            ],
+            [
+              13.351775518019648,
+              49.72623186765035
+            ],
+            [
+              13.351773781947779,
+              49.72623092920446
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "128",
+        "confidence": 0.5750896334648132,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "122",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351774227234372,
+              49.72616385914644
+            ],
+            [
+              13.351715059530791,
+              49.72620972619915
+            ],
+            [
+              13.351919245620897,
+              49.72631979321793
+            ],
+            [
+              13.35197841332448,
+              49.72627392616522
+            ],
+            [
+              13.351774227234372,
+              49.72616385914644
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "122",
+        "confidence": 0.35297971963882446,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "134",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351846522039574,
+              49.72624476583021
+            ],
+            [
+              13.351841127526573,
+              49.72624894767938
+            ],
+            [
+              13.351845299108183,
+              49.7262511963808
+            ],
+            [
+              13.351850693621182,
+              49.72624701453163
+            ],
+            [
+              13.351846522039574,
+              49.72624476583021
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "134",
+        "confidence": 0.5114892721176147,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "139",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351842300700545,
+              49.72623221343835
+            ],
+            [
+              13.35183613335866,
+              49.72623644612038
+            ],
+            [
+              13.351852394390443,
+              49.72624634708821
+            ],
+            [
+              13.35185856173233,
+              49.72624211440617
+            ],
+            [
+              13.351842300700545,
+              49.72623221343835
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "139",
+        "confidence": 0.62183678150177,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "121",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35177555817503,
+              49.72618940272738
+            ],
+            [
+              13.351733547664034,
+              49.726218234781534
+            ],
+            [
+              13.35183437978594,
+              49.726279629138766
+            ],
+            [
+              13.351876390296935,
+              49.72625079708462
+            ],
+            [
+              13.35177555817503,
+              49.72618940272738
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "121",
+        "confidence": 0.38419362902641296,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "142",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351757203805551,
+              49.726230913850536
+            ],
+            [
+              13.35173351038018,
+              49.726247174783985
+            ],
+            [
+              13.351734521956134,
+              49.72624779070929
+            ],
+            [
+              13.351758215381505,
+              49.726231529775845
+            ],
+            [
+              13.351757203805551,
+              49.726230913850536
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Window",
+        "id": "142",
+        "confidence": 0.6339767575263977,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#b0c4de",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#b0c4de",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#b0c4de",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "153",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351858590563436,
+              49.72624377984385
+            ],
+            [
+              13.351846317020875,
+              49.726256691034216
+            ],
+            [
+              13.351864797198832,
+              49.7262640320637
+            ],
+            [
+              13.351877070741393,
+              49.726251120873336
+            ],
+            [
+              13.351858590563436,
+              49.72624377984385
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "153",
+        "confidence": 0.7247002124786377,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "154",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351867284165088,
+              49.72625912646246
+            ],
+            [
+              13.351866556606806,
+              49.7262598918196
+            ],
+            [
+              13.351867740576417,
+              49.72626036213735
+            ],
+            [
+              13.351868468134699,
+              49.72625959678021
+            ],
+            [
+              13.351867284165088,
+              49.72625912646246
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "154",
+        "confidence": 0.3675417900085449,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "169",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351909525131619,
+              49.72626618864011
+            ],
+            [
+              13.351912818624815,
+              49.72625676421263
+            ],
+            [
+              13.351897916844692,
+              49.72625458807121
+            ],
+            [
+              13.351894623351496,
+              49.72626401249869
+            ],
+            [
+              13.351909525131619,
+              49.72626618864011
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "169",
+        "confidence": 0.48650065064430237,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "175",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351896617491619,
+              49.726282124271364
+            ],
+            [
+              13.351912568013944,
+              49.72627635583304
+            ],
+            [
+              13.351902493687565,
+              49.72626471511302
+            ],
+            [
+              13.35188654316524,
+              49.72627048355134
+            ],
+            [
+              13.351896617491619,
+              49.726282124271364
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "175",
+        "confidence": 0.9520933628082275,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "175",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35186407265055,
+              49.72627986269119
+            ],
+            [
+              13.351881835104432,
+              49.726284628181524
+            ],
+            [
+              13.351888394094907,
+              49.7262744122131
+            ],
+            [
+              13.351870631641024,
+              49.72626964672277
+            ],
+            [
+              13.35186407265055,
+              49.72627986269119
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "175",
+        "confidence": 0.4176506996154785,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "181",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351635856721956,
+              49.72621377463738
+            ],
+            [
+              13.351685635783177,
+              49.72622790028931
+            ],
+            [
+              13.351709313332373,
+              49.72619303268407
+            ],
+            [
+              13.351659534271151,
+              49.72617890703214
+            ],
+            [
+              13.351635856721956,
+              49.72621377463738
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "181",
+        "confidence": 0.6312660574913025,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "183",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35162256829642,
+              49.72620588603686
+            ],
+            [
+              13.351681254606989,
+              49.72622253927168
+            ],
+            [
+              13.351705346211164,
+              49.72618706192828
+            ],
+            [
+              13.351646659900595,
+              49.72617040869345
+            ],
+            [
+              13.35162256829642,
+              49.72620588603686
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "183",
+        "confidence": 0.6782809495925903,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "178",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351649491935783,
+              49.72619753587882
+            ],
+            [
+              13.351672516145696,
+              49.726203042014724
+            ],
+            [
+              13.351679934431864,
+              49.72619007952088
+            ],
+            [
+              13.351656910221951,
+              49.72618457338498
+            ],
+            [
+              13.351649491935783,
+              49.72619753587882
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "178",
+        "confidence": 0.3920253813266754,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "187",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35166813309751,
+              49.72619738588548
+            ],
+            [
+              13.351676323896838,
+              49.72620058051833
+            ],
+            [
+              13.3516842693002,
+              49.72619206779629
+            ],
+            [
+              13.351676078500873,
+              49.72618887316343
+            ],
+            [
+              13.35166813309751,
+              49.72619738588548
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "187",
+        "confidence": 0.46042537689208984,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "188",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351652335876278,
+              49.72619262519533
+            ],
+            [
+              13.351669839865236,
+              49.72619945222356
+            ],
+            [
+              13.351678478872328,
+              49.726190196373004
+            ],
+            [
+              13.35166097488337,
+              49.726183369344774
+            ],
+            [
+              13.351652335876278,
+              49.72619262519533
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Dry grass",
+        "id": "188",
+        "confidence": 0.7884435653686523,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#bdb76b",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#bdb76b",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#bdb76b",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "188",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351663025868602,
+              49.726193182025206
+            ],
+            [
+              13.351674147326003,
+              49.726194925672296
+            ],
+            [
+              13.35167633947347,
+              49.72618908288537
+            ],
+            [
+              13.351665218016068,
+              49.72618733923827
+            ],
+            [
+              13.351663025868602,
+              49.726193182025206
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "188",
+        "confidence": 0.4253073036670685,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "189",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351672033618149,
+              49.72619359821917
+            ],
+            [
+              13.35168413320419,
+              49.72619549521947
+            ],
+            [
+              13.351687062713266,
+              49.726187687123705
+            ],
+            [
+              13.351674963127225,
+              49.7261857901234
+            ],
+            [
+              13.351672033618149,
+              49.72619359821917
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "189",
+        "confidence": 0.42053312063217163,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "189",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351670331435324,
+              49.726198247467
+            ],
+            [
+              13.351682400298554,
+              49.72620108638308
+            ],
+            [
+              13.351689330687948,
+              49.72618877466618
+            ],
+            [
+              13.351677261824717,
+              49.72618593575011
+            ],
+            [
+              13.351670331435324,
+              49.726198247467
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "189",
+        "confidence": 0.8883528113365173,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "189",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351650343718315,
+              49.72617629082513
+            ],
+            [
+              13.351649351039448,
+              49.72618802824856
+            ],
+            [
+              13.351664987475786,
+              49.726188580861375
+            ],
+            [
+              13.351665980154653,
+              49.72617684343795
+            ],
+            [
+              13.351650343718315,
+              49.72617629082513
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "189",
+        "confidence": 0.5087700486183167,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "189",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35156205970519,
+              49.725930363452214
+            ],
+            [
+              13.351556229469576,
+              49.72593907447981
+            ],
+            [
+              13.351571318053391,
+              49.725943294478995
+            ],
+            [
+              13.351577148289003,
+              49.7259345834514
+            ],
+            [
+              13.35156205970519,
+              49.725930363452214
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "189",
+        "confidence": 0.6203885078430176,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "199",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351561758368039,
+              49.72592863205761
+            ],
+            [
+              13.3515543483623,
+              49.72593807807085
+            ],
+            [
+              13.351569222565072,
+              49.72594295392676
+            ],
+            [
+              13.35157663257081,
+              49.725933507913524
+            ],
+            [
+              13.351561758368039,
+              49.72592863205761
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "199",
+        "confidence": 0.4572676122188568,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "198",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351568226370235,
+              49.72591806282231
+            ],
+            [
+              13.351557365936952,
+              49.72593190731854
+            ],
+            [
+              13.351573272428865,
+              49.72593712156524
+            ],
+            [
+              13.351584132862149,
+              49.72592327706901
+            ],
+            [
+              13.351568226370235,
+              49.72591806282231
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "198",
+        "confidence": 0.5801053643226624,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "199",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351561125661487,
+              49.72593285817259
+            ],
+            [
+              13.351557405348034,
+              49.7259373692852
+            ],
+            [
+              13.351568211167152,
+              49.72594109320852
+            ],
+            [
+              13.351571931480605,
+              49.72593658209591
+            ],
+            [
+              13.351561125661487,
+              49.72593285817259
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "199",
+        "confidence": 0.5880863070487976,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "199",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351577627743177,
+              49.72592555523421
+            ],
+            [
+              13.35156832274034,
+              49.72592947748402
+            ],
+            [
+              13.351575300715544,
+              49.72593639512235
+            ],
+            [
+              13.35158460571838,
+              49.72593247287254
+            ],
+            [
+              13.351577627743177,
+              49.72592555523421
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "199",
+        "confidence": 0.4918272793292999,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "199",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351592623445438,
+              49.72591814378299
+            ],
+            [
+              13.35157943852139,
+              49.72591739268454
+            ],
+            [
+              13.351578063194374,
+              49.72592748135443
+            ],
+            [
+              13.35159124811842,
+              49.72592823245288
+            ],
+            [
+              13.351592623445438,
+              49.72591814378299
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "199",
+        "confidence": 0.4078066051006317,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "199",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351586531822512,
+              49.72591873046626
+            ],
+            [
+              13.351578660684059,
+              49.725919470907314
+            ],
+            [
+              13.351581795563336,
+              49.725933396543724
+            ],
+            [
+              13.351589666701791,
+              49.725932656102664
+            ],
+            [
+              13.351586531822512,
+              49.72591873046626
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "199",
+        "confidence": 0.3546481430530548,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "205",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351604294126385,
+              49.72591760288539
+            ],
+            [
+              13.351590813277307,
+              49.72591887103411
+            ],
+            [
+              13.351593248546045,
+              49.725929688888314
+            ],
+            [
+              13.351606729395124,
+              49.7259284207396
+            ],
+            [
+              13.351604294126385,
+              49.72591760288539
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "205",
+        "confidence": 0.7484471201896667,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "199",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352230342555805,
+              49.72620361140322
+            ],
+            [
+              13.352218161328647,
+              49.72619821387529
+            ],
+            [
+              13.352210059073624,
+              49.72620585485813
+            ],
+            [
+              13.352222240300781,
+              49.72621125238605
+            ],
+            [
+              13.352230342555805,
+              49.72620361140322
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "199",
+        "confidence": 0.6554053425788879,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "199",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352233773806699,
+              49.726203295424
+            ],
+            [
+              13.352218393068624,
+              49.7261962080421
+            ],
+            [
+              13.352207775970502,
+              49.72620583622526
+            ],
+            [
+              13.352223156708577,
+              49.72621292360716
+            ],
+            [
+              13.352233773806699,
+              49.726203295424
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "199",
+        "confidence": 0.7953463196754456,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "206",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352243378862497,
+              49.72620901976656
+            ],
+            [
+              13.352228321166073,
+              49.72620208124094
+            ],
+            [
+              13.352218905953091,
+              49.7262106194869
+            ],
+            [
+              13.352233963649514,
+              49.72621755801251
+            ],
+            [
+              13.352243378862497,
+              49.72620901976656
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "206",
+        "confidence": 0.7308725118637085,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "207",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352230581492892,
+              49.72620482331524
+            ],
+            [
+              13.352215967258733,
+              49.726199136517245
+            ],
+            [
+              13.352209391184916,
+              49.72620619842614
+            ],
+            [
+              13.352224005419075,
+              49.72621188522414
+            ],
+            [
+              13.352230581492892,
+              49.72620482331524
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "207",
+        "confidence": 0.7675161957740784,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "207",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352244674005636,
+              49.7262179637447
+            ],
+            [
+              13.352240995583575,
+              49.72620575870659
+            ],
+            [
+              13.352225443068749,
+              49.72620771741692
+            ],
+            [
+              13.35222912149081,
+              49.72621992245504
+            ],
+            [
+              13.352244674005636,
+              49.7262179637447
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "207",
+        "confidence": 0.8918375372886658,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "210",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35224781653919,
+              49.726226367458274
+            ],
+            [
+              13.352243120577493,
+              49.72621078621432
+            ],
+            [
+              13.352227381352613,
+              49.72621276843923
+            ],
+            [
+              13.35223207731431,
+              49.72622834968318
+            ],
+            [
+              13.35224781653919,
+              49.726226367458274
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "210",
+        "confidence": 0.5224910378456116,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "207",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352120954156218,
+              49.72632987976724
+            ],
+            [
+              13.35212091601201,
+              49.72632096657466
+            ],
+            [
+              13.352107092511034,
+              49.726320991295346
+            ],
+            [
+              13.352107130655241,
+              49.726329904487926
+            ],
+            [
+              13.352120954156218,
+              49.72632987976724
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "207",
+        "confidence": 0.7711543440818787,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "212",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351961900679825,
+              49.72631209935238
+            ],
+            [
+              13.351960449361057,
+              49.726304499122975
+            ],
+            [
+              13.35194585492281,
+              49.72630566370656
+            ],
+            [
+              13.351947306241579,
+              49.726313263935964
+            ],
+            [
+              13.351961900679825,
+              49.72631209935238
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "212",
+        "confidence": 0.3707617521286011,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    }
+  ]
+}

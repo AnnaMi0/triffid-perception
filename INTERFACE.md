@@ -23,6 +23,7 @@ This document defines every published and consumed interface of the TRIFFID UGV 
 8. [Category Mapping](#8-category-mapping)
 9. [Coordinate Conventions](#9-coordinate-conventions)
 10. [QoS Profiles](#10-qos-profiles)
+11. [Current Limitations](#11-current-limitations)
 
 ---
 
@@ -377,6 +378,20 @@ Units: **metres**.
 | CameraInfo | BEST_EFFORT | VOLATILE | KEEP_LAST | 5 |
 | `/fix` (GPS) | BEST_EFFORT | VOLATILE | KEEP_LAST | 10 |
 | `/tf_static` | RELIABLE | TRANSIENT_LOCAL | KEEP_ALL | — |
+
+---
+
+## 11. Current Limitations
+
+| # | Limitation | Impact | Mitigation / Notes |
+|---|---|---|---|
+| 1 | **No heading-to-North correction** | GeoJSON polygon corners are in the robot body frame, not aligned to true East/North. Polygons appear rotated on a map by the robot's heading. | `/dog_odom` contains magnetometer-fused yaw (~109° at start in this dataset). Integration is planned but not yet implemented. GPS Point centres are unaffected. |
+| 2 | **`/heading` topic is empty** | The dedicated heading topic (`QuaternionStamped`) publishes 0 messages in the current rosbag. | Fall back to `/dog_odom` orientation quaternion (124k+ msgs, ~500 Hz). |
+| 3 | **`bbox.size` may be (0,0,0)** | When depth evidence is insufficient (e.g. object too far, depth shadow), the 3D extent cannot be computed. GeoJSON falls back to Point geometry. | Back-projection fallback (`_bbox_to_3d_corners`) reduces frequency but does not eliminate it. |
+| 4 | **Equirectangular GPS projection** | Local-to-GPS conversion assumes flat Earth. Accuracy degrades beyond ~1 km from the GPS origin. | Acceptable for UGV operational range (<500 m). |
+| 5 | **No multi-camera fusion** | Only the front camera (`/camera_front`) is processed. Back camera data is available but unused. | Pipeline architecture supports adding a back-camera node in the future. |
+| 6 | **Segmentation is 2D only** | The mono8 label map has no depth; it is a per-pixel class label in image space. | 3D information is available in `Detection3DArray` for the same objects. |
+| 7 | **Single GPU required** | YOLO inference requires an NVIDIA GPU with ≥4 GB VRAM inside the Docker container (`nvidia-container-toolkit`). | No CPU fallback is provided. |
 
 ---
 
