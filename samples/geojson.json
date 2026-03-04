@@ -1,0 +1,60 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "1",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.352236217759598,
+              49.72681223180838,
+              321.30274787314227
+            ],
+            [
+              13.352268834630996,
+              49.726820559367106,
+              321.30274787314227
+            ],
+            [
+              13.35227036607377,
+              49.72681805283922,
+              321.30274787314227
+            ],
+            [
+              13.352237749202372,
+              49.72680972528049,
+              321.30274787314227
+            ],
+            [
+              13.352236217759598,
+              49.72681223180838,
+              321.30274787314227
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "1",
+        "confidence": 0.9268906712532043,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "altitude_m": 321.3,
+        "height_m": 1.4,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    }
+  ]
+}

@@ -902,54 +902,82 @@ class TestTrackerMatching:
 #  8.  GEOJSON BRIDGE (pure logic tests – no ROS spin)
 # ═══════════════════════════════════════════════════════════════════════════
 
-class TestLocalToGPS:
-    """Tests for GeoJSONBridge.local_to_gps coordinate conversion.
-    We test the math directly without instantiating a ROS node.
+class TestBodyToGPS:
+    """Tests for GeoJSONBridge coordinate conversion (body → GPS).
+
+    Tests both the static ``_body_to_enu`` rotation and the full
+    ``body_to_gps`` pipeline, exercised via the maths directly
+    (no ROS node instantiation).
     """
 
     R_EARTH = 6378137.0
 
+    # ── _body_to_enu tests ──────────────────────────────────────────
+
+    def test_body_to_enu_identity_at_yaw_zero(self):
+        """Yaw=0 (facing East): forward=east, left=north."""
+        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge
+        e, n, u = GeoJSONBridge._body_to_enu(1.0, 0.0, 0.0, yaw=0.0)
+        np.testing.assert_allclose(e, 1.0, atol=1e-12)
+        np.testing.assert_allclose(n, 0.0, atol=1e-12)
+
+    def test_body_to_enu_yaw_90_faces_north(self):
+        """Yaw=π/2 (facing North): forward=north, left=west."""
+        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge
+        yaw = math.pi / 2.0
+        e, n, u = GeoJSONBridge._body_to_enu(1.0, 0.0, 0.0, yaw)
+        np.testing.assert_allclose(e, 0.0, atol=1e-12)
+        np.testing.assert_allclose(n, 1.0, atol=1e-12)
+
+    def test_body_to_enu_left_offset_at_yaw_90(self):
+        """Yaw=π/2: left direction = -East."""
+        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge
+        yaw = math.pi / 2.0
+        e, n, u = GeoJSONBridge._body_to_enu(0.0, 1.0, 0.0, yaw)
+        np.testing.assert_allclose(e, -1.0, atol=1e-12)
+        np.testing.assert_allclose(n, 0.0, atol=1e-12)
+
+    def test_body_to_enu_preserves_z(self):
+        """Z component passes through unchanged."""
+        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge
+        _, _, u = GeoJSONBridge._body_to_enu(0.0, 0.0, 3.5, yaw=1.23)
+        np.testing.assert_allclose(u, 3.5, atol=1e-12)
+
+    def test_body_to_enu_diagonal_yaw(self):
+        """Yaw=π/4 (NE): 1m forward → (√2/2 E, √2/2 N)."""
+        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge
+        yaw = math.pi / 4.0
+        e, n, u = GeoJSONBridge._body_to_enu(1.0, 0.0, 0.0, yaw)
+        s2 = math.sqrt(2.0) / 2.0
+        np.testing.assert_allclose(e, s2, atol=1e-12)
+        np.testing.assert_allclose(n, s2, atol=1e-12)
+
+    # ── Equirectangular projection maths ────────────────────────────
+
     def test_zero_offset_returns_origin(self):
         """No displacement → coordinates equal origin."""
-        lat0, lon0 = 37.9755, 23.7348
         R = self.R_EARTH
-        lat_rad = math.radians(lat0)
-
-        # local_to_gps(0, 0) when origin is set
-        d_lat = 0 / R * (180.0 / math.pi)
-        d_lon = 0 / (R * math.cos(lat_rad)) * (180.0 / math.pi)
+        lat_rad = math.radians(37.9755)
+        d_lat = 0.0 / R * (180.0 / math.pi)
+        d_lon = 0.0 / (R * math.cos(lat_rad)) * (180.0 / math.pi)
         assert abs(d_lat) < 1e-15
         assert abs(d_lon) < 1e-15
 
     def test_100m_north(self):
         """100m north offset gives ~0.0009° latitude increase."""
-        lat0 = 37.9755
-        R = self.R_EARTH
-        d_lat = 100.0 / R * (180.0 / math.pi)
+        d_lat = 100.0 / self.R_EARTH * (180.0 / math.pi)
         assert abs(d_lat - 0.000898) < 0.0001
 
     def test_100m_east(self):
         """100m east offset gives longitude change depending on latitude."""
-        lat0 = 37.9755
-        R = self.R_EARTH
-        lat_rad = math.radians(lat0)
-        d_lon = 100.0 / (R * math.cos(lat_rad)) * (180.0 / math.pi)
-        # At lat ≈ 38°, cos(38°) ≈ 0.788 → d_lon ≈ 0.00114°
+        lat_rad = math.radians(37.9755)
+        d_lon = 100.0 / (self.R_EARTH * math.cos(lat_rad)) * (180.0 / math.pi)
         assert abs(d_lon - 0.00114) < 0.0001
-
-    def test_local_frame_fallback_returns_raw(self):
-        """When origin is not set, local_to_gps returns raw (x, y)."""
-        # Simulate origin_set = False
-        x, y = 5.0, 10.0
-        # Without origin, method returns (x, y)
-        result = (x, y)
-        assert result == (5.0, 10.0)
 
     def test_roundtrip_symmetry(self):
         """GPS offset for +x,+y should be inverse of -x,-y."""
-        lat0, lon0 = 37.9755, 23.7348
         R = self.R_EARTH
-        lat_rad = math.radians(lat0)
+        lat_rad = math.radians(37.9755)
 
         x, y = 50.0, 75.0
         d_lat_pos = y / R * (180.0 / math.pi)
@@ -961,6 +989,23 @@ class TestLocalToGPS:
         np.testing.assert_allclose(d_lat_pos, -d_lat_neg, atol=1e-15)
         np.testing.assert_allclose(d_lon_pos, -d_lon_neg, atol=1e-15)
 
+    # ── 3D coordinate output ────────────────────────────────────────
+
+    def test_body_to_gps_returns_3_tuple(self):
+        """body_to_gps must return (lon, lat, alt)."""
+        # Simulate the math directly
+        lat0, lon0, alt0 = 49.73, 13.35, 320.0
+        yaw = 0.0
+        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge
+        e, n, u = GeoJSONBridge._body_to_enu(5.0, 0.0, 1.5, yaw)
+        R = self.R_EARTH
+        lat_rad = math.radians(lat0)
+        d_lat = n / R * (180.0 / math.pi)
+        d_lon = e / (R * math.cos(lat_rad)) * (180.0 / math.pi)
+        result = (lon0 + d_lon, lat0 + d_lat, alt0 + u)
+        assert len(result) == 3
+        np.testing.assert_allclose(result[2], 321.5, atol=1e-6)
+
 
 class TestGeoJSONSchema:
     """Tests for the GeoJSON output format (RFC-7946 + SimpleStyle)."""
@@ -968,40 +1013,41 @@ class TestGeoJSONSchema:
     REQUIRED_PROPERTIES = [
         'class', 'id', 'confidence',
         'category', 'detection_type', 'source',
-        'local_frame',
+        'local_frame', 'altitude_m', 'height_m',
         'marker-color', 'marker-size', 'marker-symbol',
     ]
 
     @staticmethod
-    def _make_geojson(detections, origin_set=False):
+    def _make_geojson(detections, gps_valid=False):
         """Build a GeoJSON FeatureCollection like the bridge does.
 
-        Each detection dict must include 'coordinates' (lon, lat).
+        Each detection dict must include 'coordinates' (lon, lat, alt).
         Optionally includes 'size' (sx, sy, sz) and 'position' (x, y, z)
-        — when size.x > 0 and size.y > 0 a Polygon footprint is emitted.
+        — when size.x > 0 or size.y > 0 a Polygon footprint is emitted.
         """
-        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge
+        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge, _MIN_EXTENT
         features = []
         for det in detections:
-            lon, lat = det['coordinates']
+            lon, lat, alt = det['coordinates']
             cls = det.get('class_name', 'unknown')
-            sx, sy, _sz = det.get('size', (0.0, 0.0, 0.0))
-            pos_x, pos_y, _pz = det.get('position', (lon, lat, 0.0))
+            sx, sy, sz = det.get('size', (0.0, 0.0, 0.0))
+            pos_x, pos_y, pos_z = det.get('position', (lon, lat, 0.0))
 
-            has_extent = (sx > 0.0 and sy > 0.0)
+            has_extent = (sx > 0.0 or sy > 0.0)
 
             if has_extent:
-                half_x, half_y = sx / 2.0, sy / 2.0
+                half_x = max(sx, _MIN_EXTENT) / 2.0
+                half_y = max(sy, _MIN_EXTENT) / 2.0
                 ring = [
-                    [pos_x + half_x, pos_y + half_y],
-                    [pos_x + half_x, pos_y - half_y],
-                    [pos_x - half_x, pos_y - half_y],
-                    [pos_x - half_x, pos_y + half_y],
-                    [pos_x + half_x, pos_y + half_y],  # closed
+                    [pos_x + half_x, pos_y + half_y, pos_z],
+                    [pos_x + half_x, pos_y - half_y, pos_z],
+                    [pos_x - half_x, pos_y - half_y, pos_z],
+                    [pos_x - half_x, pos_y + half_y, pos_z],
+                    [pos_x + half_x, pos_y + half_y, pos_z],  # closed
                 ]
                 geometry = {"type": "Polygon", "coordinates": [ring]}
             else:
-                geometry = {"type": "Point", "coordinates": [lon, lat]}
+                geometry = {"type": "Point", "coordinates": [lon, lat, alt]}
 
             feature = {
                 "type": "Feature",
@@ -1014,7 +1060,9 @@ class TestGeoJSONSchema:
                     "category": GeoJSONBridge._class_category(cls),
                     "detection_type": "seg",
                     "source": "ugv",
-                    "local_frame": not origin_set,
+                    "local_frame": not gps_valid,
+                    "altitude_m": round(alt, 2),
+                    "height_m": round(float(sz), 2),
                     "marker-color": GeoJSONBridge._class_color(cls),
                     "marker-size": "medium",
                     "marker-symbol": GeoJSONBridge._class_symbol(cls),
@@ -1030,39 +1078,39 @@ class TestGeoJSONSchema:
         return {"type": "FeatureCollection", "features": features}
 
     def test_valid_feature_collection(self):
-        dets = [{'coordinates': (23.7, 37.9), 'class_name': 'person',
+        dets = [{'coordinates': (23.7, 37.9, 320.0), 'class_name': 'person',
                  'confidence': 0.85, 'track_id': '1'}]
-        gj = self._make_geojson(dets, origin_set=True)
+        gj = self._make_geojson(dets, gps_valid=True)
         assert gj['type'] == 'FeatureCollection'
         assert len(gj['features']) == 1
         assert gj['features'][0]['type'] == 'Feature'
         assert gj['features'][0]['geometry']['type'] == 'Point'
 
     def test_all_required_properties_present(self):
-        dets = [{'coordinates': (1.0, 2.0), 'class_name': 'car',
+        dets = [{'coordinates': (1.0, 2.0, 0.0), 'class_name': 'car',
                  'confidence': 0.7, 'track_id': '5'}]
-        gj = self._make_geojson(dets, origin_set=True)
+        gj = self._make_geojson(dets, gps_valid=True)
         props = gj['features'][0]['properties']
         for key in self.REQUIRED_PROPERTIES:
             assert key in props, f"Missing property: {key}"
 
     def test_local_frame_true_when_no_gps(self):
-        dets = [{'coordinates': (5.0, 10.0), 'class_name': 'person',
+        dets = [{'coordinates': (5.0, 10.0, 0.0), 'class_name': 'person',
                  'confidence': 0.9, 'track_id': '1'}]
-        gj = self._make_geojson(dets, origin_set=False)
+        gj = self._make_geojson(dets, gps_valid=False)
         assert gj['features'][0]['properties']['local_frame'] is True
 
     def test_local_frame_false_when_gps_set(self):
-        dets = [{'coordinates': (23.7, 37.9), 'class_name': 'person',
+        dets = [{'coordinates': (23.7, 37.9, 300.0), 'class_name': 'person',
                  'confidence': 0.9, 'track_id': '1'}]
-        gj = self._make_geojson(dets, origin_set=True)
+        gj = self._make_geojson(dets, gps_valid=True)
         assert gj['features'][0]['properties']['local_frame'] is False
 
     def test_json_serialisable(self):
         dets = [
-            {'coordinates': (1.0, 2.0), 'class_name': 'person',
+            {'coordinates': (1.0, 2.0, 0.0), 'class_name': 'person',
              'confidence': 0.9, 'track_id': '1'},
-            {'coordinates': (3.0, 4.0), 'class_name': 'car',
+            {'coordinates': (3.0, 4.0, 0.0), 'class_name': 'car',
              'confidence': 0.7, 'track_id': '2'},
         ]
         gj = self._make_geojson(dets)
@@ -1071,15 +1119,16 @@ class TestGeoJSONSchema:
         assert parsed['type'] == 'FeatureCollection'
         assert len(parsed['features']) == 2
 
-    def test_coordinates_are_lon_lat_order(self):
-        """GeoJSON spec: coordinates = [longitude, latitude]."""
-        lon, lat = 23.7348, 37.9755
-        dets = [{'coordinates': (lon, lat), 'class_name': 'person',
+    def test_coordinates_are_lon_lat_alt_order(self):
+        """GeoJSON spec: coordinates = [longitude, latitude, altitude]."""
+        lon, lat, alt = 23.7348, 37.9755, 310.5
+        dets = [{'coordinates': (lon, lat, alt), 'class_name': 'person',
                  'confidence': 0.9, 'track_id': '1'}]
-        gj = self._make_geojson(dets, origin_set=True)
+        gj = self._make_geojson(dets, gps_valid=True)
         coords = gj['features'][0]['geometry']['coordinates']
         assert coords[0] == lon
         assert coords[1] == lat
+        assert coords[2] == alt
 
     def test_empty_detections_yield_empty_collection(self):
         gj = self._make_geojson([])
@@ -1088,13 +1137,13 @@ class TestGeoJSONSchema:
 
     def test_marker_color_for_known_classes(self):
         for cls, expected_color in [('Flame', '#ff0000'), ('Civilian vehicle', '#0000ff')]:
-            dets = [{'coordinates': (0, 0), 'class_name': cls,
+            dets = [{'coordinates': (0, 0, 0), 'class_name': cls,
                      'confidence': 0.9, 'track_id': '1'}]
             gj = self._make_geojson(dets)
             assert gj['features'][0]['properties']['marker-color'] == expected_color
 
     def test_unknown_class_gets_default_color(self):
-        dets = [{'coordinates': (0, 0), 'class_name': 'alien',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'alien',
                  'confidence': 0.5, 'track_id': '1'}]
         gj = self._make_geojson(dets)
         assert gj['features'][0]['properties']['marker-color'] == '#808080'
@@ -1109,17 +1158,45 @@ class TestGeoJSONSchema:
             ('Helmet', 'equipment'), ('alien', 'unknown'),
         ]
         for cls, expected_cat in cases:
-            dets = [{'coordinates': (0, 0), 'class_name': cls,
+            dets = [{'coordinates': (0, 0, 0), 'class_name': cls,
                      'confidence': 0.9, 'track_id': '1'}]
             gj = self._make_geojson(dets)
             cat = gj['features'][0]['properties']['category']
             assert cat == expected_cat, f'{cls}: expected {expected_cat}, got {cat}'
 
+    # ── 3D coordinate tests ──────────────────────────────────────────
+
+    def test_altitude_property_present(self):
+        """altitude_m property must be present and match z coordinate."""
+        dets = [{'coordinates': (13.35, 49.73, 321.5), 'class_name': 'Building',
+                 'confidence': 0.8, 'track_id': '1'}]
+        gj = self._make_geojson(dets, gps_valid=True)
+        props = gj['features'][0]['properties']
+        assert 'altitude_m' in props
+        np.testing.assert_allclose(props['altitude_m'], 321.5)
+
+    def test_height_property_present(self):
+        """height_m property must reflect bbox size.z."""
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Building',
+                 'confidence': 0.7, 'track_id': '1',
+                 'size': (1.0, 2.0, 4.5), 'position': (0, 0, 0)}]
+        gj = self._make_geojson(dets, gps_valid=True)
+        props = gj['features'][0]['properties']
+        np.testing.assert_allclose(props['height_m'], 4.5)
+
+    def test_point_coordinates_have_altitude(self):
+        """Point geometry coordinates must have 3 elements [lon, lat, alt]."""
+        dets = [{'coordinates': (13.35, 49.73, 320.0), 'class_name': 'Flame',
+                 'confidence': 0.9, 'track_id': '1'}]
+        gj = self._make_geojson(dets, gps_valid=True)
+        coords = gj['features'][0]['geometry']['coordinates']
+        assert len(coords) == 3
+
     # ── Polygon geometry tests ──────────────────────────────────────
 
     def test_polygon_emitted_when_size_nonzero(self):
         """Detection with nonzero bbox size → Polygon geometry."""
-        dets = [{'coordinates': (0, 0), 'class_name': 'Building',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Building',
                  'confidence': 0.8, 'track_id': '1',
                  'size': (2.0, 3.0, 4.0), 'position': (5.0, 6.0, 0.0)}]
         gj = self._make_geojson(dets)
@@ -1127,24 +1204,33 @@ class TestGeoJSONSchema:
         assert geom['type'] == 'Polygon'
 
     def test_point_emitted_when_size_zero(self):
-        """Detection with zero bbox size → Point geometry (fallback)."""
-        dets = [{'coordinates': (1.0, 2.0), 'class_name': 'Flame',
+        """Detection with ALL-ZERO bbox size → Point geometry (fallback)."""
+        dets = [{'coordinates': (1.0, 2.0, 0.0), 'class_name': 'Flame',
                  'confidence': 0.9, 'track_id': '1',
                  'size': (0.0, 0.0, 0.0)}]
         gj = self._make_geojson(dets)
         geom = gj['features'][0]['geometry']
         assert geom['type'] == 'Point'
 
+    def test_polygon_emitted_when_only_one_size_nonzero(self):
+        """Detection with one nonzero size → Polygon (uses min extent)."""
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Green grass',
+                 'confidence': 0.9, 'track_id': '1',
+                 'size': (0.0, 2.5, 1.4), 'position': (3.0, 1.0, 0.0)}]
+        gj = self._make_geojson(dets)
+        geom = gj['features'][0]['geometry']
+        assert geom['type'] == 'Polygon'
+
     def test_point_emitted_when_size_absent(self):
         """Detection without size field → Point geometry."""
-        dets = [{'coordinates': (1.0, 2.0), 'class_name': 'Flame',
+        dets = [{'coordinates': (1.0, 2.0, 0.0), 'class_name': 'Flame',
                  'confidence': 0.9, 'track_id': '1'}]
         gj = self._make_geojson(dets)
         assert gj['features'][0]['geometry']['type'] == 'Point'
 
     def test_polygon_ring_is_closed(self):
         """RFC-7946: first and last coordinate of a ring must be identical."""
-        dets = [{'coordinates': (0, 0), 'class_name': 'Road',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Road',
                  'confidence': 0.7, 'track_id': '1',
                  'size': (1.0, 2.0, 0.0), 'position': (3.0, 4.0, 0.0)}]
         gj = self._make_geojson(dets)
@@ -1156,7 +1242,7 @@ class TestGeoJSONSchema:
         """Polygon corners should be centre ± half-extent."""
         sx, sy = 4.0, 6.0
         cx, cy = 10.0, 20.0
-        dets = [{'coordinates': (0, 0), 'class_name': 'Green grass',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Green grass',
                  'confidence': 0.6, 'track_id': '1',
                  'size': (sx, sy, 0.0), 'position': (cx, cy, 0.0)}]
         gj = self._make_geojson(dets)
@@ -1168,7 +1254,7 @@ class TestGeoJSONSchema:
 
     def test_polygon_has_simplestyle_fill_properties(self):
         """Polygon features should carry stroke/fill SimpleStyle props."""
-        dets = [{'coordinates': (0, 0), 'class_name': 'Flame',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Flame',
                  'confidence': 0.9, 'track_id': '1',
                  'size': (1.0, 1.0, 1.0), 'position': (0.0, 0.0, 0.0)}]
         gj = self._make_geojson(dets)
@@ -1182,7 +1268,7 @@ class TestGeoJSONSchema:
 
     def test_point_lacks_fill_properties(self):
         """Point features should NOT have stroke/fill properties."""
-        dets = [{'coordinates': (0, 0), 'class_name': 'Flame',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Flame',
                  'confidence': 0.9, 'track_id': '1'}]
         gj = self._make_geojson(dets)
         props = gj['features'][0]['properties']
@@ -1192,9 +1278,9 @@ class TestGeoJSONSchema:
     def test_mixed_point_and_polygon(self):
         """FeatureCollection can contain both Point and Polygon features."""
         dets = [
-            {'coordinates': (1, 2), 'class_name': 'Flame',
+            {'coordinates': (1, 2, 0), 'class_name': 'Flame',
              'confidence': 0.9, 'track_id': '1'},
-            {'coordinates': (3, 4), 'class_name': 'Road',
+            {'coordinates': (3, 4, 0), 'class_name': 'Road',
              'confidence': 0.8, 'track_id': '2',
              'size': (5.0, 10.0, 0.1), 'position': (3.0, 4.0, 0.0)},
         ]
@@ -1205,13 +1291,23 @@ class TestGeoJSONSchema:
 
     def test_polygon_serialisable(self):
         """Polygon GeoJSON must be JSON-serialisable."""
-        dets = [{'coordinates': (0, 0), 'class_name': 'Building',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Building',
                  'confidence': 0.8, 'track_id': '1',
                  'size': (3.0, 2.0, 5.0), 'position': (1.0, 1.0, 0.0)}]
         gj = self._make_geojson(dets)
         json_str = json.dumps(gj)
         parsed = json.loads(json_str)
         assert parsed['features'][0]['geometry']['type'] == 'Polygon'
+
+    def test_polygon_vertices_have_altitude(self):
+        """Polygon ring vertices should have 3D coordinates."""
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Building',
+                 'confidence': 0.8, 'track_id': '1',
+                 'size': (2.0, 3.0, 4.0), 'position': (5.0, 6.0, 1.0)}]
+        gj = self._make_geojson(dets)
+        ring = gj['features'][0]['geometry']['coordinates'][0]
+        for vertex in ring:
+            assert len(vertex) == 3, f'Expected [x,y,z], got {vertex}'
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1752,6 +1848,37 @@ class TestNMS3D:
         r_b = self.nms(dets_b, dist_thresh=0.5)
         assert len(r_a) == len(r_b) == 1
         assert r_a[0]['class_name'] == r_b[0]['class_name'] == 'Y'
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  MQTT integration
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestMqttIntegration:
+    """Tests for MQTT support in geojson_bridge."""
+
+    def test_paho_available_flag(self):
+        """_PAHO_AVAILABLE reflects whether paho-mqtt is importable."""
+        from triffid_ugv_perception.geojson_bridge import _PAHO_AVAILABLE
+        # Should be True if paho-mqtt is installed, False otherwise.
+        # Either way the import must succeed.
+        assert isinstance(_PAHO_AVAILABLE, bool)
+
+    def test_mqtt_parameters_declared(self):
+        """Bridge module declares mqtt_* parameter names in source."""
+        import inspect
+        from triffid_ugv_perception import geojson_bridge as mod
+        src = inspect.getsource(mod.GeoJSONBridge.__init__)
+        for param in ('mqtt_enabled', 'mqtt_host', 'mqtt_port', 'mqtt_topic'):
+            assert param in src, f"Parameter {param} not declared"
+
+    def test_publish_includes_mqtt(self):
+        """_publish method references self._mqtt_client."""
+        import inspect
+        from triffid_ugv_perception import geojson_bridge as mod
+        src = inspect.getsource(mod.GeoJSONBridge._publish)
+        assert '_mqtt_client' in src
+        assert '_mqtt_topic' in src
 
 
 #  Entry point

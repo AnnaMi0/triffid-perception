@@ -91,7 +91,8 @@ The robot also publishes `/tf_static` with the full transform chain, `/dog_odom`
 | `/camera_front/realsense_front/depth/image_rect_raw` | `sensor_msgs/Image` | ~15 Hz | Depth image (16UC1, mm, 640×480) |
 | `/camera_front/realsense_front/depth/camera_info` | `sensor_msgs/CameraInfo` | ~15 Hz | Depth intrinsics matrix K |
 | `/tf`, `/tf_static` | `tf2_msgs/TFMessage` | — | Transform tree (see below) |
-| `/fix` | `sensor_msgs/NavSatFix` | ~1 Hz | GPS fix (optional, for GeoJSON GPS coords) |
+| `/fix` | `sensor_msgs/NavSatFix` | ~0.4 Hz | GPS fix (optional, for GeoJSON GPS coords) |
+| `/dog_odom` | `nav_msgs/Odometry` | ~500 Hz | Odometry with magnetometer-fused heading (optional, for GeoJSON heading rotation) |
 
 ### Published (Output)
 
@@ -195,10 +196,13 @@ The core pipeline node. Subscribes to RGB, depth, CameraInfo, and TF. Publishes 
 
 Converts `Detection3DArray` messages to GeoJSON (RFC 7946) for the TRIFFID mapping API.
 
-- If GPS origin is available (from `/fix` topic or parameters), converts local (x, y) to WGS-84 (lon, lat) using equirectangular approximation
-- If no GPS: emits raw local coordinates with `"local_frame": true` property
+- **GPS gating**: does not publish until at least one valid `/fix` message is received, preventing body-frame metre coordinates from appearing as lon/lat
+- If GPS origin is available (from `/fix` topic or parameters), converts local (x, y) to WGS-84 (lon, lat) using equirectangular approximation; GPS positions are median-filtered (window = 7)
+- If heading is available (from `/dog_odom`), rotates body-frame offsets by yaw (ENU) before GPS projection
+- Polygon geometry emitted when **either** `bbox.size.x > 0` or `bbox.size.y > 0`; the zero dimension is clamped to a minimum extent of 0.3 m. Point geometry only when **both** are zero.
+- **MQTT**: publishes compact JSON to a local Mosquitto broker (default `localhost:1883`, topic `triffid/front/geojson`). Enabled by default; disable with `mqtt_enabled:=false`.
 - Optionally PUTs to the TRIFFID API at `https://crispres.com/wp-json/map-manager/v1/features` (disabled by default)
-- Each detection becomes a GeoJSON Point Feature with SimpleStyle properties (`marker-color`, `marker-symbol`, etc.)
+- Each detection becomes a GeoJSON Feature with SimpleStyle properties (`marker-color`, `marker-symbol`, etc.)
 
 ---
 
@@ -224,6 +228,10 @@ All parameters are declared on `ugv_node` and configurable via the launch file:
 | `publish_to_api` | `false` | Enable HTTP PUT to the API |
 | `gps_origin_lat` | `0.0` | GPS origin latitude (or auto-set from `/fix`) |
 | `gps_origin_lon` | `0.0` | GPS origin longitude |
+| `mqtt_enabled` | `true` | Enable MQTT publishing to local broker |
+| `mqtt_host` | `localhost` | MQTT broker hostname |
+| `mqtt_port` | `1883` | MQTT broker port |
+| `mqtt_topic` | `triffid/front/geojson` | MQTT topic for GeoJSON output |
 
 ---
 
@@ -266,7 +274,7 @@ cd ~/hua_ws
 ./run.sh stop           # Stop everything
 ./run.sh restart        # Rebuild + restart
 ./run.sh logs           # Tail node logs
-./run.sh sample [SEC]   # Collect output samples (default: 15s)
+./run.sh sample [SEC]   # Collect output samples + merged GeoJSON (default: 15s)
 ./run.sh test           # Run integration test
 ./run.sh unit           # Run unit tests
 ./run.sh shell          # Open a bash shell in the container
@@ -274,6 +282,10 @@ cd ~/hua_ws
 ```
 
 Environment variables: `BAG_RATE` (default 1.0), `BAG_START` (offset sec), `YOLO_IMGSZ` (default 1280), `TIMEOUT` (test timeout).
+
+**Notes:**
+- `build` and `start` perform a clean build (`rm -rf build/* install/* log/*`) before `colcon build` to avoid stale artefact conflicts with bind-mounted directories.
+- `sample` saves single-frame snapshots of each output topic **and** a `geojson_merged.json` file that accumulates all GeoJSON detections over the sampling window, keeping only the highest-confidence observation per track ID. It also records an `mqtt_trace.jsonl` file with every MQTT GeoJSON message received during the window.
 
 ### Manual Quick Start
 
@@ -425,7 +437,7 @@ hua_ws/
         │   └── collect_samples.py        # Output sample collector
         └── test/
             ├── integration_test.py       # End-to-end integration test
-            └── test_unit.py              # 148 unit tests
+            └── test_unit.py              # 161 unit tests
 ```
 
 ---

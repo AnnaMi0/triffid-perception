@@ -34,6 +34,7 @@ TIMEOUT="${TIMEOUT:-30}"
 
 # Shared ROS env sourcing command (used inside docker exec)
 ROS_ENV="source /opt/ros/humble/setup.bash && source /ws/install/setup.bash && export ROS_DOMAIN_ID=42 && export CYCLONEDDS_URI=file:///ws/cyclonedds.xml"
+ROS_BUILD_ENV="source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=42 && export CYCLONEDDS_URI=file:///ws/cyclonedds.xml"
 
 # ── helpers ──────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ cmd_build() {
         docker compose up -d
         sleep 2
     fi
-    docker exec "$CONTAINER" bash -c "$ROS_ENV && cd /ws && colcon build --symlink-install"
+    docker exec "$CONTAINER" bash -c "cd /ws && rm -rf build/* install/* log/* && $ROS_BUILD_ENV && colcon build --symlink-install"
     echo "✓ Build complete."
 }
 
@@ -81,12 +82,17 @@ cmd_start() {
 
     # Build workspace (symlink-install so source edits take effect)
     echo "▸ Building workspace..."
-    docker exec "$CONTAINER" bash -c "$ROS_ENV && cd /ws && colcon build --symlink-install"
+    docker exec "$CONTAINER" bash -c "cd /ws && rm -rf build/* install/* log/* && $ROS_BUILD_ENV && colcon build --symlink-install"
 
     # Launch ugv_node
     echo "▸ Launching ugv_node (YOLO imgsz=$YOLO_IMGSZ)..."
     docker exec -d "$CONTAINER" bash -c "$ROS_ENV && ros2 run triffid_ugv_perception ugv_node \
         --ros-args -p yolo_model:=/ws/best.pt -p yolo_imgsz:=$YOLO_IMGSZ 2>&1 | tee /tmp/ugv.log"
+
+    # Start local MQTT broker (mosquitto)
+    echo "▸ Starting MQTT broker (mosquitto)..."
+    docker exec -d "$CONTAINER" bash -c "mosquitto -c /dev/null -p 1883 2>&1 | tee /tmp/mosquitto.log"
+    sleep 1
 
     # Launch geojson_bridge
     echo "▸ Launching geojson_bridge..."
@@ -113,6 +119,7 @@ cmd_stop() {
     _kill_inside "ros2.bag.play"
     _kill_inside "geojson_bridge"
     _kill_inside "ugv_node"
+    _kill_inside "mosquitto"
     sleep 1
     docker rm -f "$CONTAINER" 2>/dev/null || true
     echo "✓ Stopped."
@@ -200,6 +207,9 @@ cmd_logs() {
     echo ""
     echo "── bag player ──"
     docker exec "$CONTAINER" bash -c "tail -5 /tmp/bag.log 2>/dev/null" || echo "(no log)"
+    echo ""
+    echo "── mosquitto ──"
+    docker exec "$CONTAINER" bash -c "tail -5 /tmp/mosquitto.log 2>/dev/null" || echo "(no log)"
 }
 
 cmd_shell() {

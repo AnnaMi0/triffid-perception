@@ -12,6 +12,10 @@ Saves:
   - detections_3d.yaml                   (1 Detection3DArray message)
   - segmentation.png                     (1 semantic label map, mono8)
   - geojson.json                         (1 GeoJSON FeatureCollection)
+  - geojson_merged.json                  (all GeoJSON features merged,
+                                          deduplicated by track ID)
+  - mqtt_trace.jsonl                     (every MQTT GeoJSON message,
+                                          one JSON object per line)
 
 Exit: automatically stops after all samples are collected, or after --timeout.
 """
@@ -36,6 +40,12 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from vision_msgs.msg import Detection3DArray
 
+try:
+    import paho.mqtt.client as paho_mqtt
+    _PAHO_AVAILABLE = True
+except ImportError:
+    _PAHO_AVAILABLE = False
+
 OUTDIR = '/ws/samples'
 NUM_RGB_FRAMES = 5
 
@@ -53,6 +63,16 @@ class SampleCollector(Node):
         self.got_det = False
         self.got_seg = False
         self.got_geo = False
+
+        # Accumulate all GeoJSON features for the merged output.
+        # Keyed by track ID — keeps the highest-confidence version.
+        self._merged_features = {}   # id -> feature dict
+        self._geo_msg_count = 0
+
+        # MQTT trace capture
+        self._mqtt_trace_file = None     # opened lazily
+        self._mqtt_msg_count = 0
+        self._mqtt_client = None
 
         sensor_qos = QoSProfile(
             depth=10,
@@ -95,6 +115,47 @@ class SampleCollector(Node):
 
         self.get_logger().info(f'Sample collector started — saving to {outdir}')
 
+    def start_mqtt_trace(self, host='localhost', port=1883,
+                         topic='triffid/front/geojson'):
+        """Connect to local MQTT broker and record every message."""
+        if not _PAHO_AVAILABLE:
+            self.get_logger().warn('paho-mqtt not installed — MQTT trace disabled')
+            return
+        path = os.path.join(self.outdir, 'mqtt_trace.jsonl')
+        self._mqtt_trace_file = open(path, 'w')
+        self._mqtt_topic = topic
+
+        def on_connect(client, userdata, flags, rc, properties=None):
+            if rc == 0:
+                client.subscribe(topic, qos=0)
+                self.get_logger().info(f'MQTT connected — subscribed to {topic}')
+            else:
+                self.get_logger().warn(f'MQTT connect failed (rc={rc})')
+
+        def on_message(client, userdata, msg, properties=None):
+            try:
+                payload = msg.payload.decode('utf-8')
+                # Write one JSON object per line (JSONL)
+                self._mqtt_trace_file.write(payload + '\n')
+                self._mqtt_msg_count += 1
+            except Exception:
+                pass
+
+        self._mqtt_client = paho_mqtt.Client(
+            paho_mqtt.CallbackAPIVersion.VERSION2,
+            client_id='sample_mqtt_trace',
+        )
+        self._mqtt_client.on_connect = on_connect
+        self._mqtt_client.on_message = on_message
+        try:
+            self._mqtt_client.connect(host, port, keepalive=60)
+            self._mqtt_client.loop_start()
+        except Exception as e:
+            self.get_logger().warn(f'MQTT broker not reachable ({e}) — trace disabled')
+            self._mqtt_trace_file.close()
+            self._mqtt_trace_file = None
+            self._mqtt_client = None
+
     # ------------------------------------------------------------------
 
     def _cb_rgb(self, msg: Image):
@@ -111,6 +172,10 @@ class SampleCollector(Node):
 
     def _cb_det(self, msg: Detection3DArray):
         if self.got_det:
+            return
+        # Skip empty frames so the sample is meaningful and matches
+        # the GeoJSON output (which also skips empty frames).
+        if len(msg.detections) == 0:
             return
         path = os.path.join(self.outdir, 'detections_3d.yaml')
         lines = []
@@ -147,18 +212,27 @@ class SampleCollector(Node):
             self.get_logger().error(f'Seg save error: {e}')
 
     def _cb_geo(self, msg: String):
-        if self.got_geo:
-            return
-        path = os.path.join(self.outdir, 'geojson.json')
         try:
             data = json.loads(msg.data)
+        except json.JSONDecodeError:
+            return
+
+        # Accumulate features for the merged output
+        for feat in data.get('features', []):
+            fid = feat.get('id', '')
+            new_conf = feat.get('properties', {}).get('confidence', 0.0)
+            existing = self._merged_features.get(fid)
+            if existing is None or new_conf > existing.get('properties', {}).get('confidence', 0.0):
+                self._merged_features[fid] = feat
+        self._geo_msg_count += 1
+
+        # Save first non-empty message as the single-frame sample
+        if not self.got_geo:
+            path = os.path.join(self.outdir, 'geojson.json')
             with open(path, 'w') as f:
                 json.dump(data, f, indent=2)
-        except json.JSONDecodeError:
-            with open(path, 'w') as f:
-                f.write(msg.data)
-        self.get_logger().info(f'Saved GeoJSON → {path}')
-        self.got_geo = True
+            self.get_logger().info(f'Saved GeoJSON → {path}')
+            self.got_geo = True
 
     # ------------------------------------------------------------------
 
@@ -170,12 +244,43 @@ class SampleCollector(Node):
             and self.got_geo
         )
 
+    def save_merged_geojson(self):
+        """Write the accumulated merged GeoJSON to disk."""
+        path = os.path.join(self.outdir, 'geojson_merged.json')
+        merged = {
+            "type": "FeatureCollection",
+            "features": list(self._merged_features.values()),
+        }
+        with open(path, 'w') as f:
+            json.dump(merged, f, indent=2)
+        self.get_logger().info(
+            f'Saved merged GeoJSON → {path} '
+            f'({len(merged["features"])} unique features '
+            f'from {self._geo_msg_count} messages)'
+        )
+
+    def stop_mqtt_trace(self):
+        """Stop MQTT client and close trace file."""
+        if self._mqtt_client is not None:
+            self._mqtt_client.loop_stop()
+            self._mqtt_client.disconnect()
+            self._mqtt_client = None
+        if self._mqtt_trace_file is not None:
+            self._mqtt_trace_file.close()
+            path = os.path.join(self.outdir, 'mqtt_trace.jsonl')
+            self.get_logger().info(
+                f'Saved MQTT trace → {path} ({self._mqtt_msg_count} messages)'
+            )
+            self._mqtt_trace_file = None
+
     def status(self) -> str:
         parts = []
         parts.append(f'rgb={self.n_rgb_saved}/{self.n_rgb_target}')
         parts.append(f'det={"✓" if self.got_det else "…"}')
         parts.append(f'seg={"✓" if self.got_seg else "…"}')
         parts.append(f'geo={"✓" if self.got_geo else "…"}')
+        parts.append(f'merged={self._geo_msg_count}msgs/{len(self._merged_features)}obj')
+        parts.append(f'mqtt={self._mqtt_msg_count}')
         return '  '.join(parts)
 
 
@@ -190,9 +295,11 @@ def main():
 
     rclpy.init()
     node = SampleCollector(args.outdir, args.n_rgb)
+    node.start_mqtt_trace()  # connects to local broker (best-effort)
 
     t0 = time.monotonic()
     last_status = 0.0
+    samples_done = False
     try:
         while rclpy.ok():
             rclpy.spin_once(node, timeout_sec=0.1)
@@ -202,16 +309,24 @@ def main():
                 node.get_logger().info(f'[{elapsed:.0f}s] {node.status()}')
                 last_status = elapsed
 
-            if node.all_done():
-                node.get_logger().info('All samples collected!')
-                break
+            if not samples_done and node.all_done():
+                node.get_logger().info(
+                    'Single-frame samples collected! '
+                    'Continuing to accumulate merged GeoJSON until timeout...'
+                )
+                samples_done = True
 
             if elapsed > args.timeout:
-                node.get_logger().warn(
-                    f'Timeout after {args.timeout}s — {node.status()}')
+                if not samples_done:
+                    node.get_logger().warn(
+                        f'Timeout after {args.timeout}s — {node.status()}')
                 break
     except KeyboardInterrupt:
         pass
+
+    # Save merged GeoJSON with all accumulated features
+    node.save_merged_geojson()
+    node.stop_mqtt_trace()
 
     node.get_logger().info(f'Final: {node.status()}')
     node.destroy_node()

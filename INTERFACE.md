@@ -1,8 +1,8 @@
 # TRIFFID UGV Perception — Interface Specification
 
-> **Version**: 1.0  
-> **Date**: 2026-03-01  
-> **Status**: FROZEN — changes require version bump and partner notification  V
+> **Version**: 1.3  
+> **Date**: 2026-03-04  
+> **Status**: FROZEN — changes require version bump and partner notification
 > **ROS 2 Distribution**: Humble  
 > **DDS**: CycloneDDS  
 > **ROS_DOMAIN_ID**: 42  
@@ -35,6 +35,8 @@ This document defines every published and consumed interface of the TRIFFID UGV 
 | `/ugv/perception/front/segmentation` | `sensor_msgs/msg/Image` | `mono8` | ~15 Hz | Semantic label map (pixel = class ID) |
 | `/triffid/front/geojson` | `std_msgs/msg/String` | JSON (UTF-8) | ~15 Hz | GeoJSON FeatureCollection (RFC 7946) |
 
+The same GeoJSON payload is also published to a local **MQTT** broker (see [§6 MQTT Output](#mqtt-output)).
+
 All output timestamps are copied from the triggering RGB frame (rosbag sim time), **not** wall clock.
 
 ---
@@ -49,7 +51,8 @@ All output timestamps are copied from the triggering RGB frame (rosbag sim time)
 | `/camera_front/realsense_front/depth/camera_info` | `sensor_msgs/msg/CameraInfo` | — | ~15 Hz | Yes |
 | `/tf` | `tf2_msgs/msg/TFMessage` | — | — | Yes |
 | `/tf_static` | `tf2_msgs/msg/TFMessage` | — | Once | Yes |
-| `/fix` | `sensor_msgs/msg/NavSatFix` | — | ~1 Hz | Optional (GPS) |
+| `/fix` | `sensor_msgs/msg/NavSatFix` | — | ~0.4 Hz | Optional (GPS) |
+| `/dog_odom` | `nav_msgs/msg/Odometry` | — | ~500 Hz | Optional (heading) |
 
 ---
 
@@ -185,27 +188,29 @@ When instance masks overlap, the highest-confidence detection's class ID is writ
 
 Two geometry types are emitted depending on whether the detection has a non-zero 3D extent:
 
-**Point** (when `bbox.size.x == 0` or `bbox.size.y == 0`):
+**Point** (when `bbox.size.x == 0` **and** `bbox.size.y == 0`):
 ```json
 {
   "type": "Point",
-  "coordinates": [longitude, latitude]
+  "coordinates": [longitude, latitude, altitude]
 }
 ```
 
-**Polygon** (when `bbox.size.x > 0` and `bbox.size.y > 0`):
+**Polygon** (when `bbox.size.x > 0` **or** `bbox.size.y > 0`):
 ```json
 {
   "type": "Polygon",
-  "coordinates": [[ [lon,lat], [lon,lat], [lon,lat], [lon,lat], [lon,lat] ]]
+  "coordinates": [[ [lon,lat,alt], [lon,lat,alt], [lon,lat,alt], [lon,lat,alt], [lon,lat,alt] ]]
 }
 ```
-The polygon is a closed axis-aligned rectangle (5 points, first = last) derived from the ground-plane projection of the 3D bounding box.
+The polygon is a closed axis-aligned rectangle (5 points, first = last) derived from the ground-plane projection of the 3D bounding box. If only one dimension (`size.x` or `size.y`) is non-zero, the zero dimension is clamped to a minimum extent of **0.3 m** so the polygon remains visible on the map.
 
 ### Coordinates
 
-- **With GPS** (`/fix` received or `gps_origin_lat/lon` set): WGS-84 `[longitude, latitude]` per RFC 7946.
-- **Without GPS**: raw local metres `[x_metres, y_metres]` with `"local_frame": true`.
+- **GPS gating**: GeoJSON is **not published** until at least one valid `/fix` message has been received. This prevents body-frame metre values from being emitted as lon/lat coordinates.
+- **With GPS** (`/fix` received or `gps_origin_lat/lon` set): WGS-84 `[longitude, latitude, altitude]` per RFC 7946 §3.1.1. GPS positions are median-filtered over a sliding window of 7 fixes to reduce noise.
+- **With heading** (`/dog_odom` received): body-frame detection offsets are rotated by the robot's yaw (ENU convention) into east/north before GPS projection.
+- **Without heading**: body X is treated as east, Y as north (heading = 0°).
 
 ### Properties (always present)
 
@@ -218,6 +223,8 @@ The polygon is a closed axis-aligned rectangle (5 points, first = last) derived 
 | `detection_type` | string | `"seg"` | Detection source model type |
 | `source` | string | `"ugv"` | Platform identifier |
 | `local_frame` | bool | `false` | `true` if no GPS origin available |
+| `altitude_m` | float | `321.5` | Altitude above WGS-84 ellipsoid (m) |
+| `height_m` | float | `4.5` | Object height from `bbox.size.z` (m) |
 | `marker-color` | string | `"#0000ff"` | SimpleStyle hex colour |
 | `marker-size` | string | `"medium"` | SimpleStyle marker size |
 | `marker-symbol` | string | `"car"` | SimpleStyle Maki icon name |
@@ -239,6 +246,27 @@ The polygon is a closed axis-aligned rectangle (5 points, first = last) derived 
 | `"seg"` | YOLOv11l-seg (instance segmentation model) |
 
 Additional values (e.g. `"bbox"`) may be added in future versions for bbox-only models.
+
+### MQTT Output
+
+The `geojson_bridge` node also publishes every GeoJSON FeatureCollection to a local **MQTT** broker (Mosquitto, running inside the Docker container).
+
+| Property | Value |
+|---|---|
+| **Broker** | `localhost:1883` (default, configurable via `mqtt_host` / `mqtt_port` parameters) |
+| **Topic** | `triffid/front/geojson` (configurable via `mqtt_topic` parameter) |
+| **QoS** | 0 (at most once) |
+| **Payload** | Compact JSON (no indentation) — identical schema to the ROS 2 `/triffid/front/geojson` topic |
+| **Enabled** | `true` by default; disable with `mqtt_enabled:=false` |
+
+The MQTT output uses the `paho-mqtt` Python client. If the broker is unreachable at startup, MQTT is silently disabled and the node continues to publish on the ROS 2 topic.
+
+To subscribe from the command line:
+```bash
+mosquitto_sub -h localhost -t 'triffid/front/geojson'
+```
+
+The `collect_samples.py` script also captures an MQTT trace during sampling, saving every message as `mqtt_trace.jsonl` (one JSON object per line).
 
 ---
 
@@ -348,10 +376,13 @@ Units: **metres**.
 
 ### GPS Coordinates (GeoJSON)
 
-- Order: `[longitude, latitude]` (RFC 7946 §3.1.1)
+- Order: `[longitude, latitude, altitude]` (RFC 7946 §3.1.1)
 - Datum: WGS-84
-- Projection: equirectangular approximation from a local origin (adequate for <1 km range)
-- Origin set from `/fix` topic or `gps_origin_lat`/`gps_origin_lon` parameters
+- Projection: equirectangular approximation (adequate for <1 km range)
+- Robot GPS position tracked continuously from `/fix` (median-filtered, window = 7)
+- Heading from `/dog_odom` quaternion (magnetometer-fused, ENU yaw)
+- Detection body-frame offsets rotated to ENU by robot yaw before GPS projection
+- Origin seed available via `gps_origin_lat`/`gps_origin_lon`/`gps_origin_alt` parameters
 
 ### Segmentation Pixels
 
@@ -377,21 +408,8 @@ Units: **metres**.
 | Camera images | BEST_EFFORT | VOLATILE | KEEP_LAST | 5 |
 | CameraInfo | BEST_EFFORT | VOLATILE | KEEP_LAST | 5 |
 | `/fix` (GPS) | BEST_EFFORT | VOLATILE | KEEP_LAST | 10 |
+| `/dog_odom` | RELIABLE | VOLATILE | KEEP_LAST | 5 |
 | `/tf_static` | RELIABLE | TRANSIENT_LOCAL | KEEP_ALL | — |
-
----
-
-## 11. Current Limitations
-
-| # | Limitation | Impact | Mitigation / Notes |
-|---|---|---|---|
-| 1 | **No heading-to-North correction** | GeoJSON polygon corners are in the robot body frame, not aligned to true East/North. Polygons appear rotated on a map by the robot's heading. | `/dog_odom` contains magnetometer-fused yaw (~109° at start in this dataset). Integration is planned but not yet implemented. GPS Point centres are unaffected. |
-| 2 | **`/heading` topic is empty** | The dedicated heading topic (`QuaternionStamped`) publishes 0 messages in the current rosbag. | Fall back to `/dog_odom` orientation quaternion (124k+ msgs, ~500 Hz). |
-| 3 | **`bbox.size` may be (0,0,0)** | When depth evidence is insufficient (e.g. object too far, depth shadow), the 3D extent cannot be computed. GeoJSON falls back to Point geometry. | Back-projection fallback (`_bbox_to_3d_corners`) reduces frequency but does not eliminate it. |
-| 4 | **Equirectangular GPS projection** | Local-to-GPS conversion assumes flat Earth. Accuracy degrades beyond ~1 km from the GPS origin. | Acceptable for UGV operational range (<500 m). |
-| 5 | **No multi-camera fusion** | Only the front camera (`/camera_front`) is processed. Back camera data is available but unused. | Pipeline architecture supports adding a back-camera node in the future. |
-| 6 | **Segmentation is 2D only** | The mono8 label map has no depth; it is a per-pixel class label in image space. | 3D information is available in `Detection3DArray` for the same objects. |
-| 7 | **Single GPU required** | YOLO inference requires an NVIDIA GPU with ≥4 GB VRAM inside the Docker container (`nvidia-container-toolkit`). | No CPU fallback is provided. |
 
 ---
 
@@ -400,3 +418,17 @@ Units: **metres**.
 | Version | Date | Changes |
 |---|---|---|
 | 1.0 | 2026-03-01 | Initial frozen interface |
+| 1.1 | 2026-03-02 | 3D coordinates, heading rotation, GPS filtering, `/dog_odom` subscription |
+| 1.2 | 2026-03-04 | GPS gating (no publish until fix received), polygon emitted when *either* bbox dimension > 0 (was: both), 0.3 m minimum extent for zero-dimension polygons, merged GeoJSON sample output |
+| 1.3 | 2026-03-04 | MQTT output: GeoJSON published to local Mosquitto broker (`triffid/front/geojson`, QoS 0), MQTT trace capture in sample collector |
+
+---
+
+## 11. Current Limitations
+
+1. **Equirectangular projection**: GPS coordinate conversion uses a flat-earth approximation. Accurate to ~1 m for ranges < 1 km; use UTM for larger-scale deployments.
+2. **`bbox.size` may be zero**: When depth evidence is insufficient, the 3D bbox size degrades to `(0, 0, 0)` and a Point geometry is emitted instead of a Polygon. If only one horizontal dimension is zero, a minimum extent of 0.3 m is applied so a Polygon is still emitted.
+3. **Single front camera only**: Current pipeline processes only the front-facing RealSense D435. Rear/side cameras are not integrated yet.
+4. **2D segmentation mask**: The segmentation output is a 2D mono8 label map. True 3D volumetric segmentation is not performed.
+5. **GPU required**: YOLO inference requires an NVIDIA GPU with CUDA support.
+6. **No heading → raw axis mapping**: Without `/dog_odom`, body-frame X is treated as East and Y as North (yaw = 0°). Detections will be misaligned on the map.
