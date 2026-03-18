@@ -3,56 +3,301 @@
   "features": [
     {
       "type": "Feature",
-      "id": "1",
+      "id": "6",
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              13.352236217759598,
-              49.72681223180838,
-              321.30274787314227
+              13.351324008668835,
+              49.726264294612925
             ],
             [
-              13.352268834630996,
-              49.726820559367106,
-              321.30274787314227
+              13.351313547423837,
+              49.72636821685337
             ],
             [
-              13.35227036607377,
-              49.72681805283922,
-              321.30274787314227
+              13.351642062916763,
+              49.72638203617049
             ],
             [
-              13.352237749202372,
-              49.72680972528049,
-              321.30274787314227
+              13.35165252416176,
+              49.72627811393005
             ],
             [
-              13.352236217759598,
-              49.72681223180838,
-              321.30274787314227
+              13.351324008668835,
+              49.726264294612925
             ]
           ]
         ]
       },
       "properties": {
-        "class": "Green grass",
-        "id": "1",
-        "confidence": 0.9268906712532043,
+        "class": "Building",
+        "id": "6",
+        "confidence": 0.6215859651565552,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 393.48,
+        "height_m": 16.97,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "13",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351404047978306,
+              49.72621495644286
+            ],
+            [
+              13.351389751562559,
+              49.72635697735485
+            ],
+            [
+              13.351393911669934,
+              49.72635715235372
+            ],
+            [
+              13.351408208085681,
+              49.726215131441734
+            ],
+            [
+              13.351404047978306,
+              49.72621495644286
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "13",
+        "confidence": 0.3804720640182495,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 388.11,
+        "height_m": 16.46,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "16",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351345101115141,
+              49.72620360459017
+            ],
+            [
+              13.351338552498703,
+              49.726268658691495
+            ],
+            [
+              13.351450114452739,
+              49.72627335165136
+            ],
+            [
+              13.351456663069177,
+              49.72620829755003
+            ],
+            [
+              13.351345101115141,
+              49.72620360459017
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Dry tree",
+        "id": "16",
+        "confidence": 0.43662673234939575,
         "category": "nature",
         "detection_type": "seg",
         "source": "ugv",
         "local_frame": false,
-        "altitude_m": 321.3,
-        "height_m": 1.4,
-        "marker-color": "#7cfc00",
+        "gnss_altitude_m": 392.1,
+        "height_m": 2.04,
+        "marker-color": "#daa520",
         "marker-size": "medium",
         "marker-symbol": "marker",
-        "stroke": "#7cfc00",
+        "stroke": "#daa520",
         "stroke-width": 2,
         "stroke-opacity": 1.0,
-        "fill": "#7cfc00",
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "14",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351414890345183,
+              49.72629745254665
+            ],
+            [
+              13.351413271290156,
+              49.72631353627529
+            ],
+            [
+              13.351430927084005,
+              49.72631427898308
+            ],
+            [
+              13.351432546139032,
+              49.72629819525444
+            ],
+            [
+              13.351414890345183,
+              49.72629745254665
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Dry tree",
+        "id": "14",
+        "confidence": 0.8064876794815063,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 393.6,
+        "height_m": 1.0,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "15",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351400735253602,
+              49.72626428741549
+            ],
+            [
+              13.351399655350107,
+              49.72627501520083
+            ],
+            [
+              13.351403815457482,
+              49.72627519019971
+            ],
+            [
+              13.351404895360977,
+              49.72626446241437
+            ],
+            [
+              13.351400735253602,
+              49.72626428741549
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green tree",
+        "id": "15",
+        "confidence": 0.40806758403778076,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 391.89,
+        "height_m": 1.08,
+        "marker-color": "#228b22",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#228b22",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#228b22",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "17",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351349331644826,
+              49.72622279633377
+            ],
+            [
+              13.35134359403248,
+              49.72627979390242
+            ],
+            [
+              13.351435426717542,
+              49.72628365693179
+            ],
+            [
+              13.351441164329888,
+              49.72622665936314
+            ],
+            [
+              13.351349331644826,
+              49.72622279633377
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Dry tree",
+        "id": "17",
+        "confidence": 0.39174357056617737,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 392.09,
+        "height_m": 1.69,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
         "fill-opacity": 0.25
       }
     }

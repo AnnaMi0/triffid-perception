@@ -1013,7 +1013,7 @@ class TestGeoJSONSchema:
     REQUIRED_PROPERTIES = [
         'class', 'id', 'confidence',
         'category', 'detection_type', 'source',
-        'local_frame', 'altitude_m', 'height_m',
+        'local_frame', 'gnss_altitude_m', 'height_m',
         'marker-color', 'marker-size', 'marker-symbol',
     ]
 
@@ -1022,10 +1022,14 @@ class TestGeoJSONSchema:
         """Build a GeoJSON FeatureCollection like the bridge does.
 
         Each detection dict must include 'coordinates' (lon, lat, alt).
-        Optionally includes 'size' (sx, sy, sz) and 'position' (x, y, z)
-        — when size.x > 0 or size.y > 0 a Polygon footprint is emitted.
+        Optionally includes 'size' (sx, sy, sz) and 'position' (x, y, z).
+        Geometry type is class-dependent: person→Point, Fence→LineString,
+        default→Polygon. Coordinates are 2D [lon, lat] only; altitude
+        is in gnss_altitude_m property.
         """
-        from triffid_ugv_perception.geojson_bridge import GeoJSONBridge, _MIN_EXTENT
+        from triffid_ugv_perception.geojson_bridge import (
+            GeoJSONBridge, _MIN_EXTENT, _POINT_CLASSES, _LINE_CLASSES,
+        )
         features = []
         for det in detections:
             lon, lat, alt = det['coordinates']
@@ -1034,20 +1038,39 @@ class TestGeoJSONSchema:
             pos_x, pos_y, pos_z = det.get('position', (lon, lat, 0.0))
 
             has_extent = (sx > 0.0 or sy > 0.0)
+            geom_type = GeoJSONBridge._geometry_type_for_class(cls)
 
-            if has_extent:
-                half_x = max(sx, _MIN_EXTENT) / 2.0
-                half_y = max(sy, _MIN_EXTENT) / 2.0
-                ring = [
-                    [pos_x + half_x, pos_y + half_y, pos_z],
-                    [pos_x + half_x, pos_y - half_y, pos_z],
-                    [pos_x - half_x, pos_y - half_y, pos_z],
-                    [pos_x - half_x, pos_y + half_y, pos_z],
-                    [pos_x + half_x, pos_y + half_y, pos_z],  # closed
-                ]
-                geometry = {"type": "Polygon", "coordinates": [ring]}
-            else:
-                geometry = {"type": "Point", "coordinates": [lon, lat, alt]}
+            if geom_type == 'Point':
+                geometry = {"type": "Point", "coordinates": [lon, lat]}
+
+            elif geom_type == 'LineString':
+                half_long = max(sx, sy, _MIN_EXTENT) / 2.0
+                if sx >= sy:
+                    endpoints = [
+                        [pos_x + half_long, pos_y],
+                        [pos_x - half_long, pos_y],
+                    ]
+                else:
+                    endpoints = [
+                        [pos_x, pos_y + half_long],
+                        [pos_x, pos_y - half_long],
+                    ]
+                geometry = {"type": "LineString", "coordinates": endpoints}
+
+            else:  # Polygon
+                if has_extent:
+                    half_x = max(sx, _MIN_EXTENT) / 2.0
+                    half_y = max(sy, _MIN_EXTENT) / 2.0
+                    ring = [
+                        [pos_x + half_x, pos_y + half_y],
+                        [pos_x + half_x, pos_y - half_y],
+                        [pos_x - half_x, pos_y - half_y],
+                        [pos_x - half_x, pos_y + half_y],
+                        [pos_x + half_x, pos_y + half_y],  # closed
+                    ]
+                    geometry = {"type": "Polygon", "coordinates": [ring]}
+                else:
+                    geometry = {"type": "Point", "coordinates": [lon, lat]}
 
             feature = {
                 "type": "Feature",
@@ -1061,29 +1084,34 @@ class TestGeoJSONSchema:
                     "detection_type": "seg",
                     "source": "ugv",
                     "local_frame": not gps_valid,
-                    "altitude_m": round(alt, 2),
+                    "gnss_altitude_m": round(alt, 2),
                     "height_m": round(float(sz), 2),
                     "marker-color": GeoJSONBridge._class_color(cls),
                     "marker-size": "medium",
                     "marker-symbol": GeoJSONBridge._class_symbol(cls),
                 }
             }
-            if has_extent:
+            if geometry['type'] == 'Polygon':
                 feature["properties"]["stroke"] = feature["properties"]["marker-color"]
                 feature["properties"]["stroke-width"] = 2
                 feature["properties"]["stroke-opacity"] = 1.0
                 feature["properties"]["fill"] = feature["properties"]["marker-color"]
                 feature["properties"]["fill-opacity"] = 0.25
+            elif geometry['type'] == 'LineString':
+                feature["properties"]["stroke"] = feature["properties"]["marker-color"]
+                feature["properties"]["stroke-width"] = 2
+                feature["properties"]["stroke-opacity"] = 1.0
             features.append(feature)
         return {"type": "FeatureCollection", "features": features}
 
     def test_valid_feature_collection(self):
-        dets = [{'coordinates': (23.7, 37.9, 320.0), 'class_name': 'person',
+        dets = [{'coordinates': (23.7, 37.9, 320.0), 'class_name': 'Building',
                  'confidence': 0.85, 'track_id': '1'}]
         gj = self._make_geojson(dets, gps_valid=True)
         assert gj['type'] == 'FeatureCollection'
         assert len(gj['features']) == 1
         assert gj['features'][0]['type'] == 'Feature'
+        # Building with no size → fallback Point
         assert gj['features'][0]['geometry']['type'] == 'Point'
 
     def test_all_required_properties_present(self):
@@ -1119,16 +1147,19 @@ class TestGeoJSONSchema:
         assert parsed['type'] == 'FeatureCollection'
         assert len(parsed['features']) == 2
 
-    def test_coordinates_are_lon_lat_alt_order(self):
-        """GeoJSON spec: coordinates = [longitude, latitude, altitude]."""
+    def test_coordinates_are_lon_lat_only(self):
+        """GeoJSON geometry uses 2D [lon, lat] only; altitude in properties."""
         lon, lat, alt = 23.7348, 37.9755, 310.5
-        dets = [{'coordinates': (lon, lat, alt), 'class_name': 'person',
+        dets = [{'coordinates': (lon, lat, alt), 'class_name': 'Citizen',
                  'confidence': 0.9, 'track_id': '1'}]
         gj = self._make_geojson(dets, gps_valid=True)
         coords = gj['features'][0]['geometry']['coordinates']
+        assert len(coords) == 2, f'Expected [lon, lat], got {coords}'
         assert coords[0] == lon
         assert coords[1] == lat
-        assert coords[2] == alt
+        # Altitude should be in properties, not in coordinates
+        props = gj['features'][0]['properties']
+        assert props['gnss_altitude_m'] == round(alt, 2)
 
     def test_empty_detections_yield_empty_collection(self):
         gj = self._make_geojson([])
@@ -1166,14 +1197,14 @@ class TestGeoJSONSchema:
 
     # ── 3D coordinate tests ──────────────────────────────────────────
 
-    def test_altitude_property_present(self):
-        """altitude_m property must be present and match z coordinate."""
+    def test_gnss_altitude_property_present(self):
+        """gnss_altitude_m property must be present and match z coordinate."""
         dets = [{'coordinates': (13.35, 49.73, 321.5), 'class_name': 'Building',
                  'confidence': 0.8, 'track_id': '1'}]
         gj = self._make_geojson(dets, gps_valid=True)
         props = gj['features'][0]['properties']
-        assert 'altitude_m' in props
-        np.testing.assert_allclose(props['altitude_m'], 321.5)
+        assert 'gnss_altitude_m' in props
+        np.testing.assert_allclose(props['gnss_altitude_m'], 321.5)
 
     def test_height_property_present(self):
         """height_m property must reflect bbox size.z."""
@@ -1184,13 +1215,13 @@ class TestGeoJSONSchema:
         props = gj['features'][0]['properties']
         np.testing.assert_allclose(props['height_m'], 4.5)
 
-    def test_point_coordinates_have_altitude(self):
-        """Point geometry coordinates must have 3 elements [lon, lat, alt]."""
-        dets = [{'coordinates': (13.35, 49.73, 320.0), 'class_name': 'Flame',
+    def test_point_coordinates_are_2d(self):
+        """Point geometry coordinates must have 2 elements [lon, lat]."""
+        dets = [{'coordinates': (13.35, 49.73, 320.0), 'class_name': 'First responder',
                  'confidence': 0.9, 'track_id': '1'}]
         gj = self._make_geojson(dets, gps_valid=True)
         coords = gj['features'][0]['geometry']['coordinates']
-        assert len(coords) == 3
+        assert len(coords) == 2, f'Expected [lon, lat], got {coords}'
 
     # ── Polygon geometry tests ──────────────────────────────────────
 
@@ -1211,6 +1242,42 @@ class TestGeoJSONSchema:
         gj = self._make_geojson(dets)
         geom = gj['features'][0]['geometry']
         assert geom['type'] == 'Point'
+
+    def test_person_emits_point_geometry(self):
+        """Person classes always emit Point geometry regardless of bbox size."""
+        for cls in ('First responder', 'Citizen', 'Military personnel'):
+            dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': cls,
+                     'confidence': 0.9, 'track_id': '1',
+                     'size': (1.0, 0.5, 1.8), 'position': (5.0, 0.0, 0.0)}]
+            gj = self._make_geojson(dets, gps_valid=True)
+            geom = gj['features'][0]['geometry']
+            assert geom['type'] == 'Point', f'{cls} should emit Point, got {geom["type"]}'
+            assert len(geom['coordinates']) == 2
+
+    def test_fence_emits_linestring_geometry(self):
+        """Fence class emits LineString geometry."""
+        dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': 'Fence',
+                 'confidence': 0.7, 'track_id': '1',
+                 'size': (5.0, 0.3, 1.2), 'position': (10.0, 0.0, 0.0)}]
+        gj = self._make_geojson(dets, gps_valid=True)
+        geom = gj['features'][0]['geometry']
+        assert geom['type'] == 'LineString'
+        assert len(geom['coordinates']) == 2  # two endpoints
+        for pt in geom['coordinates']:
+            assert len(pt) == 2, f'LineString vertex should be [lon, lat], got {pt}'
+
+    def test_linestring_has_stroke_properties(self):
+        """LineString features should have stroke SimpleStyle but no fill."""
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Fence',
+                 'confidence': 0.7, 'track_id': '1',
+                 'size': (5.0, 0.3, 1.2), 'position': (0.0, 0.0, 0.0)}]
+        gj = self._make_geojson(dets)
+        props = gj['features'][0]['properties']
+        assert 'stroke' in props
+        assert 'stroke-width' in props
+        assert 'stroke-opacity' in props
+        assert 'fill' not in props
+        assert 'fill-opacity' not in props
 
     def test_polygon_emitted_when_only_one_size_nonzero(self):
         """Detection with one nonzero size → Polygon (uses min extent)."""
@@ -1278,7 +1345,7 @@ class TestGeoJSONSchema:
     def test_mixed_point_and_polygon(self):
         """FeatureCollection can contain both Point and Polygon features."""
         dets = [
-            {'coordinates': (1, 2, 0), 'class_name': 'Flame',
+            {'coordinates': (1, 2, 0), 'class_name': 'Citizen',
              'confidence': 0.9, 'track_id': '1'},
             {'coordinates': (3, 4, 0), 'class_name': 'Road',
              'confidence': 0.8, 'track_id': '2',
@@ -1299,15 +1366,15 @@ class TestGeoJSONSchema:
         parsed = json.loads(json_str)
         assert parsed['features'][0]['geometry']['type'] == 'Polygon'
 
-    def test_polygon_vertices_have_altitude(self):
-        """Polygon ring vertices should have 3D coordinates."""
+    def test_polygon_vertices_are_2d(self):
+        """Polygon ring vertices should have 2D coordinates [lon, lat]."""
         dets = [{'coordinates': (0, 0, 0), 'class_name': 'Building',
                  'confidence': 0.8, 'track_id': '1',
                  'size': (2.0, 3.0, 4.0), 'position': (5.0, 6.0, 1.0)}]
         gj = self._make_geojson(dets)
         ring = gj['features'][0]['geometry']['coordinates'][0]
         for vertex in ring:
-            assert len(vertex) == 3, f'Expected [x,y,z], got {vertex}'
+            assert len(vertex) == 2, f'Expected [lon, lat], got {vertex}'
 
 
 # ═══════════════════════════════════════════════════════════════════════════

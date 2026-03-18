@@ -3,90 +3,30 @@
   "features": [
     {
       "type": "Feature",
-      "id": "1",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              13.35223550969814,
-              49.72681231772715,
-              322.02468033575593
-            ],
-            [
-              13.352266143697697,
-              49.72682116360061,
-              322.02468033575593
-            ],
-            [
-              13.352267844025999,
-              49.72681870298977,
-              322.02468033575593
-            ],
-            [
-              13.352237210026441,
-              49.72680985711631,
-              322.02468033575593
-            ],
-            [
-              13.35223550969814,
-              49.72681231772715,
-              322.02468033575593
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "class": "Green grass",
-        "id": "1",
-        "confidence": 0.9680854082107544,
-        "category": "nature",
-        "detection_type": "seg",
-        "source": "ugv",
-        "local_frame": false,
-        "altitude_m": 322.02,
-        "height_m": 1.19,
-        "marker-color": "#7cfc00",
-        "marker-size": "medium",
-        "marker-symbol": "marker",
-        "stroke": "#7cfc00",
-        "stroke-width": 2,
-        "stroke-opacity": 1.0,
-        "fill": "#7cfc00",
-        "fill-opacity": 0.25
-      }
-    },
-    {
-      "type": "Feature",
       "id": "6",
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              13.352227120195993,
-              49.72680735436573,
-              322.01619346693724
+              13.351416911999179,
+              49.726304276885045
             ],
             [
-              13.352250925465352,
-              49.726813922983,
-              322.01619346693724
+              13.351415779920128,
+              49.7263526378832
             ],
             [
-              13.352257682554749,
-              49.726803689912224,
-              322.01619346693724
+              13.351546405154957,
+              49.72635391568777
             ],
             [
-              13.352233877285387,
-              49.72679712129495,
-              322.01619346693724
+              13.351547537234008,
+              49.72630555468962
             ],
             [
-              13.352227120195993,
-              49.72680735436573,
-              322.01619346693724
+              13.351416911999179,
+              49.726304276885045
             ]
           ]
         ]
@@ -94,13 +34,13 @@
       "properties": {
         "class": "Building",
         "id": "6",
-        "confidence": 0.48253175616264343,
+        "confidence": 0.6447300910949707,
         "category": "infrastructure",
         "detection_type": "seg",
         "source": "ugv",
         "local_frame": false,
-        "altitude_m": 322.02,
-        "height_m": 0.05,
+        "gnss_altitude_m": 393.84,
+        "height_m": 6.03,
         "marker-color": "#708090",
         "marker-size": "medium",
         "marker-symbol": "building",
@@ -108,336 +48,6 @@
         "stroke-width": 2,
         "stroke-opacity": 1.0,
         "fill": "#708090",
-        "fill-opacity": 0.25
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "7",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              13.35220599794758,
-              49.72680067778629,
-              322.11623707007897
-            ],
-            [
-              13.352234884083389,
-              49.72680907129902,
-              322.11623707007897
-            ],
-            [
-              13.352236593294446,
-              49.7268066132612,
-              322.11623707007897
-            ],
-            [
-              13.35220770715864,
-              49.726798219748474,
-              322.11623707007897
-            ],
-            [
-              13.35220599794758,
-              49.72680067778629,
-              322.11623707007897
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "class": "Building",
-        "id": "7",
-        "confidence": 0.710547685623169,
-        "category": "infrastructure",
-        "detection_type": "seg",
-        "source": "ugv",
-        "local_frame": false,
-        "altitude_m": 322.12,
-        "height_m": 1.91,
-        "marker-color": "#708090",
-        "marker-size": "medium",
-        "marker-symbol": "building",
-        "stroke": "#708090",
-        "stroke-width": 2,
-        "stroke-opacity": 1.0,
-        "fill": "#708090",
-        "fill-opacity": 0.25
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "8",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              13.352236085434955,
-              49.72681636381153,
-              322.1175220768765
-            ],
-            [
-              13.352264799106722,
-              49.726824519771874,
-              322.1175220768765
-            ],
-            [
-              13.352266476194004,
-              49.726822052504666,
-              322.1175220768765
-            ],
-            [
-              13.352237762522236,
-              49.72681389654432,
-              322.1175220768765
-            ],
-            [
-              13.352236085434955,
-              49.72681636381153,
-              322.1175220768765
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "class": "Building",
-        "id": "8",
-        "confidence": 0.41286948323249817,
-        "category": "infrastructure",
-        "detection_type": "seg",
-        "source": "ugv",
-        "local_frame": false,
-        "altitude_m": 322.12,
-        "height_m": 1.97,
-        "marker-color": "#708090",
-        "marker-size": "medium",
-        "marker-symbol": "building",
-        "stroke": "#708090",
-        "stroke-width": 2,
-        "stroke-opacity": 1.0,
-        "fill": "#708090",
-        "fill-opacity": 0.25
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "9",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              13.35190720562712,
-              49.72666326654334,
-              363.14035728759956
-            ],
-            [
-              13.351933729339256,
-              49.726670845753056,
-              363.14035728759956
-            ],
-            [
-              13.351935414855719,
-              49.72666838088881,
-              363.14035728759956
-            ],
-            [
-              13.351908891143582,
-              49.726660801679095,
-              363.14035728759956
-            ],
-            [
-              13.35190720562712,
-              49.72666326654334,
-              363.14035728759956
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "class": "Building",
-        "id": "9",
-        "confidence": 0.9016766548156738,
-        "category": "infrastructure",
-        "detection_type": "seg",
-        "source": "ugv",
-        "local_frame": false,
-        "altitude_m": 363.14,
-        "height_m": 1.91,
-        "marker-color": "#708090",
-        "marker-size": "medium",
-        "marker-symbol": "building",
-        "stroke": "#708090",
-        "stroke-width": 2,
-        "stroke-opacity": 1.0,
-        "fill": "#708090",
-        "fill-opacity": 0.25
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "10",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              13.351933925690018,
-              49.72667581266267,
-              362.99322400928384
-            ],
-            [
-              13.351964403224011,
-              49.726684448072355,
-              362.99322400928384
-            ],
-            [
-              13.351966076797702,
-              49.72668197980987,
-              362.99322400928384
-            ],
-            [
-              13.351935599263708,
-              49.72667334440018,
-              362.99322400928384
-            ],
-            [
-              13.351933925690018,
-              49.72667581266267,
-              362.99322400928384
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "class": "Green grass",
-        "id": "10",
-        "confidence": 0.9660507440567017,
-        "category": "nature",
-        "detection_type": "seg",
-        "source": "ugv",
-        "local_frame": false,
-        "altitude_m": 362.99,
-        "height_m": 1.16,
-        "marker-color": "#7cfc00",
-        "marker-size": "medium",
-        "marker-symbol": "marker",
-        "stroke": "#7cfc00",
-        "stroke-width": 2,
-        "stroke-opacity": 1.0,
-        "fill": "#7cfc00",
-        "fill-opacity": 0.25
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "11",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              13.351927616153507,
-              49.726670068619754,
-              362.9776702207859
-            ],
-            [
-              13.351947599164452,
-              49.72667570565708,
-              362.9776702207859
-            ],
-            [
-              13.351954848191758,
-              49.72666496726206,
-              362.9776702207859
-            ],
-            [
-              13.351934865180812,
-              49.726659330224734,
-              362.9776702207859
-            ],
-            [
-              13.351927616153507,
-              49.726670068619754,
-              362.9776702207859
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "class": "Building",
-        "id": "11",
-        "confidence": 0.47518983483314514,
-        "category": "infrastructure",
-        "detection_type": "seg",
-        "source": "ugv",
-        "local_frame": false,
-        "altitude_m": 362.98,
-        "height_m": 0.06,
-        "marker-color": "#708090",
-        "marker-size": "medium",
-        "marker-symbol": "building",
-        "stroke": "#708090",
-        "stroke-width": 2,
-        "stroke-opacity": 1.0,
-        "fill": "#708090",
-        "fill-opacity": 0.25
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "12",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              13.351934528360264,
-              49.726676407097415,
-              362.97780392771364
-            ],
-            [
-              13.351968537932242,
-              49.726684701371816,
-              362.97780392771364
-            ],
-            [
-              13.351970009503638,
-              49.726682179902255,
-              362.97780392771364
-            ],
-            [
-              13.35193599993166,
-              49.726673885627854,
-              362.97780392771364
-            ],
-            [
-              13.351934528360264,
-              49.726676407097415,
-              362.97780392771364
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "class": "Green grass",
-        "id": "12",
-        "confidence": 0.9398585557937622,
-        "category": "nature",
-        "detection_type": "seg",
-        "source": "ugv",
-        "local_frame": false,
-        "altitude_m": 362.98,
-        "height_m": 1.13,
-        "marker-color": "#7cfc00",
-        "marker-size": "medium",
-        "marker-symbol": "marker",
-        "stroke": "#7cfc00",
-        "stroke-width": 2,
-        "stroke-opacity": 1.0,
-        "fill": "#7cfc00",
         "fill-opacity": 0.25
       }
     },
@@ -449,50 +59,5119 @@
         "coordinates": [
           [
             [
-              13.351922830307313,
-              49.72666700430694,
-              363.0513435500734
+              13.351404047978306,
+              49.72621495644286
             ],
             [
-              13.351933230920416,
-              49.72666939231895,
-              363.0513435500734
+              13.351389751562559,
+              49.72635697735485
             ],
             [
-              13.35193630852056,
-              49.72666379107801,
-              363.0513435500734
+              13.351393911669934,
+              49.72635715235372
             ],
             [
-              13.351925907907457,
-              49.72666140306601,
-              363.0513435500734
+              13.351408208085681,
+              49.726215131441734
             ],
             [
-              13.351922830307313,
-              49.72666700430694,
-              363.0513435500734
+              13.351404047978306,
+              49.72621495644286
             ]
           ]
         ]
       },
       "properties": {
-        "class": "Wall",
+        "class": "Building",
         "id": "13",
-        "confidence": 0.4906887114048004,
+        "confidence": 0.3804720640182495,
         "category": "infrastructure",
         "detection_type": "seg",
         "source": "ugv",
         "local_frame": false,
-        "altitude_m": 363.05,
-        "height_m": 0.18,
-        "marker-color": "#808080",
+        "gnss_altitude_m": 388.11,
+        "height_m": 16.46,
+        "marker-color": "#708090",
         "marker-size": "medium",
-        "marker-symbol": "marker",
-        "stroke": "#808080",
+        "marker-symbol": "building",
+        "stroke": "#708090",
         "stroke-width": 2,
         "stroke-opacity": 1.0,
-        "fill": "#808080",
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "16",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351596784385189,
+              49.72628703997661
+            ],
+            [
+              13.351590923271068,
+              49.726298397020706
+            ],
+            [
+              13.351609731068287,
+              49.72630245312071
+            ],
+            [
+              13.351615592182409,
+              49.726291096076615
+            ],
+            [
+              13.351596784385189,
+              49.72628703997661
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "16",
+        "confidence": 0.7139043807983398,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.36,
+        "height_m": 0.07,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "14",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351391650549356,
+              49.72628747058781
+            ],
+            [
+              13.351391454861238,
+              49.72630439381479
+            ],
+            [
+              13.35141733776168,
+              49.72630451888391
+            ],
+            [
+              13.351417533449798,
+              49.72628759565693
+            ],
+            [
+              13.351391650549356,
+              49.72628747058781
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Dry tree",
+        "id": "14",
+        "confidence": 0.8471442461013794,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 393.21,
+        "height_m": 0.89,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "15",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351400735253602,
+              49.72626428741549
+            ],
+            [
+              13.351399655350107,
+              49.72627501520083
+            ],
+            [
+              13.351403815457482,
+              49.72627519019971
+            ],
+            [
+              13.351404895360977,
+              49.72626446241437
+            ],
+            [
+              13.351400735253602,
+              49.72626428741549
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green tree",
+        "id": "15",
+        "confidence": 0.40806758403778076,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 391.89,
+        "height_m": 1.08,
+        "marker-color": "#228b22",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#228b22",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#228b22",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "17",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351440415159026,
+              49.72617021624948
+            ],
+            [
+              13.351436292592215,
+              49.72629440483785
+            ],
+            [
+              13.351440460538788,
+              49.72629446265598
+            ],
+            [
+              13.351444583105598,
+              49.726170274067606
+            ],
+            [
+              13.351440415159026,
+              49.72617021624948
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Dry tree",
+        "id": "17",
+        "confidence": 0.7261133193969727,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 393.6,
+        "height_m": 8.79,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "18",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351416132692073,
+              49.72627133826599
+            ],
+            [
+              13.351415887868448,
+              49.72628074320054
+            ],
+            [
+              13.351420056184443,
+              49.72628078854393
+            ],
+            [
+              13.351420301008066,
+              49.72627138360938
+            ],
+            [
+              13.351416132692073,
+              49.72627133826599
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "18",
+        "confidence": 0.6318084001541138,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 390.93,
+        "height_m": 0.54,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "19",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351366741511793,
+              49.72624597935242
+            ],
+            [
+              13.351366412483133,
+              49.726259321156164
+            ],
+            [
+              13.351370580859593,
+              49.72625936411396
+            ],
+            [
+              13.351370909888253,
+              49.726246022310214
+            ],
+            [
+              13.351366741511793,
+              49.72624597935242
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green tree",
+        "id": "19",
+        "confidence": 0.4167361259460449,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 392.63,
+        "height_m": 1.14,
+        "marker-color": "#228b22",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#228b22",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#228b22",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "20",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351338488953871,
+              49.726252565623746
+            ],
+            [
+              13.351338414753872,
+              49.72626718357327
+            ],
+            [
+              13.351342583637557,
+              49.72626719241614
+            ],
+            [
+              13.351342657837558,
+              49.72625257446661
+            ],
+            [
+              13.351338488953871,
+              49.726252565623746
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "20",
+        "confidence": 0.46252191066741943,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 385.24,
+        "height_m": 0.97,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "21",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351320388232113,
+              49.726224786408395
+            ],
+            [
+              13.351315544922628,
+              49.726257895821114
+            ],
+            [
+              13.351368255855599,
+              49.726261117982595
+            ],
+            [
+              13.351373099165086,
+              49.72622800856988
+            ],
+            [
+              13.351320388232113,
+              49.726224786408395
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Dry tree",
+        "id": "21",
+        "confidence": 0.5328146815299988,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 391.97,
+        "height_m": 1.12,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "22",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351276290127094,
+            49.72624898167745
+          ],
+          [
+            13.351521723462238,
+            49.72625615976385
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "22",
+        "confidence": 0.708962082862854,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 392.53,
+        "height_m": 5.2,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "23",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351555809011064,
+              49.72629659340959
+            ],
+            [
+              13.351555708426982,
+              49.726299623413865
+            ],
+            [
+              13.351559876373555,
+              49.72629968123199
+            ],
+            [
+              13.351559976957635,
+              49.72629665122772
+            ],
+            [
+              13.351555809011064,
+              49.72629659340959
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "23",
+        "confidence": 0.5819078683853149,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.12,
+        "height_m": 0.12,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "24",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35159578112794,
+              49.72630535034379
+            ],
+            [
+              13.351595648250049,
+              49.726309698542266
+            ],
+            [
+              13.351599816342958,
+              49.72630975176984
+            ],
+            [
+              13.35159994922085,
+              49.72630540357136
+            ],
+            [
+              13.35159578112794,
+              49.72630535034379
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Barrier",
+        "id": "24",
+        "confidence": 0.36357006430625916,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.57,
+        "height_m": 0.45,
+        "marker-color": "#ffd700",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ffd700",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ffd700",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "25",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351593681671888,
+              49.72629607803648
+            ],
+            [
+              13.351588592713918,
+              49.72630676779129
+            ],
+            [
+              13.351605643195741,
+              49.726310159774016
+            ],
+            [
+              13.351610732153711,
+              49.7262994700192
+            ],
+            [
+              13.351593681671888,
+              49.72629607803648
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "25",
+        "confidence": 0.4233153462409973,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.4,
+        "height_m": 0.31,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "26",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351596049380376,
+              49.726292961467166
+            ],
+            [
+              13.351588875853905,
+              49.726306696343634
+            ],
+            [
+              13.351606104856716,
+              49.72631045665619
+            ],
+            [
+              13.351613278383187,
+              49.72629672177972
+            ],
+            [
+              13.351596049380376,
+              49.726292961467166
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "26",
+        "confidence": 0.6053026914596558,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.4,
+        "height_m": 0.16,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "27",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351595161616382,
+              49.72630650131778
+            ],
+            [
+              13.351593878958706,
+              49.726309065538075
+            ],
+            [
+              13.351597845640896,
+              49.726309894698744
+            ],
+            [
+              13.351599128298572,
+              49.72630733047844
+            ],
+            [
+              13.351595161616382,
+              49.72630650131778
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Destroyed building",
+        "id": "27",
+        "confidence": 0.4239735007286072,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.53,
+        "height_m": 0.09,
+        "marker-color": "#696969",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#696969",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#696969",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "28",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.3516084323018,
+              49.7262887071658
+            ],
+            [
+              13.351597488985904,
+              49.72629316009098
+            ],
+            [
+              13.351606074158106,
+              49.72630197683848
+            ],
+            [
+              13.351617017474002,
+              49.726297523913296
+            ],
+            [
+              13.3516084323018,
+              49.7262887071658
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "28",
+        "confidence": 0.8847888708114624,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.41,
+        "height_m": 0.18,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "29",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35160752300297,
+              49.72628521683224
+            ],
+            [
+              13.351597182703207,
+              49.72628902935603
+            ],
+            [
+              13.351600583940636,
+              49.726292884258285
+            ],
+            [
+              13.351610924240399,
+              49.72628907173449
+            ],
+            [
+              13.35160752300297,
+              49.72628521683224
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "29",
+        "confidence": 0.48477262258529663,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.47,
+        "height_m": 0.15,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "30",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351614244926166,
+            49.72628908752311
+          ],
+          [
+            13.351588204643118,
+            49.7262963748786
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "30",
+        "confidence": 0.805984377861023,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.57,
+        "height_m": 1.31,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "31",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351644439289862,
+              49.72628589864597
+            ],
+            [
+              13.351628847937716,
+              49.7262847278705
+            ],
+            [
+              13.351627472152646,
+              49.72629238412942
+            ],
+            [
+              13.351643063504792,
+              49.72629355490489
+            ],
+            [
+              13.351644439289862,
+              49.72628589864597
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "31",
+        "confidence": 0.5846774578094482,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.43,
+        "height_m": 0.07,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "32",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351644038992433,
+            49.726285240135645
+          ],
+          [
+            13.351609918754827,
+            49.72628243435969
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "32",
+        "confidence": 0.689380407333374,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.44,
+        "height_m": 1.46,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "33",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351648742798023,
+              49.72628273650434
+            ],
+            [
+              13.35163639504808,
+              49.72628170103586
+            ],
+            [
+              13.35163585873373,
+              49.72628437358817
+            ],
+            [
+              13.351648206483674,
+              49.72628540905665
+            ],
+            [
+              13.351648742798023,
+              49.72628273650434
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "33",
+        "confidence": 0.4929080009460449,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.39,
+        "height_m": 0.04,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "34",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351631707654617,
+              49.726284238591504
+            ],
+            [
+              13.351613195822514,
+              49.726282802727646
+            ],
+            [
+              13.3516110886492,
+              49.72629415524701
+            ],
+            [
+              13.351629600481303,
+              49.72629559111087
+            ],
+            [
+              13.351631707654617,
+              49.726284238591504
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "34",
+        "confidence": 0.6586853265762329,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.39,
+        "height_m": 0.12,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "35",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351629152790032,
+              49.72628428219462
+            ],
+            [
+              13.351614194191676,
+              49.726282919727154
+            ],
+            [
+              13.351611796235986,
+              49.726293921477115
+            ],
+            [
+              13.351626754834342,
+              49.72629528394458
+            ],
+            [
+              13.351629152790032,
+              49.72628428219462
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "35",
+        "confidence": 0.520880937576294,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.4,
+        "height_m": 0.12,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "36",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351611971482749,
+              49.72626871538057
+            ],
+            [
+              13.351587761144183,
+              49.72626948656014
+            ],
+            [
+              13.351589321907513,
+              49.72628996223641
+            ],
+            [
+              13.35161353224608,
+              49.726289191056836
+            ],
+            [
+              13.351611971482749,
+              49.72626871538057
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "36",
+        "confidence": 0.7898737192153931,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.27,
+        "height_m": 0.67,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "37",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35163068505788,
+              49.726281182332414
+            ],
+            [
+              13.351603174077946,
+              49.72628170716943
+            ],
+            [
+              13.351604007761546,
+              49.72629996876489
+            ],
+            [
+              13.351631518741481,
+              49.72629944392788
+            ],
+            [
+              13.35163068505788,
+              49.726281182332414
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Destroyed building",
+        "id": "37",
+        "confidence": 0.8685922622680664,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.52,
+        "height_m": 0.91,
+        "marker-color": "#696969",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#696969",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#696969",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "38",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351635353671755,
+              49.726285459666535
+            ],
+            [
+              13.351616085996062,
+              49.726282732891846
+            ],
+            [
+              13.35161263342499,
+              49.726292927688235
+            ],
+            [
+              13.351631901100683,
+              49.72629565446292
+            ],
+            [
+              13.351635353671755,
+              49.726285459666535
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "38",
+        "confidence": 0.8018191456794739,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.4,
+        "height_m": 0.07,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "39",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351655088109254,
+              49.7262856781846
+            ],
+            [
+              13.35164209612185,
+              49.72628303729482
+            ],
+            [
+              13.351640845590994,
+              49.72628560813797
+            ],
+            [
+              13.3516538375784,
+              49.72628824902775
+            ],
+            [
+              13.351655088109254,
+              49.7262856781846
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "39",
+        "confidence": 0.8747035264968872,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.38,
+        "height_m": 0.04,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "40",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351653324459164,
+              49.72628682534825
+            ],
+            [
+              13.351628864608557,
+              49.7262818268484
+            ],
+            [
+              13.351625624111358,
+              49.72628845330903
+            ],
+            [
+              13.351650083961966,
+              49.72629345180888
+            ],
+            [
+              13.351653324459164,
+              49.72628682534825
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "40",
+        "confidence": 0.6659282445907593,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.4,
+        "height_m": 0.08,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "41",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351631205096748,
+              49.72628518010631
+            ],
+            [
+              13.351627227816143,
+              49.72628437244034
+            ],
+            [
+              13.35162545550689,
+              49.72628801955829
+            ],
+            [
+              13.351629432787494,
+              49.72628882722426
+            ],
+            [
+              13.351631205096748,
+              49.72628518010631
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "41",
+        "confidence": 0.6267807483673096,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.46,
+        "height_m": 0.03,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "42",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.3516528876052,
+              49.72628859263079
+            ],
+            [
+              13.351629768921061,
+              49.726283332278314
+            ],
+            [
+              13.351625182691379,
+              49.726291755144906
+            ],
+            [
+              13.351648301375517,
+              49.72629701549738
+            ],
+            [
+              13.3516528876052,
+              49.72628859263079
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "42",
+        "confidence": 0.45792895555496216,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.4,
+        "height_m": 0.04,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "43",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351610550102883,
+              49.72628864124446
+            ],
+            [
+              13.351603032762155,
+              49.72629076376957
+            ],
+            [
+              13.351608185802341,
+              49.726298390366296
+            ],
+            [
+              13.351615703143068,
+              49.726296267841185
+            ],
+            [
+              13.351610550102883,
+              49.72628864124446
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Destroyed building",
+        "id": "43",
+        "confidence": 0.5837453603744507,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.49,
+        "height_m": 0.22,
+        "marker-color": "#696969",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#696969",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#696969",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "44",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35161859388645,
+              49.72628908071143
+            ],
+            [
+              13.351613805598502,
+              49.72629275075146
+            ],
+            [
+              13.351616992396071,
+              49.72629448823137
+            ],
+            [
+              13.351621780684017,
+              49.72629081819133
+            ],
+            [
+              13.35161859388645,
+              49.72628908071143
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "44",
+        "confidence": 0.8754620552062988,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.38,
+        "height_m": 0.52,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "45",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351605903961342,
+              49.72628188228687
+            ],
+            [
+              13.351592558406232,
+              49.72629000724388
+            ],
+            [
+              13.351608864605614,
+              49.726301199668406
+            ],
+            [
+              13.351622210160725,
+              49.726293074711386
+            ],
+            [
+              13.351605903961342,
+              49.72628188228687
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "45",
+        "confidence": 0.7586544752120972,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.39,
+        "height_m": 0.48,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "46",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351609579428107,
+              49.72629606313007
+            ],
+            [
+              13.35160600261031,
+              49.72629744750009
+            ],
+            [
+              13.351608144140782,
+              49.72629975969662
+            ],
+            [
+              13.351611720958578,
+              49.7262983753266
+            ],
+            [
+              13.351609579428107,
+              49.72629606313007
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Window",
+        "id": "46",
+        "confidence": 0.36723461747169495,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.42,
+        "height_m": 0.81,
+        "marker-color": "#b0c4de",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#b0c4de",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#b0c4de",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "47",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351609025312145,
+            49.72628650315227
+          ],
+          [
+            13.351581726384184,
+            49.726297899190335
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "47",
+        "confidence": 0.5299932360649109,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.45,
+        "height_m": 1.17,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "48",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351615584742948,
+              49.72629809098802
+            ],
+            [
+              13.351612082602504,
+              49.72629955296945
+            ],
+            [
+              13.351614344192788,
+              49.726301816891585
+            ],
+            [
+              13.351617846333232,
+              49.72630035491015
+            ],
+            [
+              13.351615584742948,
+              49.72629809098802
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "48",
+        "confidence": 0.4247889816761017,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.88,
+        "height_m": 0.39,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "49",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351614911552696,
+              49.726300624349065
+            ],
+            [
+              13.351612204089905,
+              49.726302673615855
+            ],
+            [
+              13.35161537417248,
+              49.72630442382692
+            ],
+            [
+              13.351618081635271,
+              49.72630237456013
+            ],
+            [
+              13.351614911552696,
+              49.726300624349065
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "49",
+        "confidence": 0.4733060598373413,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.82,
+        "height_m": 0.28,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "50",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351615067743834,
+              49.72630050682569
+            ],
+            [
+              13.351612381164818,
+              49.72630256754599
+            ],
+            [
+              13.351615568965235,
+              49.726304304256956
+            ],
+            [
+              13.35161825554425,
+              49.72630224353665
+            ],
+            [
+              13.351615067743834,
+              49.72630050682569
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "50",
+        "confidence": 0.4988255798816681,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.86,
+        "height_m": 0.28,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "51",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351615844955601,
+              49.72629970542191
+            ],
+            [
+              13.35161317153959,
+              49.72630177328347
+            ],
+            [
+              13.35161637038706,
+              49.72630350148535
+            ],
+            [
+              13.35161904380307,
+              49.72630143362379
+            ],
+            [
+              13.351615844955601,
+              49.72629970542191
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "51",
+        "confidence": 0.4882030785083771,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.91,
+        "height_m": 0.03,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "52",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351616027542278,
+              49.72629881690309
+            ],
+            [
+              13.351613349187158,
+              49.72630088209206
+            ],
+            [
+              13.351616543900315,
+              49.72630261348677
+            ],
+            [
+              13.351619222255435,
+              49.7263005482978
+            ],
+            [
+              13.351616027542278,
+              49.72629881690309
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "52",
+        "confidence": 0.4034872055053711,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.83,
+        "height_m": 0.35,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "53",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351616237398682,
+              49.726298886571556
+            ],
+            [
+              13.351613567618312,
+              49.72630095639503
+            ],
+            [
+              13.351616769500737,
+              49.72630268224668
+            ],
+            [
+              13.351619439281109,
+              49.72630061242321
+            ],
+            [
+              13.351616237398682,
+              49.726298886571556
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "53",
+        "confidence": 0.48548153042793274,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.92,
+        "height_m": 0.3,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "54",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351596809890879,
+            49.726298930346154
+          ],
+          [
+            13.351592006820045,
+            49.726302656287615
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "54",
+        "confidence": 0.9171392917633057,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.56,
+        "height_m": 0.83,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "55",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351619112461087,
+            49.726301411565856
+          ],
+          [
+            13.351616451566022,
+            49.726303486165136
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "55",
+        "confidence": 0.3888557553291321,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.89,
+        "height_m": 0.09,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "56",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351595704724655,
+            49.7262995141032
+          ],
+          [
+            13.351592263923942,
+            49.72630291180229
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "56",
+        "confidence": 0.8710287809371948,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.53,
+        "height_m": 0.6,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "57",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351616552645146,
+              49.72630087767879
+            ],
+            [
+              13.351614277786013,
+              49.726303136038716
+            ],
+            [
+              13.351617771322076,
+              49.72630460659766
+            ],
+            [
+              13.351620046181209,
+              49.72630234823773
+            ],
+            [
+              13.351616552645146,
+              49.72630087767879
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "57",
+        "confidence": 0.43445220589637756,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.95,
+        "height_m": 0.17,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "58",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351615482399152,
+              49.72630009852043
+            ],
+            [
+              13.351613199028625,
+              49.72630235328804
+            ],
+            [
+              13.351616687007601,
+              49.726303829349085
+            ],
+            [
+              13.351618970378128,
+              49.72630157458148
+            ],
+            [
+              13.351615482399152,
+              49.72630009852043
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "58",
+        "confidence": 0.40248340368270874,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.92,
+        "height_m": 0.03,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "59",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351615543888753,
+              49.7262990555451
+            ],
+            [
+              13.351613227500359,
+              49.726301296194805
+            ],
+            [
+              13.351616693639867,
+              49.726302793599906
+            ],
+            [
+              13.351619010028264,
+              49.7263005529502
+            ],
+            [
+              13.351615543888753,
+              49.7262990555451
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "59",
+        "confidence": 0.4906105399131775,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.89,
+        "height_m": 0.04,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "60",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351618822820418,
+              49.726283440626574
+            ],
+            [
+              13.351596037712365,
+              49.7262909841826
+            ],
+            [
+              13.35160371971872,
+              49.72630068047022
+            ],
+            [
+              13.351626504826772,
+              49.726293136914194
+            ],
+            [
+              13.351618822820418,
+              49.726283440626574
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "60",
+        "confidence": 0.8187958002090454,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.4,
+        "height_m": 0.16,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "61",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351619097086996,
+            49.72628545037129
+          ],
+          [
+            13.351615210802471,
+            49.726286425739325
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "61",
+        "confidence": 0.7845651507377625,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.5,
+        "height_m": 0.06,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "62",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351630372090877,
+              49.72628220932358
+            ],
+            [
+              13.351615511019146,
+              49.72628575533569
+            ],
+            [
+              13.351621863493,
+              49.726296880556944
+            ],
+            [
+              13.351636724564731,
+              49.726293334544835
+            ],
+            [
+              13.351630372090877,
+              49.72628220932358
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "62",
+        "confidence": 0.7671490907669067,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.39,
+        "height_m": 0.14,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "63",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351614346702219,
+              49.726266035980125
+            ],
+            [
+              13.351591852779636,
+              49.72626966325182
+            ],
+            [
+              13.351610549993902,
+              49.72631811593911
+            ],
+            [
+              13.351633043916483,
+              49.72631448866741
+            ],
+            [
+              13.351614346702219,
+              49.726266035980125
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "63",
+        "confidence": 0.5242006182670593,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.41,
+        "height_m": 1.46,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "64",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351631015747907,
+            49.726236009183026
+          ],
+          [
+            13.35158309938856,
+            49.726243735965824
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "64",
+        "confidence": 0.42819535732269287,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 394.98,
+        "height_m": 2.94,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "65",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351625613325158,
+              49.7262900809074
+            ],
+            [
+              13.35162144443496,
+              49.7262900883572
+            ],
+            [
+              13.351621455959322,
+              49.726292783292756
+            ],
+            [
+              13.351625624849522,
+              49.72629277584296
+            ],
+            [
+              13.351625613325158,
+              49.7262900809074
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "65",
+        "confidence": 0.3964309096336365,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.56,
+        "height_m": 0.23,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "66",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351650089165902,
+              49.72627267500727
+            ],
+            [
+              13.35161328856685,
+              49.72627228105327
+            ],
+            [
+              13.351612368099463,
+              49.72630821241133
+            ],
+            [
+              13.351649168698515,
+              49.726308606365336
+            ],
+            [
+              13.351650089165902,
+              49.72627267500727
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "66",
+        "confidence": 0.5947503447532654,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.37,
+        "height_m": 1.72,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "67",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351641521847954,
+              49.726284966315035
+            ],
+            [
+              13.35162216662949,
+              49.726284483234075
+            ],
+            [
+              13.351621452086178,
+              49.72629644685299
+            ],
+            [
+              13.351640807304644,
+              49.72629692993395
+            ],
+            [
+              13.351641521847954,
+              49.726284966315035
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "67",
+        "confidence": 0.4914693832397461,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.38,
+        "height_m": 0.16,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "68",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351625649113062,
+              49.726243167916955
+            ],
+            [
+              13.351594990193488,
+              49.726242384890426
+            ],
+            [
+              13.351591922509506,
+              49.72629257831677
+            ],
+            [
+              13.35162258142908,
+              49.72629336134331
+            ],
+            [
+              13.351625649113062,
+              49.726243167916955
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "68",
+        "confidence": 0.7345415353775024,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.88,
+        "height_m": 1.55,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "69",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351622528992996,
+              49.72629298750908
+            ],
+            [
+              13.351618364357595,
+              49.72629286555574
+            ],
+            [
+              13.351618175703706,
+              49.726295557740826
+            ],
+            [
+              13.351622340339105,
+              49.72629567969417
+            ],
+            [
+              13.351622528992996,
+              49.72629298750908
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green grass",
+        "id": "69",
+        "confidence": 0.3635733723640442,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.48,
+        "height_m": 0.08,
+        "marker-color": "#7cfc00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#7cfc00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#7cfc00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "70",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351611459918558,
+              49.72627015042999
+            ],
+            [
+              13.351599054840145,
+              49.72626974629351
+            ],
+            [
+              13.351598845008048,
+              49.72627243782354
+            ],
+            [
+              13.351611250086462,
+              49.726272841960025
+            ],
+            [
+              13.351611459918558,
+              49.72627015042999
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green plant",
+        "id": "70",
+        "confidence": 0.693300187587738,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 394.73,
+        "height_m": 0.26,
+        "marker-color": "#32cd32",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#32cd32",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#32cd32",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "71",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351624229606418,
+              49.72629592431576
+            ],
+            [
+              13.351620067324667,
+              49.72629577245209
+            ],
+            [
+              13.351619832401436,
+              49.72629846311568
+            ],
+            [
+              13.351623994683187,
+              49.726298614979356
+            ],
+            [
+              13.351624229606418,
+              49.72629592431576
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "71",
+        "confidence": 0.5836471915245056,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.83,
+        "height_m": 0.1,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "72",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351650981338262,
+              49.72627592077961
+            ],
+            [
+              13.351616316903268,
+              49.726274649489746
+            ],
+            [
+              13.35161371633166,
+              49.72630428171134
+            ],
+            [
+              13.351648380766653,
+              49.726305553001204
+            ],
+            [
+              13.351650981338262,
+              49.72627592077961
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "72",
+        "confidence": 0.36246195435523987,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.41,
+        "height_m": 1.78,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "73",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351591343214313,
+              49.726251798282036
+            ],
+            [
+              13.35158718183439,
+              49.72625163641966
+            ],
+            [
+              13.351586451141607,
+              49.726259486645084
+            ],
+            [
+              13.351590612521528,
+              49.72625964850746
+            ],
+            [
+              13.351591343214313,
+              49.726251798282036
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "73",
+        "confidence": 0.37175872921943665,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.57,
+        "height_m": 0.26,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "74",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351624530546806,
+              49.726297146874444
+            ],
+            [
+              13.351620369812805,
+              49.7262969782158
+            ],
+            [
+              13.351620108908843,
+              49.72629966787887
+            ],
+            [
+              13.351624269642844,
+              49.72629983653751
+            ],
+            [
+              13.351624530546806,
+              49.726297146874444
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "74",
+        "confidence": 0.4064461588859558,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.89,
+        "height_m": 0.31,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "75",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35162450960707,
+              49.72629762085417
+            ],
+            [
+              13.351620349688387,
+              49.7262974439908
+            ],
+            [
+              13.351620076092248,
+              49.72630013312681
+            ],
+            [
+              13.351624236010931,
+              49.72630030999018
+            ],
+            [
+              13.35162450960707,
+              49.72629762085417
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "75",
+        "confidence": 0.3653768301010132,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.83,
+        "height_m": 0.27,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "76",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351624592114224,
+              49.7262971282219
+            ],
+            [
+              13.351620433166195,
+              49.72629694206347
+            ],
+            [
+              13.3516201451912,
+              49.726299630572015
+            ],
+            [
+              13.351624304139229,
+              49.726299816730446
+            ],
+            [
+              13.351624592114224,
+              49.7262971282219
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "76",
+        "confidence": 0.5373711585998535,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.88,
+        "height_m": 0.3,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "77",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351644775122288,
+              49.72628616951941
+            ],
+            [
+              13.35162422788206,
+              49.726284927801096
+            ],
+            [
+              13.351622550368878,
+              49.72629652764665
+            ],
+            [
+              13.351643097609108,
+              49.72629776936497
+            ],
+            [
+              13.351644775122288,
+              49.72628616951941
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "77",
+        "confidence": 0.4430059492588043,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.39,
+        "height_m": 0.04,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "78",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351625225995546,
+              49.72629629691926
+            ],
+            [
+              13.351621075187818,
+              49.72629604607613
+            ],
+            [
+              13.3516206871498,
+              49.72629872932246
+            ],
+            [
+              13.351624837957528,
+              49.72629898016559
+            ],
+            [
+              13.351625225995546,
+              49.72629629691926
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "78",
+        "confidence": 0.3599971830844879,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.89,
+        "height_m": 0.4,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "79",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351647326244901,
+              49.72629025324438
+            ],
+            [
+              13.351635801713837,
+              49.72628295347565
+            ],
+            [
+              13.351628276348196,
+              49.72628791822838
+            ],
+            [
+              13.35163980087926,
+              49.726295217997105
+            ],
+            [
+              13.351647326244901,
+              49.72629025324438
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "79",
+        "confidence": 0.6314274072647095,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.42,
+        "height_m": 0.09,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "80",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35165991502239,
+              49.726289736070164
+            ],
+            [
+              13.351644167851237,
+              49.72628439404117
+            ],
+            [
+              13.351642230644305,
+              49.7262867803584
+            ],
+            [
+              13.351657977815458,
+              49.72629212238739
+            ],
+            [
+              13.35165991502239,
+              49.726289736070164
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "80",
+        "confidence": 0.7203078866004944,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.39,
+        "height_m": 0.01,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "81",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351654424420595,
+              49.726293375885305
+            ],
+            [
+              13.351632533758993,
+              49.72627241935363
+            ],
+            [
+              13.351629078774273,
+              49.726273927492954
+            ],
+            [
+              13.351650969435875,
+              49.72629488402463
+            ],
+            [
+              13.351654424420595,
+              49.726293375885305
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "81",
+        "confidence": 0.6416546702384949,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.44,
+        "height_m": 1.94,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "82",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351664409970969,
+              49.72630318232634
+            ],
+            [
+              13.35166218692957,
+              49.72630090250481
+            ],
+            [
+              13.351658660193793,
+              49.72630233956672
+            ],
+            [
+              13.351660883235192,
+              49.72630461938825
+            ],
+            [
+              13.351664409970969,
+              49.72630318232634
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "82",
+        "confidence": 0.6077914237976074,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.43,
+        "height_m": 0.02,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "83",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351661560235257,
+              49.72629497892687
+            ],
+            [
+              13.351642493927597,
+              49.7262753040867
+            ],
+            [
+              13.351638960999432,
+              49.72627673477836
+            ],
+            [
+              13.35165802730709,
+              49.726296409618534
+            ],
+            [
+              13.351661560235257,
+              49.72629497892687
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "83",
+        "confidence": 0.6643965840339661,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.34,
+        "height_m": 2.26,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "84",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351665910853297,
+              49.72630191358691
+            ],
+            [
+              13.351658826066236,
+              49.726294668313116
+            ],
+            [
+              13.351655302164357,
+              49.72629610827721
+            ],
+            [
+              13.351662386951418,
+              49.726303353551
+            ],
+            [
+              13.351665910853297,
+              49.72630191358691
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "84",
+        "confidence": 0.6295288801193237,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.38,
+        "height_m": 0.02,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "85",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351659647822565,
+              49.72629459562222
+            ],
+            [
+              13.35163941768365,
+              49.72628562137114
+            ],
+            [
+              13.351634872451834,
+              49.72628990303474
+            ],
+            [
+              13.351655102590748,
+              49.726298877285814
+            ],
+            [
+              13.351659647822565,
+              49.72629459562222
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "85",
+        "confidence": 0.7593223452568054,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.42,
+        "height_m": 0.04,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "86",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351660502658088,
+              49.72629954095293
+            ],
+            [
+              13.351648891260421,
+              49.726290819061994
+            ],
+            [
+              13.351635377292773,
+              49.726298337239534
+            ],
+            [
+              13.35164698869044,
+              49.72630705913047
+            ],
+            [
+              13.351660502658088,
+              49.72629954095293
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "86",
+        "confidence": 0.4427473247051239,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.39,
+        "height_m": 0.04,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "87",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351633505354792,
+              49.72629724421204
+            ],
+            [
+              13.351630830730265,
+              49.72629517700364
+            ],
+            [
+              13.351627632893193,
+              49.72629690598675
+            ],
+            [
+              13.351630307517722,
+              49.72629897319515
+            ],
+            [
+              13.351633505354792,
+              49.72629724421204
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "87",
+        "confidence": 0.5395955443382263,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.67,
+        "height_m": 0.48,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "88",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351658315868352,
+              49.72625758683526
+            ],
+            [
+              13.35162887571738,
+              49.72624452694934
+            ],
+            [
+              13.351604942216523,
+              49.726267072597935
+            ],
+            [
+              13.351634382367497,
+              49.72628013248386
+            ],
+            [
+              13.351658315868352,
+              49.72625758683526
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "88",
+        "confidence": 0.40255969762802124,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.62,
+        "height_m": 0.34,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "89",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351657748520408,
+              49.72625808517994
+            ],
+            [
+              13.351628308369435,
+              49.72624502529401
+            ],
+            [
+              13.351604374868579,
+              49.72626757094261
+            ],
+            [
+              13.351633815019552,
+              49.72628063082854
+            ],
+            [
+              13.351657748520408,
+              49.72625808517994
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "89",
+        "confidence": 0.6245712637901306,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.04,
+        "height_m": 1.33,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "90",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351635555091004,
+              49.726255104938616
+            ],
+            [
+              13.35162780089543,
+              49.72625181042828
+            ],
+            [
+              13.351618257198014,
+              49.72626119724618
+            ],
+            [
+              13.351626011393586,
+              49.72626449175652
+            ],
+            [
+              13.351635555091004,
+              49.726255104938616
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Window",
+        "id": "90",
+        "confidence": 0.3663727343082428,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.11,
+        "height_m": 0.38,
+        "marker-color": "#b0c4de",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#b0c4de",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#b0c4de",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "91",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351645832892833,
+            49.72626956214181
+          ],
+          [
+            13.351624178295866,
+            49.72626318008634
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "91",
+        "confidence": 0.5276744961738586,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 394.35,
+        "height_m": 0.27,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "92",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351686664920773,
+              49.72627243977872
+            ],
+            [
+              13.35165561891071,
+              49.72626511696652
+            ],
+            [
+              13.351651849715982,
+              49.72627179474993
+            ],
+            [
+              13.351682895726045,
+              49.726279117562115
+            ],
+            [
+              13.351686664920773,
+              49.72627243977872
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "92",
+        "confidence": 0.8766706585884094,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.8,
+        "height_m": 0.23,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "93",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351643733090565,
+              49.726295794025106
+            ],
+            [
+              13.351636109099863,
+              49.72629339696404
+            ],
+            [
+              13.351633745604538,
+              49.72629653829622
+            ],
+            [
+              13.351641369595242,
+              49.726298935357285
+            ],
+            [
+              13.351643733090565,
+              49.726295794025106
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "93",
+        "confidence": 0.8733715415000916,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.65,
+        "height_m": 0.27,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "94",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351626295117706,
+              49.72629171648727
+            ],
+            [
+              13.351622442719028,
+              49.726290686474975
+            ],
+            [
+              13.351620849356944,
+              49.72629317681789
+            ],
+            [
+              13.351624701755622,
+              49.72629420683018
+            ],
+            [
+              13.351626295117706,
+              49.72629171648727
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "94",
+        "confidence": 0.3957597613334656,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.67,
+        "height_m": 0.81,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "95",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.351652911644955,
+            49.7262230479976
+          ],
+          [
+            13.351624274286452,
+            49.72627006965407
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Fence",
+        "id": "95",
+        "confidence": 0.4674105644226074,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.09,
+        "height_m": 2.17,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "96",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351627443531203,
+              49.72628999787132
+            ],
+            [
+              13.351623576973287,
+              49.72628899027375
+            ],
+            [
+              13.35162201828532,
+              49.726291489769764
+            ],
+            [
+              13.351625884843239,
+              49.726292497367325
+            ],
+            [
+              13.351627443531203,
+              49.72628999787132
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "96",
+        "confidence": 0.502406120300293,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.58,
+        "height_m": 0.88,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "97",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351631831799251,
+              49.72629320845742
+            ],
+            [
+              13.351628030379873,
+              49.726292102122045
+            ],
+            [
+              13.35162424800825,
+              49.72629753311248
+            ],
+            [
+              13.351628049427628,
+              49.72629863944785
+            ],
+            [
+              13.351631831799251,
+              49.72629320845742
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "97",
+        "confidence": 0.8644249439239502,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.65,
+        "height_m": 0.36,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "98",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351707272695512,
+              49.72624693999442
+            ],
+            [
+              13.351665726705082,
+              49.72623658195102
+            ],
+            [
+              13.351629415087904,
+              49.726297444878305
+            ],
+            [
+              13.351670961078334,
+              49.7263078029217
+            ],
+            [
+              13.351707272695512,
+              49.72624693999442
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "98",
+        "confidence": 0.7426474094390869,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.64,
+        "height_m": 3.14,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "99",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351629047192397,
+              49.726287354435826
+            ],
+            [
+              13.351625130842212,
+              49.726286430687594
+            ],
+            [
+              13.351623701863721,
+              49.72628896237129
+            ],
+            [
+              13.351627618213906,
+              49.726289886119524
+            ],
+            [
+              13.351629047192397,
+              49.726287354435826
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "99",
+        "confidence": 0.40930795669555664,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.53,
+        "height_m": 0.13,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "100",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35166892463594,
+              49.72621142793362
+            ],
+            [
+              13.351613019599723,
+              49.72619732424014
+            ],
+            [
+              13.351560763322576,
+              49.72628388327269
+            ],
+            [
+              13.351616668358794,
+              49.72629798696617
+            ],
+            [
+              13.35166892463594,
+              49.72621142793362
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Door",
+        "id": "100",
+        "confidence": 0.41845598816871643,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 394.92,
+        "height_m": 4.3,
+        "marker-color": "#8b4513",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#8b4513",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#8b4513",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "101",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351676161499539,
+              49.72625635144149
+            ],
+            [
+              13.35162821088905,
+              49.72624399348177
+            ],
+            [
+              13.351575345589604,
+              49.72632971185438
+            ],
+            [
+              13.351623296200092,
+              49.7263420698141
+            ],
+            [
+              13.351676161499539,
+              49.72625635144149
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "101",
+        "confidence": 0.7465609312057495,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.49,
+        "height_m": 3.4,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "102",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351643164162288,
+              49.72629613798305
+            ],
+            [
+              13.351638461423727,
+              49.7262947578023
+            ],
+            [
+              13.351636738029839,
+              49.726297211693335
+            ],
+            [
+              13.3516414407684,
+              49.726298591874084
+            ],
+            [
+              13.351643164162288,
+              49.72629613798305
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "102",
+        "confidence": 0.4793854057788849,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.75,
+        "height_m": 0.74,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "103",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351630429633419,
+              49.72629241342389
+            ],
+            [
+              13.351626624665577,
+              49.72629131219782
+            ],
+            [
+              13.351624921140399,
+              49.72629377187957
+            ],
+            [
+              13.35162872610824,
+              49.72629487310564
+            ],
+            [
+              13.351630429633419,
+              49.72629241342389
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Window",
+        "id": "103",
+        "confidence": 0.5909767746925354,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.65,
+        "height_m": 0.07,
+        "marker-color": "#b0c4de",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#b0c4de",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#b0c4de",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "104",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351634783531452,
+              49.72627523299348
+            ],
+            [
+              13.35162647682824,
+              49.72627282939119
+            ],
+            [
+              13.351624773602287,
+              49.72627528915953
+            ],
+            [
+              13.351633080305499,
+              49.72627769276182
+            ],
+            [
+              13.351634783531452,
+              49.72627523299348
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Window",
+        "id": "104",
+        "confidence": 0.7371365427970886,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.2,
+        "height_m": 0.23,
+        "marker-color": "#b0c4de",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#b0c4de",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#b0c4de",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "105",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351631505852113,
+              49.726295509816524
+            ],
+            [
+              13.351627708631458,
+              49.72629434192339
+            ],
+            [
+              13.35162591752782,
+              49.72629677546795
+            ],
+            [
+              13.351629714748475,
+              49.72629794336108
+            ],
+            [
+              13.351631505852113,
+              49.726295509816524
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Green plant",
+        "id": "105",
+        "confidence": 0.8834668397903442,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.59,
+        "height_m": 0.1,
+        "marker-color": "#32cd32",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#32cd32",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#32cd32",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "106",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351667989716205,
+              49.72620630786532
+            ],
+            [
+              13.351653782327833,
+              49.72620201629634
+            ],
+            [
+              13.35165201746694,
+              49.72620445783998
+            ],
+            [
+              13.351666224855311,
+              49.726208749408954
+            ],
+            [
+              13.351667989716205,
+              49.72620630786532
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Window",
+        "id": "106",
+        "confidence": 0.5929594039916992,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 393.86,
+        "height_m": 0.96,
+        "marker-color": "#b0c4de",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#b0c4de",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#b0c4de",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "107",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351637608599258,
+              49.7262912801069
+            ],
+            [
+              13.351624886430422,
+              49.72628745620909
+            ],
+            [
+              13.351615955742254,
+              49.72629987260804
+            ],
+            [
+              13.35162867791109,
+              49.726303696505845
+            ],
+            [
+              13.351637608599258,
+              49.7262912801069
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "107",
+        "confidence": 0.8083734512329102,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.65,
+        "height_m": 0.58,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "108",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351646550937591,
+              49.726295478879294
+            ],
+            [
+              13.351637479149716,
+              49.72629286825902
+            ],
+            [
+              13.351634209143182,
+              49.726297616728566
+            ],
+            [
+              13.351643280931057,
+              49.72630022734884
+            ],
+            [
+              13.351646550937591,
+              49.726295478879294
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "108",
+        "confidence": 0.40446195006370544,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.48,
+        "height_m": 0.12,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "109",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351642086238158,
+              49.72628846223743
+            ],
+            [
+              13.351624752022298,
+              49.726283478440884
+            ],
+            [
+              13.351615540922603,
+              49.72629686630308
+            ],
+            [
+              13.351632875138463,
+              49.726301850099624
+            ],
+            [
+              13.351642086238158,
+              49.72628846223743
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "109",
+        "confidence": 0.5249148011207581,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.51,
+        "height_m": 0.4,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "110",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351647685749345,
+              49.72629382110294
+            ],
+            [
+              13.351643851277128,
+              49.72629276350705
+            ],
+            [
+              13.351642215245002,
+              49.72629524226159
+            ],
+            [
+              13.35164604971722,
+              49.72629629985748
+            ],
+            [
+              13.351647685749345,
+              49.72629382110294
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "110",
+        "confidence": 0.7490805983543396,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.58,
+        "height_m": 0.11,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "111",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35162331198003,
+              49.726291070323356
+            ],
+            [
+              13.351619289463438,
+              49.72629036243851
+            ],
+            [
+              13.351618194411579,
+              49.726292962752375
+            ],
+            [
+              13.35162221692817,
+              49.72629367063722
+            ],
+            [
+              13.35162331198003,
+              49.726291070323356
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Pole",
+        "id": "111",
+        "confidence": 0.4322667419910431,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.64,
+        "height_m": 0.87,
+        "marker-color": "#778899",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#778899",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#778899",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "112",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35163816197684,
+              49.72629052342167
+            ],
+            [
+              13.351620565430071,
+              49.72629034479142
+            ],
+            [
+              13.351620495528195,
+              49.726293222303475
+            ],
+            [
+              13.351638092074964,
+              49.72629340093371
+            ],
+            [
+              13.35163816197684,
+              49.72629052342167
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "112",
+        "confidence": 0.5014209747314453,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.36,
+        "height_m": 0.03,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "113",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351610787945722,
+              49.726283767713724
+            ],
+            [
+              13.35160673218924,
+              49.72628439132445
+            ],
+            [
+              13.351607696874499,
+              49.72628701312589
+            ],
+            [
+              13.351611752630983,
+              49.726286389515174
+            ],
+            [
+              13.351610787945722,
+              49.726283767713724
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Destroyed vehicle",
+        "id": "113",
+        "confidence": 0.8205319046974182,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.43,
+        "height_m": 0.03,
+        "marker-color": "#00008b",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#00008b",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00008b",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "114",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351593037430241,
+              49.72629864548563
+            ],
+            [
+              13.351589386420807,
+              49.72631107939748
+            ],
+            [
+              13.351608914023611,
+              49.726313475525174
+            ],
+            [
+              13.351612565033045,
+              49.726301041613326
+            ],
+            [
+              13.351593037430241,
+              49.72629864548563
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Debris",
+        "id": "114",
+        "confidence": 0.6788030862808228,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.42,
+        "height_m": 0.14,
+        "marker-color": "#ff8c00",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#ff8c00",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#ff8c00",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "115",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351634899041695,
+              49.726240825488674
+            ],
+            [
+              13.35162278269092,
+              49.72624656730211
+            ],
+            [
+              13.351630400554603,
+              49.726253284879654
+            ],
+            [
+              13.351642516905377,
+              49.726247543066215
+            ],
+            [
+              13.351634899041695,
+              49.726240825488674
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "115",
+        "confidence": 0.9412698149681091,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.37,
+        "height_m": 0.14,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "116",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35160435183632,
+              49.726303565962105
+            ],
+            [
+              13.351603178823643,
+              49.7263090811816
+            ],
+            [
+              13.351608677102906,
+              49.72630956985934
+            ],
+            [
+              13.351609850115583,
+              49.72630405463985
+            ],
+            [
+              13.35160435183632,
+              49.726303565962105
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Civilian vehicle",
+        "id": "116",
+        "confidence": 0.6747530102729797,
+        "category": "vehicle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.43,
+        "height_m": 0.09,
+        "marker-color": "#0000ff",
+        "marker-size": "medium",
+        "marker-symbol": "car",
+        "stroke": "#0000ff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#0000ff",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "117",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351588872212886,
+              49.72628745356863
+            ],
+            [
+              13.351584387241264,
+              49.72630825666291
+            ],
+            [
+              13.351608375767881,
+              49.72631041784416
+            ],
+            [
+              13.351612860739504,
+              49.72628961474988
+            ],
+            [
+              13.351588872212886,
+              49.72628745356863
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "117",
+        "confidence": 0.3798855245113373,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 396.29,
+        "height_m": 0.15,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "118",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351644862623257,
+              49.72623303685855
+            ],
+            [
+              13.35161737194378,
+              49.72624538385827
+            ],
+            [
+              13.351626348777131,
+              49.726253736116824
+            ],
+            [
+              13.351653839456608,
+              49.726241389117114
+            ],
+            [
+              13.351644862623257,
+              49.72623303685855
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Road",
+        "id": "118",
+        "confidence": 0.7736296653747559,
+        "category": "infrastructure",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "gnss_altitude_m": 395.31,
+        "height_m": 0.12,
+        "marker-color": "#a9a9a9",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#a9a9a9",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#a9a9a9",
         "fill-opacity": 0.25
       }
     }

@@ -1,13 +1,9 @@
-# =============================================================
-# TRIFFID Perception – Docker Image
-# Base: ROS2 Humble on Ubuntu 22.04 with CUDA support
-# =============================================================
 FROM ros:humble-perception-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ROS_DOMAIN_ID=42
 
-# ── System deps ──────────────────────────────────────────────
+# System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-opencv \
@@ -20,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     mosquitto-clients \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Python deps (inside container, safe) ─────────────────────
+# Python deps
 # Pin numpy<2 because ROS2 Humble cv_bridge was compiled against NumPy 1.x
 RUN pip3 install --no-cache-dir \
     "numpy<2" \
@@ -28,7 +24,7 @@ RUN pip3 install --no-cache-dir \
     ultralytics \
     paho-mqtt
 
-# ── Workspace setup ──────────────────────────────────────────
+# Workspace setup 
 WORKDIR /ws
 # src/ is bind-mounted at runtime via docker-compose
 
@@ -41,7 +37,7 @@ RUN echo '#!/bin/bash'                                          >  /etc/triffid_
     echo '[ -f /ws/install/setup.bash ] && source /ws/install/setup.bash' >> /etc/triffid_ros_env.sh && \
     chmod +x /etc/triffid_ros_env.sh
 
-# ── Entrypoint ───────────────────────────────────────────────
+# Entrypoint 
 COPY docker_entrypoint.sh /docker_entrypoint.sh
 RUN chmod +x /docker_entrypoint.sh
 ENTRYPOINT ["/docker_entrypoint.sh"]

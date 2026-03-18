@@ -1,6 +1,6 @@
 """
 TRIFFID GeoJSON Bridge
-=======================
+
 Subscribes to UGV detection topic (Detection3DArray in b2/base_link)
 and converts them to RFC-7946 GeoJSON, then:
   1. Publishes as a ROS2 String topic (for debugging / other nodes)
@@ -17,7 +17,8 @@ Coordinate handling:
     East-North-Up (ENU) and added to the current GPS position.
   - When no GPS is available, raw local (x, y, z) are emitted and a
     ``"local_frame": true`` property is added.
-  - 3D coordinates are emitted: [lon, lat, altitude] (RFC 7946 §3.1.1).
+  - 2D coordinates are emitted: [lon, lat] (RFC 7946 §3.1.1).
+   - GNSS altitude is stored in properties (``gnss_altitude_m``).
 
 API endpoint (when enabled): https://crispres.com/wp-json/map-manager/v1/features
 """
@@ -50,9 +51,18 @@ _R_EARTH = 6378137.0
 # GPS sliding-window size for median filter
 _GPS_WINDOW = 7
 
-# Minimum polygon extent (metres) — used when one bbox dimension is 0
-# so that a visible polygon is still emitted instead of a Point.
+# Minimum polygon extent (metres) — used when one bbox dimension is 0 so that a visible polygon is still emitted instead of a point 
 _MIN_EXTENT = 0.3
+
+# Classes whose geometry is always emitted as a Point (regardless of bbox)
+_POINT_CLASSES = frozenset([
+    'First responder', 'Citizen', 'Military personnel',
+])
+
+# Classes whose geometry is emitted as a LineString (centre-line along longest axis)
+_LINE_CLASSES = frozenset([
+    'Fence',
+])
 
 
 class GeoJSONBridge(Node):
@@ -61,7 +71,7 @@ class GeoJSONBridge(Node):
     def __init__(self):
         super().__init__('geojson_bridge')
 
-        # ── Parameters ──────────────────────────────────────────────
+        # Parameters 
         self.declare_parameter('api_url',
                                'https://crispres.com/wp-json/map-manager/v1/features')
         self.declare_parameter('publish_to_api', False)
@@ -76,7 +86,7 @@ class GeoJSONBridge(Node):
         self.api_url = self.get_parameter('api_url').value
         self.publish_to_api = self.get_parameter('publish_to_api').value
 
-        # ── GPS state ───────────────────────────────────────────────
+        # GPS state
         # Sliding window for median filtering of noisy GPS fixes
         self._gps_lat_buf = collections.deque(maxlen=_GPS_WINDOW)
         self._gps_lon_buf = collections.deque(maxlen=_GPS_WINDOW)
@@ -98,13 +108,13 @@ class GeoJSONBridge(Node):
             self.robot_alt = param_alt
             self.gps_valid = True
 
-        # ── Heading state ───────────────────────────────────────────
+        # Heading state 
         # Yaw from /dog_odom quaternion (radians, ENU convention:
         # 0 = East, π/2 = North, counter-clockwise positive)
         self.robot_yaw = 0.0
         self.heading_valid = False
 
-        # ── Subscribers ─────────────────────────────────────────────
+        # Subscribers 
         self.sub_ugv = self.create_subscription(
             Detection3DArray,
             '/ugv/perception/front/detections_3d',
@@ -128,7 +138,7 @@ class GeoJSONBridge(Node):
             ),
         )
 
-        # ── Publishers ──────────────────────────────────────────────
+        # Publishers
         self.pub_geojson = self.create_publisher(
             String,
             '/triffid/front/geojson',
@@ -148,7 +158,7 @@ class GeoJSONBridge(Node):
                 'Waiting for /fix topic.'
             )
 
-        # ── MQTT client ─────────────────────────────────────────────
+        # MQTT client
         self._mqtt_enabled = self.get_parameter('mqtt_enabled').value
         self._mqtt_topic = self.get_parameter('mqtt_topic').value
         self._mqtt_client = None     # type: paho_mqtt.Client | None
@@ -178,10 +188,7 @@ class GeoJSONBridge(Node):
                     self.get_logger().warn(f'MQTT connect failed: {e}')
                     self._mqtt_enabled = False
 
-    # ═══════════════════════════════════════════════════════════════
     #  GPS (position tracking with median filter)
-    # ═══════════════════════════════════════════════════════════════
-
     def gps_callback(self, msg: NavSatFix):
         """Update current robot position from every valid GPS fix.
 
@@ -207,10 +214,8 @@ class GeoJSONBridge(Node):
                 f'{self.robot_alt:.1f}m)'
             )
 
-    # ═══════════════════════════════════════════════════════════════
-    #  Heading (from /dog_odom orientation quaternion)
-    # ═══════════════════════════════════════════════════════════════
 
+    #  Heading (from /dog_odom orientation quaternion)
     def odom_callback(self, msg: Odometry):
         """Extract yaw from the Go2 state estimator odometry.
 
@@ -230,10 +235,7 @@ class GeoJSONBridge(Node):
                 f'(ENU yaw)'
             )
 
-    # ═══════════════════════════════════════════════════════════════
     #  Coordinate conversion (body-frame → GPS)
-    # ═══════════════════════════════════════════════════════════════
-
     @staticmethod
     def _body_to_enu(x_fwd, y_left, z_up, yaw):
         """Rotate a body-frame offset into East-North-Up.
@@ -290,44 +292,94 @@ class GeoJSONBridge(Node):
     #  Detection → GeoJSON conversion
     # ═══════════════════════════════════════════════════════════════
 
+    # Class-dependent geometry type
+    @staticmethod
+    def _geometry_type_for_class(class_name: str) -> str:
+        """Return the GeoJSON geometry type to use for a given class.
+
+        - Person classes → Point (small, mobile targets)
+        - Linear structures (Fence) → LineString
+        - Everything else → Polygon (footprint)
+        """
+        if class_name in _POINT_CLASSES:
+            return 'Point'
+        if class_name in _LINE_CLASSES:
+            return 'LineString'
+        return 'Polygon'
+
     def detections_to_geojson(self, detections, source='ugv',
                                detection_type='seg'):
-        """Build a GeoJSON FeatureCollection from detection dicts."""
+        """Build a GeoJSON FeatureCollection from detection dicts.
+
+        Geometry coordinates are 2D [lon, lat] only (RFC 7946).
+        GNSS altitude is stored in ``gnss_altitude_m`` property.
+        Geometry type is class-dependent (Point / LineString / Polygon).
+        """
         features = []
         for det in detections:
             lon, lat, alt = det['coordinates']
             sx, sy, sz = det.get('size', (0.0, 0.0, 0.0))
             pos_x, pos_y, pos_z = det.get('position', (0.0, 0.0, 0.0))
 
+            class_name = det.get('class_name', 'unknown')
             has_extent = (sx > 0.0 or sy > 0.0)
+            geom_type = self._geometry_type_for_class(class_name)
 
-            if has_extent:
-                # Build polygon from body-frame corners, each
-                # individually converted to GPS via body_to_gps.
-                # Use minimum extent so a zero dimension still
-                # produces a visible polygon (not a degenerate line).
-                half_x = max(sx, _MIN_EXTENT) / 2.0
-                half_y = max(sy, _MIN_EXTENT) / 2.0
-                body_corners = [
-                    (pos_x + half_x, pos_y + half_y, pos_z),
-                    (pos_x + half_x, pos_y - half_y, pos_z),
-                    (pos_x - half_x, pos_y - half_y, pos_z),
-                    (pos_x - half_x, pos_y + half_y, pos_z),
-                ]
-                ring = [list(self.body_to_gps(cx, cy, cz))
-                        for cx, cy, cz in body_corners]
-                ring.append(ring[0])  # close the ring (RFC-7946)
-                geometry = {
-                    "type": "Polygon",
-                    "coordinates": [ring],
-                }
-            else:
+            if geom_type == 'Point':
+                # Point: just the centre position in [lon, lat]
                 geometry = {
                     "type": "Point",
-                    "coordinates": [lon, lat, alt],
+                    "coordinates": [lon, lat],
                 }
 
-            class_name = det.get('class_name', 'unknown')
+            elif geom_type == 'LineString':
+                # LineString: centre-line along the longer bbox axis
+                half_long = max(sx, sy, _MIN_EXTENT) / 2.0
+                if sx >= sy:
+                    # longer along X (forward)
+                    endpoints = [
+                        list(self.body_to_gps(pos_x + half_long, pos_y, pos_z))[:2],
+                        list(self.body_to_gps(pos_x - half_long, pos_y, pos_z))[:2],
+                    ]
+                else:
+                    # longer along Y (left-right)
+                    endpoints = [
+                        list(self.body_to_gps(pos_x, pos_y + half_long, pos_z))[:2],
+                        list(self.body_to_gps(pos_x, pos_y - half_long, pos_z))[:2],
+                    ]
+                geometry = {
+                    "type": "LineString",
+                    "coordinates": endpoints,
+                }
+
+            else:  # Polygon (default)
+                if has_extent:
+                    # Build polygon from body-frame corners, each
+                    # individually converted to GPS via body_to_gps.
+                    # Use minimum extent so a zero dimension still
+                    # produces a visible polygon (not a degenerate line).
+                    half_x = max(sx, _MIN_EXTENT) / 2.0
+                    half_y = max(sy, _MIN_EXTENT) / 2.0
+                    body_corners = [
+                        (pos_x + half_x, pos_y + half_y, pos_z),
+                        (pos_x + half_x, pos_y - half_y, pos_z),
+                        (pos_x - half_x, pos_y - half_y, pos_z),
+                        (pos_x - half_x, pos_y + half_y, pos_z),
+                    ]
+                    ring = [list(self.body_to_gps(cx, cy, cz))[:2]
+                            for cx, cy, cz in body_corners]
+                    ring.append(ring[0])  # close the ring (RFC-7946)
+                    geometry = {
+                        "type": "Polygon",
+                        "coordinates": [ring],
+                    }
+                else:
+                    # Fallback to Point when no bbox extents
+                    geometry = {
+                        "type": "Point",
+                        "coordinates": [lon, lat],
+                    }
+
             feature = {
                 "type": "Feature",
                 "id": det.get('track_id', ''),
@@ -340,19 +392,24 @@ class GeoJSONBridge(Node):
                     "detection_type": detection_type,
                     "source": source,
                     "local_frame": not self.gps_valid,
-                    "altitude_m": round(alt, 2),
+                    "gnss_altitude_m": round(alt, 2),
                     "height_m": round(float(sz), 2),
                     "marker-color": self._class_color(class_name),
                     "marker-size": "medium",
                     "marker-symbol": self._class_symbol(class_name),
                 }
             }
-            if has_extent:
+            # SimpleStyle: stroke/fill for Polygon, stroke for LineString
+            if geometry['type'] == 'Polygon':
                 feature["properties"]["stroke"] = feature["properties"]["marker-color"]
                 feature["properties"]["stroke-width"] = 2
                 feature["properties"]["stroke-opacity"] = 1.0
                 feature["properties"]["fill"] = feature["properties"]["marker-color"]
                 feature["properties"]["fill-opacity"] = 0.25
+            elif geometry['type'] == 'LineString':
+                feature["properties"]["stroke"] = feature["properties"]["marker-color"]
+                feature["properties"]["stroke-width"] = 2
+                feature["properties"]["stroke-opacity"] = 1.0
             features.append(feature)
 
         return {
@@ -360,10 +417,7 @@ class GeoJSONBridge(Node):
             "features": features
         }
 
-    # ═══════════════════════════════════════════════════════════════
     #  Detection callback
-    # ═══════════════════════════════════════════════════════════════
-
     def ugv_callback(self, msg: Detection3DArray):
         """Process UGV 3D detections (b2/base_link) → GeoJSON."""
         detections = []
@@ -414,10 +468,7 @@ class GeoJSONBridge(Node):
         )
         self._publish(geojson)
 
-    # ═══════════════════════════════════════════════════════════════
     #  Publishing
-    # ═══════════════════════════════════════════════════════════════
-
     def _publish(self, geojson: dict):
         """Publish GeoJSON to ROS2 topic, MQTT, and optionally to the API."""
         json_str = json.dumps(geojson, indent=2)
@@ -453,7 +504,7 @@ class GeoJSONBridge(Node):
             ).start()
 
     def _send_to_api(self, json_str: str):
-        """PUT GeoJSON to the TRIFFID mapping API."""
+        # PUT GeoJSON to the TRIFFID mapping API.
         try:
             req = Request(
                 self.api_url,
@@ -474,13 +525,11 @@ class GeoJSONBridge(Node):
         except Exception as e:
             self.get_logger().error(f'API PUT error: {e}')
 
-    # ═══════════════════════════════════════════════════════════════
-    #  SimpleStyle helpers
-    # ═══════════════════════════════════════════════════════════════
 
+    #  SimpleStyle helpers
     @staticmethod
     def _class_color(class_name: str) -> str:
-        """Map TRIFFID class name to a SimpleStyle marker color."""
+
         colors = {
             # Fire / hazard (reds)
             'Flame': '#ff0000',
@@ -557,7 +606,7 @@ class GeoJSONBridge(Node):
 
     @staticmethod
     def _class_category(class_name: str) -> str:
-        """Map TRIFFID class name to a semantic category."""
+
         categories = {
             # Hazard
             'Flame': 'hazard', 'Smoke': 'hazard',
@@ -599,7 +648,7 @@ class GeoJSONBridge(Node):
 
     @staticmethod
     def _class_symbol(class_name: str) -> str:
-        """Map TRIFFID class name to a Maki icon name."""
+
         symbols = {
             'First responder': 'pitch',
             'Citizen': 'pitch',

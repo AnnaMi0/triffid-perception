@@ -1,10 +1,40 @@
 header:
-  stamp: 1771603293.484250350
+  stamp: 1773161660.519816678
   frame_id: "b2/base_link"
-detections: (1 total)
+detections: (6 total)
   [0]:
-    id: "1"
-    class: "Green grass"
-    score: 0.9571
-    position: (2.114, -1.158, -0.519)
-    size: (0.384, 0.172, 0.054)
+    id: "6"
+    class: "Building"
+    score: 0.6216
+    position: (6.865, -2.462, -3.465)
+    size: (23.690, 11.593, 16.969)
+  [1]:
+    id: "13"
+    class: "Building"
+    score: 0.3805
+    position: (13.169, 1.267, -8.835)
+    size: (0.000, 15.843, 16.464)
+  [2]:
+    id: "16"
+    class: "Dry tree"
+    score: 0.4366
+    position: (13.611, 6.546, -4.855)
+    size: (8.045, 7.257, 2.043)
+  [3]:
+    id: "14"
+    class: "Dry tree"
+    score: 0.8065
+    position: (11.308, -0.821, -3.355)
+    size: (1.273, 1.794, 0.997)
+  [4]:
+    id: "15"
+    class: "Green tree"
+    score: 0.4081
+    position: (13.050, 3.095, -5.058)
+    size: (0.000, 1.197, 1.083)
+  [5]:
+    id: "17"
+    class: "Dry tree"
+    score: 0.3917
+    position: (13.880, 4.883, -4.858)
+    size: (6.622, 6.358, 1.688)

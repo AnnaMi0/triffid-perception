@@ -1,11 +1,3 @@
-# =============================================================
-# TRIFFID Perception – Docker Compose
-# Usage:
-#   sudo docker compose build          # first time / after Dockerfile changes
-#   sudo docker compose run --rm perception bash   # interactive shell
-#   sudo docker compose up perception  # run default CMD
-# =============================================================
-
 services:
   perception:
     build:
@@ -14,7 +6,6 @@ services:
     image: triffid_perception:latest
     container_name: triffid_perception
 
-    # ── GPU access ──
     deploy:
       resources:
         reservations:
@@ -23,10 +14,9 @@ services:
               count: 1            # use 1 GPU (change to "all" for both)
               capabilities: [gpu]
 
-    # ── Mount workspace ──
     volumes:
       - ./src:/ws/src                          # source code (editable from host)
-      - ./rosbag2_active_20260220_170131:/ws/rosbag:ro     # rosbag (read-only)
+      - ./new_rosbag/rosbag2_active_20260310_175414/:/ws/rosbag:ro     # rosbag (read-only)
       - ./install:/ws/install                  # persist build artifacts
       - ./build:/ws/build                      # persist build artifacts
       - ./log:/ws/log                          # persist logs
@@ -35,11 +25,9 @@ services:
       - ./samples:/ws/samples                  # collected output samples
       - ./output_rosbag:/ws/output_rosbag        # recorded output rosbag
 
-    # ── Networking ──
     network_mode: host    # shares host network so ROS2 DDS works seamlessly
     ipc: host             # shared memory for fast DDS transport
 
-    # ── Environment ──
     environment:
       - ROS_DOMAIN_ID=42
       - CYCLONEDDS_URI=file:///ws/cyclonedds.xml
