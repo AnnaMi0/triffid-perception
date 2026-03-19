@@ -224,7 +224,7 @@ The polygon is a closed axis-aligned rectangle (5 points, first = last) derived 
 | `detection_type` | string | `"seg"` | Detection source model type |
 | `source` | string | `"ugv"` | Platform identifier |
 | `local_frame` | bool | `false` | `true` if no GPS origin available |
-| `altitude_m` | float | `321.5` | Altitude above WGS-84 ellipsoid (m) |
+| `gnss_altitude_m` | float | `321.5` | Altitude above WGS-84 ellipsoid (m) |
 | `height_m` | float | `4.5` | Object height from `bbox.size.z` (m) |
 | `marker-color` | string | `"#0000ff"` | SimpleStyle hex colour |
 | `marker-size` | string | `"medium"` | SimpleStyle marker size |

@@ -1,4 +1,17 @@
-# TRIFFID UGV Perception
+# TRIFFID Perception
+
+Perception pipelines for the TRIFFID project — covering both **UGV** (ground robot) and **UAV** (DJI M30T drone) platforms.
+
+| Platform | Package | Runtime | Output |
+|----------|---------|---------|--------|
+| UGV | `triffid_ugv_perception` | ROS 2 Humble + Docker (GPU) | ROS 2 topics + MQTT + API |
+| UAV | `triffid_uav_perception` | Pure Python + Docker (CPU) | MQTT + GeoJSON files |
+
+For UAV-specific documentation see [src/triffid_uav_perception/README.md](src/triffid_uav_perception/README.md).
+
+---
+
+## UGV Perception
 
 Real-time 3D object detection pipeline for the TRIFFID UGV platform.  
 Fuses RGB and depth from separate cameras via cross-camera projection, runs a fine-tuned YOLOv11l-seg model for 2D detection, back-projects to 3D, tracks objects across frames, and publishes results as ROS 2 messages and GeoJSON.
@@ -7,19 +20,20 @@ Fuses RGB and depth from separate cameras via cross-camera projection, runs a fi
 
 ## Table of Contents
 
-1. [Architecture Overview](#architecture-overview)
-2. [Hardware Assumptions](#hardware-assumptions)
-3. [ROS 2 Topics](#ros-2-topics)
-4. [TF Frame Tree](#tf-frame-tree)
-5. [Pipeline Steps](#pipeline-steps)
-6. [Node Descriptions](#node-descriptions)
-7. [Parameters](#parameters)
-8. [Docker Setup](#docker-setup)
-9. [Quick Start (`run.sh`)](#quick-start-runsh)
-10. [Running the Integration Test](#running-the-integration-test)
-11. [Rosbag Datasets](#rosbag-datasets)
-12. [Project Structure](#project-structure)
-13. [Interface Specification](#interface-specification)
+1. [UGV Perception](#ugv-perception)
+2. [Architecture Overview](#architecture-overview)
+3. [Hardware Assumptions](#hardware-assumptions)
+4. [ROS 2 Topics](#ros-2-topics)
+5. [TF Frame Tree](#tf-frame-tree)
+6. [Pipeline Steps](#pipeline-steps)
+7. [Node Descriptions](#node-descriptions)
+8. [Parameters](#parameters)
+9. [Docker Setup](#docker-setup)
+10. [Quick Start (`run.sh`)](#quick-start-runsh)
+11. [Running the Integration Test](#running-the-integration-test)
+12. [Rosbag Datasets](#rosbag-datasets)
+13. [Project Structure](#project-structure)
+14. [Interface Specification](#interface-specification)
 
 ---
 
@@ -438,31 +452,46 @@ The pipeline detects 63 disaster-response classes using a fine-tuned YOLOv11l-se
 
 ```
 hua_ws/
-├── docker-compose.yml          # Container config (GPU, volumes, network)
-├── Dockerfile                  # Image: ROS2 Humble + CUDA + ultralytics
+├── docker-compose.yml          # UGV container config (GPU, volumes, network)
+├── docker-compose.uav.yml      # UAV container config (lightweight, no ROS2)
+├── Dockerfile                  # UGV image: ROS2 Humble + CUDA + ultralytics
+├── Dockerfile.uav              # UAV image: Python 3.10 + ultralytics
+├── run.sh                      # UGV all-in-one runner
+├── run_uav.sh                  # UAV all-in-one runner
 ├── docker_entrypoint.sh        # Source ROS, build if needed
 ├── cyclonedds.xml              # DDS tuning for large image fragments
 ├── .gitignore
 │
 └── src/
-    └── triffid_ugv_perception/
-        ├── package.xml
-        ├── setup.py
-        ├── setup.cfg
-        ├── config/
-        │   └── bag_qos_overrides.yaml    # QoS overrides for ros2 bag play
-        ├── launch/
-        │   └── ugv_perception.launch.py  # Launch all nodes + static TFs
-        ├── triffid_ugv_perception/
+    ├── triffid_ugv_perception/     # UGV perception (ROS2 + MQTT)
+    │   ├── package.xml
+    │   ├── setup.py
+    │   ├── setup.cfg
+    │   ├── config/
+    │   │   └── bag_qos_overrides.yaml    # QoS overrides for ros2 bag play
+    │   ├── launch/
+    │   │   └── ugv_perception.launch.py  # Launch all nodes + static TFs
+    │   ├── triffid_ugv_perception/
+    │   │   ├── __init__.py
+    │   │   ├── ugv_node.py               # Main perception node
+    │   │   ├── tracker.py                # IoU-based 2D bbox tracker
+    │   │   └── geojson_bridge.py         # Detection3D → GeoJSON + API
+    │   ├── scripts/
+    │   │   └── collect_samples.py        # Output sample collector
+    │   └── test/
+    │       ├── integration_test.py       # End-to-end integration test
+    │       └── test_unit.py              # 161 unit tests
+    │
+    └── triffid_uav_perception/     # UAV perception (standalone, MQTT only)
+        ├── requirements.txt
+        ├── README.md
+        ├── triffid_uav_perception/
         │   ├── __init__.py
-        │   ├── ugv_node.py               # Main perception node
-        │   ├── tracker.py                # IoU-based 2D bbox tracker
-        │   └── geojson_bridge.py         # Detection3D → GeoJSON + API
-        ├── scripts/
-        │   └── collect_samples.py        # Output sample collector
+        │   ├── metadata.py              # DJI XMP metadata extraction
+        │   ├── geo.py                   # Geo-projection (pixel → GPS)
+        │   └── uav_node.py             # Main pipeline + MQTT
         └── test/
-            ├── integration_test.py       # End-to-end integration test
-            └── test_unit.py              # 161 unit tests
+            └── test_unit.py             # 34 unit tests
 ```
 
 ---

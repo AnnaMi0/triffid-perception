@@ -1,0 +1,22 @@
+FROM python:3.10-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System deps (OpenCV needs libgl)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    mosquitto \
+    mosquitto-clients \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Python deps — install first for Docker layer caching
+COPY src/triffid_uav_perception/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Source code is bind-mounted at runtime via docker-compose
+# (so edits on host take effect immediately)
+
+CMD ["bash"]

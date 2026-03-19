@@ -26,3 +26,4 @@ dist/
 # Secrets / credentials
 *.env
 secrets.yaml
+mqtt_traces/*.jsonl

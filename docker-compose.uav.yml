@@ -1,0 +1,22 @@
+services:
+  uav_perception:
+    build:
+      context: .
+      dockerfile: Dockerfile.uav
+    image: triffid_uav_perception:latest
+    container_name: triffid_uav_perception
+
+    volumes:
+      - ./src/triffid_uav_perception:/app/src/triffid_uav_perception  # source (editable)
+      - ./uav_images:/app/images                                      # input images
+      - ./uav_samples:/app/samples                                    # output GeoJSON
+      - ./best.pt:/app/best.pt:ro                                     # YOLO model weights
+
+    network_mode: host    # so MQTT on localhost is accessible
+    ipc: host
+
+    environment:
+      - PYTHONPATH=/app/src/triffid_uav_perception
+
+    stdin_open: true
+    tty: true
