@@ -25,8 +25,8 @@ Topic mapping (from rosbag):
   IN:  /camera_front/realsense_front/depth/image_rect_raw   (sensor_msgs/Image, 16UC1 mm, 640×480, frame: f_depth_optical_frame)
   IN:  /camera_front/realsense_front/depth/camera_info      (sensor_msgs/CameraInfo, frame: f_depth_optical_frame)
   IN:  /tf, /tf_static
-  OUT: /ugv/perception/front/detections_3d                   (vision_msgs/Detection3DArray, frame: b2/base_link)
-  OUT: /ugv/perception/front/segmentation                     (sensor_msgs/Image, bgr8, annotated masks)
+  OUT: /ugv/detections/front/detections_3d                    (vision_msgs/Detection3DArray, frame: b2/base_link)
+  OUT: /ugv/detections/front/segmentation                      (sensor_msgs/Image, bgr8, annotated masks)
 """
 
 import rclpy
@@ -38,12 +38,13 @@ from vision_msgs.msg import Detection3DArray, Detection3D, ObjectHypothesisWithP
 from geometry_msgs.msg import PoseStamped
 
 from cv_bridge import CvBridge
+import cv2
 import numpy as np
 
 from tf2_ros import Buffer, TransformListener
 import tf2_geometry_msgs  # noqa – registers PoseStamped transform
 
-from triffid_ugv_perception.tracker import IoUTracker
+from triffid_ugv_perception.tracker import ByteTracker
 
 try:
     from ultralytics import YOLO
@@ -143,6 +144,13 @@ class UGVPerceptionNode(Node):
         self.declare_parameter('depth_grid_step_v', DEFAULT_GRID_STEP_V)
         self.declare_parameter('use_dummy_detections', False)
         self.declare_parameter('yolo_imgsz', 1280)
+        self.declare_parameter('tracker_iou_threshold', 0.30)
+        self.declare_parameter('tracker_iou_threshold_low', 0.15)
+        self.declare_parameter('tracker_conf_high', 0.40)
+        self.declare_parameter('tracker_max_age', 30)
+        self.declare_parameter('tracker_n_init', 3)
+        self.declare_parameter('tracker_pos_gate', 2.0)
+        self.declare_parameter('publish_debug_image', True)
 
         self.model_path = self.get_parameter('model_path').value
         self.conf_thresh = self.get_parameter('confidence_threshold').value
@@ -151,6 +159,13 @@ class UGVPerceptionNode(Node):
         self.grid_step_v = self.get_parameter('depth_grid_step_v').value
         self.use_dummy = self.get_parameter('use_dummy_detections').value
         self.yolo_imgsz = self.get_parameter('yolo_imgsz').value
+        self.tracker_iou = self.get_parameter('tracker_iou_threshold').value
+        self.tracker_iou_low = self.get_parameter('tracker_iou_threshold_low').value
+        self.tracker_conf_high = self.get_parameter('tracker_conf_high').value
+        self.tracker_max_age = self.get_parameter('tracker_max_age').value
+        self.tracker_n_init = self.get_parameter('tracker_n_init').value
+        self.tracker_pos_gate = self.get_parameter('tracker_pos_gate').value
+        self.publish_debug_image = self.get_parameter('publish_debug_image').value
 
         # ── YOLO model ──────────────────────────────────────────────
         if _HAS_YOLO:
@@ -170,7 +185,14 @@ class UGVPerceptionNode(Node):
         self.depth_camera_info = None    # /camera_front/realsense_front/depth/camera_info
         self.depth_image = None          # latest depth frame (uint16, mm)
         self.depth_stamp = None
-        self.tracker = IoUTracker()
+        self.tracker = ByteTracker(
+            iou_threshold=float(self.tracker_iou),
+            iou_threshold_low=float(self.tracker_iou_low),
+            conf_threshold_high=float(self.tracker_conf_high),
+            max_age=int(self.tracker_max_age),
+            n_init=int(self.tracker_n_init),
+            pos_gate=float(self.tracker_pos_gate),
+        )
 
         # ── TF2 ─────────────────────────────────────────────────────
         self.tf_buffer = Buffer()
@@ -221,21 +243,30 @@ class UGVPerceptionNode(Node):
         # ── Publishers ───────────────────────────────────────────────
         self.pub_det3d = self.create_publisher(
             Detection3DArray,
-            '/ugv/perception/front/detections_3d',
+            '/ugv/detections/front/detections_3d',
             10,
         )
         self.pub_seg = self.create_publisher(
             Image,
-            '/ugv/perception/front/segmentation',
+            '/ugv/detections/front/segmentation',
+            10,
+        )
+        self.pub_debug = self.create_publisher(
+            Image,
+            '/ugv/detections/front/debug_image',
             10,
         )
 
         self.get_logger().info('UGV Perception node started (cross-camera pipeline).')
         self.get_logger().info(f'  RGB topic:       /camera_front/raw_image  (frame: {RGB_FRAME})')
         self.get_logger().info(f'  Depth topic:     /camera_front/realsense_front/depth/image_rect_raw  (frame: {DEPTH_FRAME})')
-        self.get_logger().info(f'  Output topic:    /ugv/perception/front/detections_3d  (frame: {self.target_frame})')
-        self.get_logger().info(f'  Seg topic:       /ugv/perception/front/segmentation  (mono8 label map)')
+        self.get_logger().info(f'  Output topic:    /ugv/detections/front/detections_3d  (frame: {self.target_frame})')
+        self.get_logger().info(f'  Seg topic:       /ugv/detections/front/segmentation  (mono8 label map)')
+        self.get_logger().info(f'  Debug topic:     /ugv/detections/front/debug_image  (RGB+ID overlay)')
         self.get_logger().info(f'  Depth grid step: {self.grid_step_u}×{self.grid_step_v}')
+        self.get_logger().info(
+            f'  Tracker: IoU={self.tracker_iou:.2f}, max_age={int(self.tracker_max_age)}'
+        )
         if self.use_dummy:
             self.get_logger().warn('*** DUMMY DETECTION MODE — bypassing YOLO ***')
 
@@ -302,6 +333,7 @@ class UGVPerceptionNode(Node):
             raw_detections = self._detect(cv_image)
         if not raw_detections:
             self._publish_empty(msg.header.stamp)
+            self._publish_debug_overlay(cv_image, [], msg.header)
             return
         
         # ── Step 2: Build 3D candidate cloud from depth grid ────────
@@ -445,6 +477,7 @@ class UGVPerceptionNode(Node):
 
         # ── Step 8: Publish segmentation label map (mono8) ───────────
         self._publish_segmentation(cv_image, raw_detections, msg.header)
+        self._publish_debug_overlay(cv_image, tracked, msg.header)
 
         if tracked:
             self.get_logger().info(
@@ -483,7 +516,6 @@ class UGVPerceptionNode(Node):
                     # Resize mask to match the input image dimensions
                     h, w = cv_image.shape[:2]
                     if mask.shape != (h, w):
-                        import cv2
                         mask = cv2.resize(
                             mask.astype(np.uint8), (w, h),
                             interpolation=cv2.INTER_NEAREST,
@@ -541,6 +573,42 @@ class UGVPerceptionNode(Node):
         seg_msg = self.bridge.cv2_to_imgmsg(label_img, encoding='mono8')
         seg_msg.header = header
         self.pub_seg.publish(seg_msg)
+
+    def _publish_debug_overlay(self, cv_image, tracked, header):
+        """Publish RGB debug image with bbox + class + track ID overlay."""
+        if not self.publish_debug_image:
+            return
+        if self.pub_debug.get_subscription_count() == 0:
+            return
+
+        dbg = cv_image.copy()
+        for t in tracked:
+            bbox = t.get('bbox')
+            if bbox is None:
+                continue
+            x1, y1, x2, y2 = [int(v) for v in bbox]
+            tid = int(t.get('track_id', -1))
+            cls = t.get('class_name', 'unknown')
+            conf = float(t.get('confidence', 0.0))
+            npts = int(t.get('n_depth_pts', 0))
+
+            # Deterministic per-track color makes ID switches obvious.
+            color = (
+                int((37 * tid) % 255),
+                int((97 * tid) % 255),
+                int((173 * tid) % 255),
+            )
+            cv2.rectangle(dbg, (x1, y1), (x2, y2), color, 2)
+            label = f'{cls} #{tid} {conf:.2f} d={npts}'
+            ytxt = max(18, y1 - 6)
+            cv2.putText(
+                dbg, label, (x1, ytxt),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2, cv2.LINE_AA,
+            )
+
+        msg = self.bridge.cv2_to_imgmsg(dbg, encoding='bgr8')
+        msg.header = header
+        self.pub_debug.publish(msg)
 
     # ─── Cross-camera depth → RGB-frame geometry ───────────────────
 

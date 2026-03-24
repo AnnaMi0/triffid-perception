@@ -3,6 +3,14 @@ rosbag2_active_*/
 *.db3
 *.bag
 rosbag.zip
+new_rosbag/
+predictions_rosbag/
+output_rosbag/
+
+# Large media files
+*.mp4
+*.MP4
+uav_data/
 
 # ROS2 colcon build artifacts
 build/
@@ -27,3 +35,7 @@ dist/
 *.env
 secrets.yaml
 mqtt_traces/*.jsonl
+
+
+predictions_rosbag.zip
+output_rosbag/

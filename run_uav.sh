@@ -42,6 +42,38 @@ PY_ARGS="--model $MODEL --confidence $CONFIDENCE --mqtt-host $MQTT_HOST --mqtt-p
 
 _running() { docker ps -q -f name="$CONTAINER" 2>/dev/null | grep -q .; }
 
+_to_container_path() {
+    # Map common host paths to mounted container paths.
+    # Accepts either container paths (/app/...) or host-relative paths.
+    local p="$1"
+    if [[ -z "$p" ]]; then
+        echo "/app/images"
+        return 0
+    fi
+    if [[ "$p" == /app/* ]]; then
+        echo "$p"
+        return 0
+    fi
+
+    local clean="${p#./}"
+    if [[ "$clean" == uav_images* ]]; then
+        echo "/app/images${clean#uav_images}"
+        return 0
+    fi
+    if [[ "$clean" == uav_samples* ]]; then
+        echo "/app/samples${clean#uav_samples}"
+        return 0
+    fi
+    if [[ "$clean" == uav_data* ]]; then
+        echo "/app/uav_data${clean#uav_data}"
+        return 0
+    fi
+
+    # Fallback: keep original input; caller may intentionally provide
+    # a container-visible path.
+    echo "$p"
+}
+
 _ensure_running() {
     if ! _running; then
         echo "▸ Starting container..."
@@ -53,7 +85,25 @@ _ensure_running() {
 _start_mosquitto() {
     echo "▸ Starting MQTT broker (mosquitto)..."
     docker exec "$CONTAINER" bash -c "mosquitto -c /dev/null -p $MQTT_PORT &" 2>/dev/null || true
-    sleep 1
+    # Wait briefly until broker socket accepts connections.
+    docker exec "$CONTAINER" bash -c "python3 - <<'PY'
+import socket, time
+host='127.0.0.1'
+port=int('$MQTT_PORT')
+ok=False
+for _ in range(25):
+    s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(0.2)
+    try:
+        s.connect((host, port))
+        ok=True
+        break
+    except Exception:
+        time.sleep(0.1)
+    finally:
+        s.close()
+print('ready' if ok else 'not-ready')
+PY" >/tmp/uav_mqtt_wait.log 2>&1 || true
 }
 
 # ── commands ─────────────────────────────────────────────────
@@ -69,13 +119,13 @@ cmd_process() {
     _ensure_running
     _start_mosquitto
 
-    # Determine if the image path is absolute or relative
     local container_path
-    if [[ "$img" == /* ]]; then
-        # Absolute path — check if it's in uav_images/
-        container_path="/app/images/$(basename "$img")"
-    else
-        container_path="/app/images/$img"
+    container_path="$(_to_container_path "$img")"
+
+    if ! docker exec "$CONTAINER" test -f "$container_path"; then
+        echo "✗ Image not found inside container: $container_path"
+        echo "  If this is a host path, place it under ./uav_images or ./uav_data"
+        return 1
     fi
 
     echo "▸ Processing: $img → $container_path"
@@ -88,9 +138,18 @@ cmd_batch() {
     _ensure_running
     _start_mosquitto
 
-    echo "▸ Processing all images in: $dir"
+    local container_dir
+    container_dir="$(_to_container_path "$dir")"
+
+    if ! docker exec "$CONTAINER" test -d "$container_dir"; then
+        echo "✗ Directory not found inside container: $container_dir"
+        echo "  Use one of: ./uav_images, ./uav_data, /app/images, /app/uav_data"
+        return 1
+    fi
+
+    echo "▸ Processing all images in: $dir → $container_dir"
     docker exec "$CONTAINER" bash -c \
-        "PYTHONPATH=/app/src/triffid_uav_perception $PY_CMD $PY_ARGS --batch $dir --output /app/samples"
+        "PYTHONPATH=/app/src/triffid_uav_perception $PY_CMD $PY_ARGS --batch $container_dir --output /app/samples"
     echo "✓ Batch complete. Results in ./uav_samples/"
 }
 
@@ -99,10 +158,19 @@ cmd_watch() {
     _ensure_running
     _start_mosquitto
 
-    echo "▸ Watching for new images in: $dir"
+    local container_dir
+    container_dir="$(_to_container_path "$dir")"
+
+    if ! docker exec "$CONTAINER" test -d "$container_dir"; then
+        echo "✗ Directory not found inside container: $container_dir"
+        echo "  Use one of: ./uav_images, ./uav_data, /app/images, /app/uav_data"
+        return 1
+    fi
+
+    echo "▸ Watching for new images in: $dir → $container_dir"
     echo "  (Press Ctrl+C to stop)"
     docker exec -it "$CONTAINER" bash -c \
-        "PYTHONPATH=/app/src/triffid_uav_perception $PY_CMD $PY_ARGS --watch $dir"
+        "PYTHONPATH=/app/src/triffid_uav_perception $PY_CMD $PY_ARGS --watch $container_dir"
 }
 
 cmd_stop() {

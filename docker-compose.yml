@@ -23,7 +23,7 @@ services:
       - ./cyclonedds.xml:/ws/cyclonedds.xml:ro # DDS config
       - ./best.pt:/ws/best.pt:ro               # YOLO model weights
       - ./samples:/ws/samples                  # collected output samples
-      - ./output_rosbag:/ws/output_rosbag        # recorded output rosbag
+      - ./output_rosbag:/ws/output_rosbag      # recorded output rosbag
 
     network_mode: host    # shares host network so ROS2 DDS works seamlessly
     ipc: host             # shared memory for fast DDS transport

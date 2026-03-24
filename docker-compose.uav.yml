@@ -9,6 +9,7 @@ services:
     volumes:
       - ./src/triffid_uav_perception:/app/src/triffid_uav_perception  # source (editable)
       - ./uav_images:/app/images                                      # input images
+      - ./uav_data:/app/uav_data                                      # additional input images
       - ./uav_samples:/app/samples                                    # output GeoJSON
       - ./best.pt:/app/best.pt:ro                                     # YOLO model weights
 

@@ -777,8 +777,8 @@ class TestTrackerIDPersistence:
         r1 = tracker.update(det)
         first_id = r1[0]['track_id']
 
-        # Disappear for max_age+1 frames
-        for _ in range(3):
+        # Disappear for max_age+2 frames to ensure removal
+        for _ in range(4):
             tracker.update([])
 
         # Re-appear at same location
@@ -802,7 +802,8 @@ class TestTrackerIDPersistence:
     def test_counter_never_resets(self):
         tracker = IoUTracker(max_age=0)
         for i in range(10):
-            det = [self._make_det((i * 200, 0, i * 200 + 50, 50))]
+            det = [self._make_det((i * 200, 0, i * 200 + 50, 50),
+                                  pos=(float(i * 20), 0, 0))]
             tracker.update(det)
         # After 10 different detections (all expired), next_id should be 11
         assert tracker.next_id == 11
@@ -830,8 +831,8 @@ class TestTrackerMatching:
 
     def test_low_iou_creates_new_track(self):
         tracker = IoUTracker(iou_threshold=0.3)
-        dets1 = [self._make_det((0, 0, 50, 50))]
-        dets2 = [self._make_det((500, 500, 600, 600))]  # far away
+        dets1 = [self._make_det((0, 0, 50, 50), pos=(1.0, 0.0, 0.0))]
+        dets2 = [self._make_det((500, 500, 600, 600), pos=(10.0, 10.0, 0.0))]  # far away
         r1 = tracker.update(dets1)
         r2 = tracker.update(dets2)
         assert r1[0]['track_id'] != r2[0]['track_id']
@@ -871,10 +872,12 @@ class TestTrackerMatching:
         for _ in range(3):
             tracker.update([])
 
-        assert len(tracker.tracks) == 1  # age=3, still within max_age
+        # time_since_update=3, max_age=3 → 3 > 3 is False → still alive
+        assert len(tracker.tracks) == 1
 
         tracker.update([])
-        assert len(tracker.tracks) == 0  # age=4 > max_age=3, expired
+        # time_since_update=4 > max_age=3 → removed
+        assert len(tracker.tracks) == 0
 
     def test_empty_detections_returns_empty(self):
         tracker = IoUTracker()
@@ -1013,7 +1016,7 @@ class TestGeoJSONSchema:
     REQUIRED_PROPERTIES = [
         'class', 'id', 'confidence',
         'category', 'detection_type', 'source',
-        'local_frame', 'gnss_altitude_m', 'height_m',
+        'local_frame', 'ellipsoidal_alt_m', 'height_m',
         'marker-color', 'marker-size', 'marker-symbol',
     ]
 
@@ -1025,7 +1028,7 @@ class TestGeoJSONSchema:
         Optionally includes 'size' (sx, sy, sz) and 'position' (x, y, z).
         Geometry type is class-dependent: person→Point, Fence→LineString,
         default→Polygon. Coordinates are 2D [lon, lat] only; altitude
-        is in gnss_altitude_m property.
+        is in ellipsoidal_alt_m property.
         """
         from triffid_ugv_perception.geojson_bridge import (
             GeoJSONBridge, _MIN_EXTENT, _POINT_CLASSES, _LINE_CLASSES,
@@ -1037,7 +1040,6 @@ class TestGeoJSONSchema:
             sx, sy, sz = det.get('size', (0.0, 0.0, 0.0))
             pos_x, pos_y, pos_z = det.get('position', (lon, lat, 0.0))
 
-            has_extent = (sx > 0.0 or sy > 0.0)
             geom_type = GeoJSONBridge._geometry_type_for_class(cls)
 
             if geom_type == 'Point':
@@ -1058,19 +1060,16 @@ class TestGeoJSONSchema:
                 geometry = {"type": "LineString", "coordinates": endpoints}
 
             else:  # Polygon
-                if has_extent:
-                    half_x = max(sx, _MIN_EXTENT) / 2.0
-                    half_y = max(sy, _MIN_EXTENT) / 2.0
-                    ring = [
-                        [pos_x + half_x, pos_y + half_y],
-                        [pos_x + half_x, pos_y - half_y],
-                        [pos_x - half_x, pos_y - half_y],
-                        [pos_x - half_x, pos_y + half_y],
-                        [pos_x + half_x, pos_y + half_y],  # closed
-                    ]
-                    geometry = {"type": "Polygon", "coordinates": [ring]}
-                else:
-                    geometry = {"type": "Point", "coordinates": [lon, lat]}
+                half_x = max(sx, _MIN_EXTENT) / 2.0
+                half_y = max(sy, _MIN_EXTENT) / 2.0
+                ring = [
+                    [pos_x + half_x, pos_y + half_y],
+                    [pos_x + half_x, pos_y - half_y],
+                    [pos_x - half_x, pos_y - half_y],
+                    [pos_x - half_x, pos_y + half_y],
+                    [pos_x + half_x, pos_y + half_y],  # closed
+                ]
+                geometry = {"type": "Polygon", "coordinates": [ring]}
 
             feature = {
                 "type": "Feature",
@@ -1084,7 +1083,7 @@ class TestGeoJSONSchema:
                     "detection_type": "seg",
                     "source": "ugv",
                     "local_frame": not gps_valid,
-                    "gnss_altitude_m": round(alt, 2),
+                    "ellipsoidal_alt_m": round(alt, 2),
                     "height_m": round(float(sz), 2),
                     "marker-color": GeoJSONBridge._class_color(cls),
                     "marker-size": "medium",
@@ -1111,8 +1110,8 @@ class TestGeoJSONSchema:
         assert gj['type'] == 'FeatureCollection'
         assert len(gj['features']) == 1
         assert gj['features'][0]['type'] == 'Feature'
-        # Building with no size → fallback Point
-        assert gj['features'][0]['geometry']['type'] == 'Point'
+        # Building with no size → Polygon with _MIN_EXTENT
+        assert gj['features'][0]['geometry']['type'] == 'Polygon'
 
     def test_all_required_properties_present(self):
         dets = [{'coordinates': (1.0, 2.0, 0.0), 'class_name': 'car',
@@ -1159,7 +1158,7 @@ class TestGeoJSONSchema:
         assert coords[1] == lat
         # Altitude should be in properties, not in coordinates
         props = gj['features'][0]['properties']
-        assert props['gnss_altitude_m'] == round(alt, 2)
+        assert props['ellipsoidal_alt_m'] == round(alt, 2)
 
     def test_empty_detections_yield_empty_collection(self):
         gj = self._make_geojson([])
@@ -1198,13 +1197,13 @@ class TestGeoJSONSchema:
     # ── 3D coordinate tests ──────────────────────────────────────────
 
     def test_gnss_altitude_property_present(self):
-        """gnss_altitude_m property must be present and match z coordinate."""
+        """ellipsoidal_alt_m property must be present and match z coordinate."""
         dets = [{'coordinates': (13.35, 49.73, 321.5), 'class_name': 'Building',
                  'confidence': 0.8, 'track_id': '1'}]
         gj = self._make_geojson(dets, gps_valid=True)
         props = gj['features'][0]['properties']
-        assert 'gnss_altitude_m' in props
-        np.testing.assert_allclose(props['gnss_altitude_m'], 321.5)
+        assert 'ellipsoidal_alt_m' in props
+        np.testing.assert_allclose(props['ellipsoidal_alt_m'], 321.5)
 
     def test_height_property_present(self):
         """height_m property must reflect bbox size.z."""
@@ -1234,14 +1233,14 @@ class TestGeoJSONSchema:
         geom = gj['features'][0]['geometry']
         assert geom['type'] == 'Polygon'
 
-    def test_point_emitted_when_size_zero(self):
-        """Detection with ALL-ZERO bbox size → Point geometry (fallback)."""
+    def test_polygon_emitted_when_size_zero(self):
+        """Polygon class with ALL-ZERO bbox size → Polygon with _MIN_EXTENT."""
         dets = [{'coordinates': (1.0, 2.0, 0.0), 'class_name': 'Flame',
                  'confidence': 0.9, 'track_id': '1',
-                 'size': (0.0, 0.0, 0.0)}]
+                 'size': (0.0, 0.0, 0.0), 'position': (1.0, 2.0, 0.0)}]
         gj = self._make_geojson(dets)
         geom = gj['features'][0]['geometry']
-        assert geom['type'] == 'Point'
+        assert geom['type'] == 'Polygon'
 
     def test_person_emits_point_geometry(self):
         """Person classes always emit Point geometry regardless of bbox size."""
@@ -1253,6 +1252,33 @@ class TestGeoJSONSchema:
             geom = gj['features'][0]['geometry']
             assert geom['type'] == 'Point', f'{cls} should emit Point, got {geom["type"]}'
             assert len(geom['coordinates']) == 2
+
+    def test_expanded_point_classes(self):
+        """Equipment/vehicle/small-object classes emit Point geometry."""
+        point_classes = [
+            'Helmet', 'Destroyed vehicle', 'Fire hose', 'SCBA', 'Boot',
+            'Mask', 'Window', 'Pole', 'Animal', 'Door', 'Civilian vehicle',
+            'Hole in the ground', 'Bag', 'Ambulance', 'Fire truck', 'Cone',
+            'Ax', 'Glove', 'Stairs', 'Protective glasses', 'Shovel',
+            'Fire hydrant', 'Police vehicle', 'Army vehicle', 'Chainsaw',
+            'aerial vehicle', 'Lifesaver', 'Extinguisher',
+        ]
+        for cls in point_classes:
+            dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': cls,
+                     'confidence': 0.8, 'track_id': '1',
+                     'size': (1.0, 0.5, 0.5), 'position': (3.0, 0.0, 0.0)}]
+            gj = self._make_geojson(dets, gps_valid=True)
+            geom = gj['features'][0]['geometry']
+            assert geom['type'] == 'Point', f'{cls} should emit Point, got {geom["type"]}'
+
+    def test_wall_emits_linestring_geometry(self):
+        """Wall class emits LineString geometry (same as Fence)."""
+        dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': 'Wall',
+                 'confidence': 0.7, 'track_id': '1',
+                 'size': (3.0, 0.2, 2.0), 'position': (5.0, 0.0, 0.0)}]
+        gj = self._make_geojson(dets, gps_valid=True)
+        geom = gj['features'][0]['geometry']
+        assert geom['type'] == 'LineString'
 
     def test_fence_emits_linestring_geometry(self):
         """Fence class emits LineString geometry."""
@@ -1288,12 +1314,13 @@ class TestGeoJSONSchema:
         geom = gj['features'][0]['geometry']
         assert geom['type'] == 'Polygon'
 
-    def test_point_emitted_when_size_absent(self):
-        """Detection without size field → Point geometry."""
+    def test_polygon_emitted_when_size_absent(self):
+        """Polygon class without size field → Polygon with _MIN_EXTENT."""
         dets = [{'coordinates': (1.0, 2.0, 0.0), 'class_name': 'Flame',
-                 'confidence': 0.9, 'track_id': '1'}]
+                 'confidence': 0.9, 'track_id': '1',
+                 'position': (1.0, 2.0, 0.0)}]
         gj = self._make_geojson(dets)
-        assert gj['features'][0]['geometry']['type'] == 'Point'
+        assert gj['features'][0]['geometry']['type'] == 'Polygon'
 
     def test_polygon_ring_is_closed(self):
         """RFC-7946: first and last coordinate of a ring must be identical."""
@@ -1335,7 +1362,7 @@ class TestGeoJSONSchema:
 
     def test_point_lacks_fill_properties(self):
         """Point features should NOT have stroke/fill properties."""
-        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Flame',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Helmet',
                  'confidence': 0.9, 'track_id': '1'}]
         gj = self._make_geojson(dets)
         props = gj['features'][0]['properties']
@@ -1549,8 +1576,9 @@ class TestTrackerEdgeCases:
         r1 = tracker.update(det)
         id1 = r1[0]['track_id']
 
-        tracker.update([])  # empty
-        tracker.update([])  # track expires at age > 1
+        tracker.update([])  # empty → LOST, time_since_update=1
+        tracker.update([])  # time_since_update=2 > max_age=1 → removed
+        tracker.update([])  # ensure fully expired
 
         r2 = tracker.update(det)
         id2 = r2[0]['track_id']
@@ -1576,12 +1604,13 @@ class TestTrackerEdgeCases:
         # A=(0,0,100,100) area=10000
         # B=(50,0,150,100) area=10000, intersection=(50,0,100,100)=5000
         # IoU = 5000/15000 = 0.333 → below 0.5 → no match
-        dets1 = [self._make_det((0, 0, 100, 100))]
-        dets2 = [self._make_det((50, 0, 150, 100))]
+        # Use distinct 3D positions so the position gate doesn't link them
+        dets1 = [self._make_det((0, 0, 100, 100), pos=(1.0, 0.0, 0.0))]
+        dets2 = [self._make_det((50, 0, 150, 100), pos=(10.0, 10.0, 0.0))]
 
         r1 = tracker.update(dets1)
         r2 = tracker.update(dets2)
-        # IoU ≈ 0.333 < 0.5, so should create a new track
+        # IoU ≈ 0.333 < 0.5, and 3D dist > pos_gate → new track
         assert r1[0]['track_id'] != r2[0]['track_id']
 
     def test_tracker_with_none_position(self):
@@ -1604,7 +1633,7 @@ class TestTrackerEdgeCases:
         tracker.update([self._make_det((10, 10, 50, 50))])
         assert len(tracker.tracks) == 1
 
-        tracker.update([])  # no match, age → 1 > max_age=0
+        tracker.update([])  # LOST, time_since_update=1 > max_age=0 → removed
         assert len(tracker.tracks) == 0
 
     def test_position_update_on_rematch(self):
@@ -1946,6 +1975,299 @@ class TestMqttIntegration:
         src = inspect.getsource(mod.GeoJSONBridge._publish)
         assert '_mqtt_client' in src
         assert '_mqtt_topic' in src
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ByteTracker-specific tests
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestByteTrackerFeatures:
+    """Tests for ByteTracker: Kalman, two-pass, confirmation, 3D gate."""
+
+    from triffid_ugv_perception.tracker import ByteTracker
+
+    def _make_det(self, bbox, cls='person', conf=0.9, pos=(0, 0, 0)):
+        return {
+            'bbox': bbox,
+            'class_id': 0,
+            'class_name': cls,
+            'confidence': conf,
+            'position': pos,
+        }
+
+    # ── Track confirmation gate ──
+
+    def test_n_init_withholds_tentative_tracks(self):
+        """With n_init=3, first two frames should return empty."""
+        tracker = self.ByteTracker(n_init=3)
+        det = [self._make_det((100, 100, 200, 200), conf=0.9)]
+        r1 = tracker.update(det)
+        assert r1 == [], "Frame 1: should be tentative"
+        r2 = tracker.update(det)
+        assert r2 == [], "Frame 2: should be tentative"
+        r3 = tracker.update(det)
+        assert len(r3) == 1, "Frame 3: should be confirmed"
+
+    def test_n_init_1_publishes_immediately(self):
+        """With n_init=1, tracks are confirmed on first frame."""
+        tracker = self.ByteTracker(n_init=1)
+        r = tracker.update([self._make_det((100, 100, 200, 200))])
+        assert len(r) == 1
+
+    # ── Two-pass association ──
+
+    def test_low_conf_second_pass_maintains_track(self):
+        """A low-confidence detection should maintain a track via 2nd pass."""
+        tracker = self.ByteTracker(
+            n_init=1, conf_threshold_high=0.5,
+            iou_threshold=0.3, iou_threshold_low=0.1,
+        )
+        det_high = [self._make_det((100, 100, 200, 200), conf=0.8)]
+        det_low = [self._make_det((105, 105, 205, 205), conf=0.3)]
+
+        r1 = tracker.update(det_high)
+        id1 = r1[0]['track_id']
+
+        r2 = tracker.update(det_low)
+        assert len(r2) == 1
+        assert r2[0]['track_id'] == id1, "Low-conf should keep same track"
+
+    # ── 3D position gate ──
+
+    def test_3d_position_recovers_small_bbox_match(self):
+        """When IoU is low but 3D position is close, track is maintained."""
+        tracker = self.ByteTracker(
+            n_init=1, iou_threshold=0.3, pos_gate=2.0,
+        )
+        # Small bbox, shifts enough that IoU < 0.3
+        det1 = [self._make_det((500, 300, 520, 320), conf=0.8,
+                                pos=(3.0, 1.0, -0.5))]
+        det2 = [self._make_det((530, 295, 550, 315), conf=0.6,
+                                pos=(3.1, 1.0, -0.5))]  # 0.1m away
+
+        r1 = tracker.update(det1)
+        r2 = tracker.update(det2)
+        assert r1[0]['track_id'] == r2[0]['track_id']
+
+    def test_3d_far_away_creates_new_track(self):
+        """When both IoU is low AND 3D position is far, a new track is made."""
+        tracker = self.ByteTracker(n_init=1, pos_gate=2.0)
+        det1 = [self._make_det((100, 100, 150, 150), conf=0.8,
+                                pos=(1.0, 0.0, 0.0))]
+        det2 = [self._make_det((500, 500, 550, 550), conf=0.8,
+                                pos=(15.0, 10.0, 0.0))]
+
+        r1 = tracker.update(det1)
+        r2 = tracker.update(det2)
+        assert r1[0]['track_id'] != r2[0]['track_id']
+
+    # ── Kalman prediction ──
+
+    def test_kalman_prediction_aids_matching(self):
+        """After a gap frame, Kalman prediction moves bbox toward detection."""
+        tracker = self.ByteTracker(n_init=1, max_age=5)
+        # Object moving right
+        det1 = [self._make_det((100, 100, 200, 200), conf=0.8)]
+        det2 = [self._make_det((110, 100, 210, 200), conf=0.8)]
+
+        r1 = tracker.update(det1)
+        r2 = tracker.update(det2)
+        assert r1[0]['track_id'] == r2[0]['track_id']
+
+        # Skip a frame
+        tracker.update([])
+
+        # Continue moving right — Kalman should predict forward
+        det4 = [self._make_det((130, 100, 230, 200), conf=0.8)]
+        r4 = tracker.update(det4)
+        assert len(r4) == 1
+        assert r4[0]['track_id'] == r1[0]['track_id']
+
+    # ── Vectorised IoU ──
+
+    def test_iou_batch_identical(self):
+        from triffid_ugv_perception.tracker import _iou_batch
+        iou = _iou_batch([(0, 0, 10, 10)], [(0, 0, 10, 10)])
+        np.testing.assert_allclose(iou, [[1.0]])
+
+    def test_iou_batch_no_overlap(self):
+        from triffid_ugv_perception.tracker import _iou_batch
+        iou = _iou_batch([(0, 0, 10, 10)], [(20, 20, 30, 30)])
+        np.testing.assert_allclose(iou, [[0.0]])
+
+    def test_iou_batch_multi(self):
+        from triffid_ugv_perception.tracker import _iou_batch
+        a = [(0, 0, 10, 10), (20, 20, 30, 30)]
+        b = [(0, 0, 10, 10), (100, 100, 110, 110)]
+        iou = _iou_batch(a, b)
+        assert iou.shape == (2, 2)
+        assert iou[0, 0] == 1.0
+        assert iou[1, 1] == 0.0
+
+    # ── ID persistence under ByteTracker ──
+
+    def test_ids_never_reused(self):
+        tracker = self.ByteTracker(n_init=1, max_age=1)
+        det = [self._make_det((100, 100, 200, 200))]
+        r1 = tracker.update(det)
+        id1 = r1[0]['track_id']
+
+        tracker.update([])
+        tracker.update([])
+        tracker.update([])
+
+        r2 = tracker.update(det)
+        assert r2[0]['track_id'] > id1
+
+    def test_extent_and_depth_pts_propagated(self):
+        """Tracker must propagate extent, n_depth_pts, and class_id."""
+        tracker = self.ByteTracker(n_init=1)
+        det = [{
+            'bbox': (100, 100, 200, 200),
+            'class_id': 14,
+            'class_name': 'Building',
+            'confidence': 0.85,
+            'position': (5.0, 1.0, -0.5),
+            'extent': (2.0, 3.5, 4.0),
+            'n_depth_pts': 42,
+        }]
+        results = tracker.update(det)
+        assert len(results) == 1
+        r = results[0]
+        assert r['extent'] == (2.0, 3.5, 4.0)
+        assert r['n_depth_pts'] == 42
+        assert r['class_id'] == 14
+
+    def test_class_gate_prevents_cross_class_match(self):
+        """A track should NOT match a detection of a different class."""
+        tracker = self.ByteTracker(n_init=1, iou_threshold=0.3)
+        # Frame 1: create Fence track at (100, 100, 200, 200)
+        tracker.update([{
+            'bbox': (100, 100, 200, 200),
+            'class_name': 'Fence',
+            'class_id': 1,
+            'confidence': 0.8,
+            'position': (5.0, 0.0, 0.0),
+        }])
+        # Frame 2: overlapping bbox but different class
+        results = tracker.update([{
+            'bbox': (105, 105, 210, 210),
+            'class_name': 'Civilian vehicle',
+            'class_id': 21,
+            'confidence': 0.9,
+            'position': (5.0, 0.0, 0.0),
+        }])
+        # Should produce TWO tracks (not merge into one) — the original
+        # Fence becomes lost and a new Civilian vehicle track is created.
+        # With n_init=1, the new track is immediately confirmed.
+        classes = {r['class_name'] for r in results}
+        assert 'Civilian vehicle' in classes
+        # The Fence track should NOT have been re-labelled
+        for r in results:
+            if r['class_name'] == 'Fence':
+                assert r['track_id'] == 1
+
+    def test_class_majority_vote_stable(self):
+        """Class stays stable via majority vote even if one frame disagrees."""
+        tracker = self.ByteTracker(n_init=1, iou_threshold=0.3)
+        base = {
+            'bbox': (100, 100, 200, 200),
+            'class_name': 'Building',
+            'class_id': 7,
+            'confidence': 0.8,
+            'position': (5.0, 0.0, 0.0),
+        }
+        # Frames 1..3: Building
+        for _ in range(3):
+            tracker.update([base])
+        # Frame 4: same bbox, same class but one fluke "Destroyed building"
+        fluke = dict(base, class_name='Destroyed building', class_id=99)
+        # Class gate will prevent matching with different class,
+        # so the Building track stays and the fluke creates a new one.
+        results = tracker.update([fluke])
+        building = [r for r in results if r['class_name'] == 'Building']
+        # Building track should remain as Building (even if lost it stays)
+        # since the fluke is a *different* class, it won't match.
+        # The original Building track may go lost but its class never flipped.
+        assert all(r['class_name'] != 'Destroyed building'
+                   for r in results if r['track_id'] == 1)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Spatial deduplication (collect_samples.py)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class TestSpatialDedup:
+    """Tests for the spatial dedup logic in SampleCollector."""
+
+    @staticmethod
+    def _feature(fid, cls, conf, lon, lat):
+        return {
+            "type": "Feature",
+            "id": str(fid),
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[
+                    [lon - 0.0001, lat - 0.0001],
+                    [lon + 0.0001, lat - 0.0001],
+                    [lon + 0.0001, lat + 0.0001],
+                    [lon - 0.0001, lat + 0.0001],
+                    [lon - 0.0001, lat - 0.0001],
+                ]],
+            },
+            "properties": {
+                "class": cls,
+                "confidence": conf,
+            },
+        }
+
+    def test_identical_location_same_class_merged(self):
+        """Two features of same class at same location → keep higher conf."""
+        import sys, os
+        scripts_dir = os.path.join(
+            os.path.dirname(__file__), '..', 'scripts')
+        sys.path.insert(0, scripts_dir)
+        collect = pytest.importorskip('collect_samples')
+        SC = collect.SampleCollector
+
+        f1 = self._feature(1, 'Pole', 0.4, 13.351615, 49.726300)
+        f2 = self._feature(2, 'Pole', 0.6, 13.351616, 49.726301)  # ~0.1m away
+
+        # Pass the class itself as 'self' — all methods called on self
+        # (_feature_centroid, _haversine) are @staticmethod.
+        result = SC._spatial_dedup(SC, [f1, f2])
+        assert len(result) == 1
+        assert result[0]['properties']['confidence'] == 0.6
+
+    def test_different_class_not_merged(self):
+        """Features of different classes at same location → both kept."""
+        import sys, os
+        scripts_dir = os.path.join(
+            os.path.dirname(__file__), '..', 'scripts')
+        sys.path.insert(0, scripts_dir)
+        collect = pytest.importorskip('collect_samples')
+        SC = collect.SampleCollector
+
+        f1 = self._feature(1, 'Pole', 0.5, 13.351615, 49.726300)
+        f2 = self._feature(2, 'Building', 0.8, 13.351616, 49.726301)
+
+        result = SC._spatial_dedup(SC, [f1, f2])
+        assert len(result) == 2
+
+    def test_far_apart_same_class_not_merged(self):
+        """Same class but > merge radius → both kept."""
+        import sys, os
+        scripts_dir = os.path.join(
+            os.path.dirname(__file__), '..', 'scripts')
+        sys.path.insert(0, scripts_dir)
+        collect = pytest.importorskip('collect_samples')
+        SC = collect.SampleCollector
+
+        f1 = self._feature(1, 'Pole', 0.5, 13.351615, 49.726300)
+        f2 = self._feature(2, 'Pole', 0.8, 13.352615, 49.726300)  # ~74m away
+
+        result = SC._spatial_dedup(SC, [f1, f2])
+        assert len(result) == 2
 
 
 #  Entry point

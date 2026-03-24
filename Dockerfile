@@ -22,7 +22,8 @@ RUN pip3 install --no-cache-dir \
     "numpy<2" \
     opencv-python-headless \
     ultralytics \
-    paho-mqtt
+    paho-mqtt \
+    scipy
 
 # Workspace setup 
 WORKDIR /ws

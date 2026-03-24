@@ -1,7 +1,7 @@
 # TRIFFID UGV Perception — Interface Specification
 
-> **Version**: 1.3  
-> **Date**: 2026-03-04  
+> **Version**: 1.9  
+> **Date**: 2026-03-24  
 > **Status**: FROZEN — changes require version bump and partner notification
 > **ROS 2 Distribution**: Humble  
 > **DDS**: CycloneDDS  
@@ -32,9 +32,12 @@ This document defines every published and consumed interface of the TRIFFID UGV 
 
 | Topic | Message Type | Encoding | Rate | Description |
 |---|---|---|---|---|
-| `/ugv/perception/front/detections_3d` | `vision_msgs/msg/Detection3DArray` | — | ~15 Hz | 3D bounding boxes in `b2/base_link` |
-| `/ugv/perception/front/segmentation` | `sensor_msgs/msg/Image` | `mono8` | ~15 Hz | Semantic label map (pixel = class ID) |
-| `/triffid/front/geojson` | `std_msgs/msg/String` | JSON (UTF-8) | ~15 Hz | GeoJSON FeatureCollection (RFC 7946) |
+| `/ugv/detections/front/detections_3d` | `vision_msgs/msg/Detection3DArray` | — | ~15 Hz | 3D bounding boxes in `b2/base_link` |
+| `/ugv/detections/front/segmentation` | `sensor_msgs/msg/Image` | `mono8` | ~15 Hz | Semantic label map (pixel = class ID) |
+| `/ugv/detections/front/debug_image` | `sensor_msgs/msg/Image` | `bgr8` | ~15 Hz¹ | Debug overlay: RGB with bbox, class, track ID, `d=N` depth-point count |
+| `/ugv/detections/front/geojson` | `std_msgs/msg/String` | JSON (UTF-8) | ~15 Hz | GeoJSON FeatureCollection (RFC 7946) |
+
+¹ Only published when at least one subscriber is connected (lazy publishing).
 
 The same GeoJSON payload is also published to a local **MQTT** broker (see [§6 MQTT Output](#mqtt-output)).
 
@@ -97,7 +100,7 @@ Z_optical =  X_body     (forward = forward)
 
 ## 4. Detection3DArray Schema
 
-**Topic**: `/ugv/perception/front/detections_3d`  
+**Topic**: `/ugv/detections/front/detections_3d`  
 **Type**: `vision_msgs/msg/Detection3DArray`  
 **Frame**: `b2/base_link`
 
@@ -128,12 +131,13 @@ Z_optical =  X_body     (forward = forward)
 - `class_id` is the **human-readable class name** (e.g. `"Civilian vehicle"`), not a numeric ID
 - `bbox.size` may be `(0, 0, 0)` if depth evidence is insufficient (rare)
 - Detections at the same 3D position (within 0.5 m) are deduplicated; highest confidence kept
+- Tracking uses ByteTrack-style assignment: Kalman-filter prediction, Hungarian (optimal) matching, two-pass association (high-conf then low-conf), a **class gate** (cross-class matches forbidden), **majority-vote class labelling** (most-frequent class across observations wins), and a 3D position gate (2.0 m) for small-object recovery. Tracks must be seen for `n_init` consecutive frames before being published (confirmation gate).
 
 ---
 
 ## 5. Segmentation Image Schema
 
-**Topic**: `/ugv/perception/front/segmentation`  
+**Topic**: `/ugv/detections/front/segmentation`  
 **Type**: `sensor_msgs/msg/Image`
 
 | Field | Value |
@@ -158,9 +162,32 @@ When instance masks overlap, the highest-confidence detection's class ID is writ
 
 ---
 
+## 5b. Debug Image Schema
+
+**Topic**: `/ugv/detections/front/debug_image`  
+**Type**: `sensor_msgs/msg/Image`
+
+| Field | Value |
+|---|---|
+| `encoding` | `bgr8` |
+| `width` | `1280` |
+| `height` | `720` |
+| `header.frame_id` | `f_oc_link` |
+| `header.stamp` | RGB frame timestamp (sim time) |
+
+This topic is **lazy-published** — only emitted when at least one subscriber is connected.
+
+Each frame is the original RGB image overlaid with:
+- **Coloured bounding box** per tracked detection (deterministic colour from track ID)
+- **Text label**: `<class> #<track_id> <confidence> d=<depth_pts>` where `d=N` is the number of depth grid points that matched the detection's segmentation mask
+
+This topic is recorded by `collect_samples.py` as `tracking_debug.mp4` (H.264).
+
+---
+
 ## 6. GeoJSON Schema
 
-**Topic**: `/triffid/front/geojson`  
+**Topic**: `/ugv/detections/front/geojson`  
 **Type**: `std_msgs/msg/String`  
 **Encoding**: JSON UTF-8  
 **Standard**: RFC 7946
@@ -187,24 +214,40 @@ When instance masks overlap, the highest-confidence detection's class ID is writ
 
 ### Geometry
 
-Two geometry types are emitted depending on whether the detection has a non-zero 3D extent:
+Three geometry types are emitted, determined by the **class** of the detection (see table below):
 
-**Point** (when `bbox.size.x == 0` **and** `bbox.size.y == 0`):
+**Point** — small / mobile objects (persons, equipment, vehicles):
 ```json
 {
   "type": "Point",
-  "coordinates": [longitude, latitude, altitude]
+  "coordinates": [longitude, latitude]
 }
 ```
 
-**Polygon** (when `bbox.size.x > 0` **or** `bbox.size.y > 0`):
+**LineString** — linear structures (Fence, Wall), centre-line along longest axis:
+```json
+{
+  "type": "LineString",
+  "coordinates": [[lon1, lat1], [lon2, lat2]]
+}
+```
+
+**Polygon** — area features (buildings, vegetation, hazards, terrain):
 ```json
 {
   "type": "Polygon",
-  "coordinates": [[ [lon,lat,alt], [lon,lat,alt], [lon,lat,alt], [lon,lat,alt], [lon,lat,alt] ]]
+  "coordinates": [[ [lon,lat], [lon,lat], [lon,lat], [lon,lat], [lon,lat] ]]
 }
 ```
-The polygon is a closed axis-aligned rectangle (5 points, first = last) derived from the ground-plane projection of the 3D bounding box. If only one dimension (`size.x` or `size.y`) is non-zero, the zero dimension is clamped to a minimum extent of **0.3 m** so the polygon remains visible on the map.
+The polygon is a closed axis-aligned rectangle (5 points, first = last) derived from the ground-plane projection of the 3D bounding box. Each dimension is clamped to a minimum extent of **0.3 m** so the polygon remains visible even when depth evidence is sparse.
+
+#### Class → Geometry Mapping
+
+| GeoJSON Type | Classes |
+|---|---|
+| **Point** (31) | Helmet, First responder, Destroyed vehicle, Fire hose, SCBA, Boot, Mask, Window, Citizen, Pole, Animal, Door, Civilian vehicle, Hole in the ground, Bag, Ambulance, Fire truck, Cone, Military personnel, Ax, Glove, Stairs, Protective glasses, Shovel, Fire hydrant, Police vehicle, Army vehicle, Chainsaw, aerial vehicle, Lifesaver, Extinguisher |
+| **LineString** (2) | Fence, Wall |
+| **Polygon** (30) | Water, Green tree, Flame, Smoke, Green plant, Building, Destroyed building, Debris, Ladder, Dirt road, Dry tree, Road, Green grass, Boat, Pavement, Dry grass, Excavator, Mud, Barrier, Burnt tree, Bicycle, Tower, Silo, Burnt grass, Crane, Dry plant, Furniture, Tank, Barrel, Burnt plant |
 
 ### Coordinates
 
@@ -224,13 +267,13 @@ The polygon is a closed axis-aligned rectangle (5 points, first = last) derived 
 | `detection_type` | string | `"seg"` | Detection source model type |
 | `source` | string | `"ugv"` | Platform identifier |
 | `local_frame` | bool | `false` | `true` if no GPS origin available |
-| `gnss_altitude_m` | float | `321.5` | Altitude above WGS-84 ellipsoid (m) |
+| `ellipsoidal_alt_m` | float | `321.5` | Altitude above WGS-84 ellipsoid (m) — **not** height above mean sea level |
 | `height_m` | float | `4.5` | Object height from `bbox.size.z` (m) |
 | `marker-color` | string | `"#0000ff"` | SimpleStyle hex colour |
 | `marker-size` | string | `"medium"` | SimpleStyle marker size |
 | `marker-symbol` | string | `"car"` | SimpleStyle Maki icon name |
 
-### Properties (Polygon only, additional)
+### Properties (Polygon / LineString, additional)
 
 | Property | Type | Example | Description |
 |---|---|---|---|
@@ -255,9 +298,9 @@ The `geojson_bridge` node also publishes every GeoJSON FeatureCollection to a lo
 | Property | Value |
 |---|---|
 | **Broker** | `localhost:1883` (default, configurable via `mqtt_host` / `mqtt_port` parameters) |
-| **Topic** | `triffid/front/geojson` (configurable via `mqtt_topic` parameter) |
+| **Topic** | `ugv/detections/front/geojson` (configurable via `mqtt_topic` parameter) |
 | **QoS** | 0 (at most once) |
-| **Payload** | Compact JSON (no indentation) — identical FeatureCollection schema to the ROS 2 `/triffid/front/geojson` topic |
+| **Payload** | Compact JSON (no indentation) — identical FeatureCollection schema to the ROS 2 `/ugv/detections/front/geojson` topic |
 | **Enabled** | `true` by default; disable with `mqtt_enabled:=false` |
 | **Client** | `paho-mqtt` ≥ 2.0 (CallbackAPIVersion.VERSION2) |
 
@@ -265,9 +308,9 @@ The MQTT output uses the `paho-mqtt` Python client. If the broker is unreachable
 
 To subscribe from any terminal on the same host:
 ```bash
-mosquitto_sub -h localhost -t 'triffid/front/geojson'
+mosquitto_sub -h localhost -t 'ugv/detections/front/geojson'
 # or from outside the container if using host network:
-mosquitto_sub -h <robot-ip> -t 'triffid/front/geojson'
+mosquitto_sub -h <robot-ip> -t 'ugv/detections/front/geojson'
 ```
 
 The `collect_samples.py` script also captures an MQTT trace during sampling, saving every received message to `mqtt_trace.jsonl` — one complete FeatureCollection JSON object per line (JSONL format), suitable for replaying or post-processing.
@@ -403,6 +446,7 @@ Units: **metres**.
 |---|---|---|---|---|
 | `detections_3d` | RELIABLE | VOLATILE | KEEP_LAST | 10 |
 | `segmentation` | RELIABLE | VOLATILE | KEEP_LAST | 10 |
+| `debug_image` | RELIABLE | VOLATILE | KEEP_LAST | 10 |
 | `geojson` | RELIABLE | VOLATILE | KEEP_LAST | 10 |
 
 ### Subscribed Topics
@@ -425,13 +469,19 @@ Units: **metres**.
 | 1.1 | 2026-03-02 | 3D coordinates, heading rotation, GPS filtering, `/dog_odom` subscription |
 | 1.2 | 2026-03-04 | GPS gating (no publish until fix received), polygon emitted when *either* bbox dimension > 0 (was: both), 0.3 m minimum extent for zero-dimension polygons, merged GeoJSON sample output |
 | 1.3 | 2026-03-04 | MQTT output: GeoJSON published to local Mosquitto broker (`triffid/front/geojson`, QoS 0), MQTT trace capture in sample collector |
+| 1.4 | 2026-03-23 | ByteTrack tracker (Kalman + Hungarian + 3D gate) replaces greedy IoU tracker; `max_age` default 10→30; new params: `tracker_iou_threshold_low`, `tracker_conf_high`, `tracker_n_init`, `tracker_pos_gate`; `scipy` dependency added; spatial deduplication in merged GeoJSON (same-class within 1 m → keep highest confidence) |
+| 1.5 | 2026-03-23 | Topic rename: `/ugv/perception/front/*` → `/ugv/detections/front/*`; GeoJSON ROS topic `/triffid/front/geojson` → `/ugv/detections/front/geojson`; MQTT topic default `triffid/front/geojson` → `ugv/detections/front/geojson` |
+| 1.6 | 2026-03-23 | Class-dependent geometry types (Point/LineString/Polygon) per 63-class ontology; Wall added to LineString classes; Polygon no longer falls back to Point when extent is zero (uses 0.3 m minimum); tracker now propagates `extent`, `n_depth_pts`, `class_id` to published detections |
+| 1.7 | 2026-03-23 | Added `/ugv/detections/front/debug_image` topic to interface spec (lazy-published `bgr8` debug overlay with bbox, class, track ID, and depth-point count `d=N`); documented `samples/` output artefacts |
+| 1.8 | 2026-03-24 | **Class gate**: cross-class tracker matches now forbidden (cost +1e5), preventing ID hijacking when bboxes overlap across classes; **majority-vote class label**: track class determined by most-frequent observation (not overwritten each frame); `geojson_raw.json` added to sample output (all confirmed tracks, no spatial dedup) |
+| 1.9 | 2026-03-24 | **Renamed** `gnss_altitude_m` property to `ellipsoidal_alt_m` to clarify it is WGS-84 ellipsoidal height (not geoid/MSL); `run.sh record` now records subscribed input topics alongside output topics |
 
 ---
 
 ## 11. Current Limitations
 
 1. **Equirectangular projection**: GPS coordinate conversion uses a flat-earth approximation. Accurate to ~1 m for ranges < 1 km; use UTM for larger-scale deployments.
-2. **`bbox.size` may be zero**: When depth evidence is insufficient, the 3D bbox size degrades to `(0, 0, 0)` and a Point geometry is emitted instead of a Polygon. If only one horizontal dimension is zero, a minimum extent of 0.3 m is applied so a Polygon is still emitted.
+2. **`bbox.size` may be zero**: When depth evidence is insufficient, the 3D bbox size degrades to `(0, 0, 0)`. Polygon-class detections still emit a Polygon geometry using the 0.3 m minimum extent. Point-class detections always emit a Point regardless of extent.
 3. **Single front camera only**: Current pipeline processes only the front-facing RealSense D435. Rear/side cameras are not integrated yet.
 4. **2D segmentation mask**: The segmentation output is a 2D mono8 label map. True 3D volumetric segmentation is not performed.
 5. **GPU required**: YOLO inference requires an NVIDIA GPU with CUDA support.

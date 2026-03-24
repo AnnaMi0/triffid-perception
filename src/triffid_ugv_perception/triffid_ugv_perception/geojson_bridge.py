@@ -18,7 +18,7 @@ Coordinate handling:
   - When no GPS is available, raw local (x, y, z) are emitted and a
     ``"local_frame": true`` property is added.
   - 2D coordinates are emitted: [lon, lat] (RFC 7946 §3.1.1).
-   - GNSS altitude is stored in properties (``gnss_altitude_m``).
+   - WGS-84 ellipsoidal altitude is stored in ``ellipsoidal_alt_m``.
 
 API endpoint (when enabled): https://crispres.com/wp-json/map-manager/v1/features
 """
@@ -54,14 +54,25 @@ _GPS_WINDOW = 7
 # Minimum polygon extent (metres) — used when one bbox dimension is 0 so that a visible polygon is still emitted instead of a point 
 _MIN_EXTENT = 0.3
 
-# Classes whose geometry is always emitted as a Point (regardless of bbox)
+# Per-class geometry types from the TRIFFID 63-class disaster-response
+# ontology.  See geojson_geometries.txt for the authoritative mapping.
+#
+#   Point      – small / mobile objects (persons, equipment, vehicles)
+#   LineString – linear structures (fences, walls)
+#   Polygon    – everything else (areas, buildings, vegetation, …)
+
 _POINT_CLASSES = frozenset([
-    'First responder', 'Citizen', 'Military personnel',
+    'Helmet', 'First responder', 'Destroyed vehicle', 'Fire hose',
+    'SCBA', 'Boot', 'Mask', 'Window', 'Citizen', 'Pole', 'Animal',
+    'Door', 'Civilian vehicle', 'Hole in the ground', 'Bag',
+    'Ambulance', 'Fire truck', 'Cone', 'Military personnel', 'Ax',
+    'Glove', 'Stairs', 'Protective glasses', 'Shovel', 'Fire hydrant',
+    'Police vehicle', 'Army vehicle', 'Chainsaw', 'aerial vehicle',
+    'Lifesaver', 'Extinguisher',
 ])
 
-# Classes whose geometry is emitted as a LineString (centre-line along longest axis)
 _LINE_CLASSES = frozenset([
-    'Fence',
+    'Fence', 'Wall',
 ])
 
 
@@ -81,7 +92,7 @@ class GeoJSONBridge(Node):
         self.declare_parameter('mqtt_enabled', True)
         self.declare_parameter('mqtt_host', 'localhost')
         self.declare_parameter('mqtt_port', 1883)
-        self.declare_parameter('mqtt_topic', 'triffid/front/geojson')
+        self.declare_parameter('mqtt_topic', 'ugv/detections/front/geojson')
 
         self.api_url = self.get_parameter('api_url').value
         self.publish_to_api = self.get_parameter('publish_to_api').value
@@ -117,7 +128,7 @@ class GeoJSONBridge(Node):
         # Subscribers 
         self.sub_ugv = self.create_subscription(
             Detection3DArray,
-            '/ugv/perception/front/detections_3d',
+            '/ugv/detections/front/detections_3d',
             self.ugv_callback,
             10,
         )
@@ -141,7 +152,7 @@ class GeoJSONBridge(Node):
         # Publishers
         self.pub_geojson = self.create_publisher(
             String,
-            '/triffid/front/geojson',
+            '/ugv/detections/front/geojson',
             10,
         )
 
@@ -312,7 +323,7 @@ class GeoJSONBridge(Node):
         """Build a GeoJSON FeatureCollection from detection dicts.
 
         Geometry coordinates are 2D [lon, lat] only (RFC 7946).
-        GNSS altitude is stored in ``gnss_altitude_m`` property.
+        WGS-84 ellipsoidal altitude is stored in ``ellipsoidal_alt_m``.
         Geometry type is class-dependent (Point / LineString / Polygon).
         """
         features = []
@@ -322,7 +333,6 @@ class GeoJSONBridge(Node):
             pos_x, pos_y, pos_z = det.get('position', (0.0, 0.0, 0.0))
 
             class_name = det.get('class_name', 'unknown')
-            has_extent = (sx > 0.0 or sy > 0.0)
             geom_type = self._geometry_type_for_class(class_name)
 
             if geom_type == 'Point':
@@ -353,32 +363,25 @@ class GeoJSONBridge(Node):
                 }
 
             else:  # Polygon (default)
-                if has_extent:
-                    # Build polygon from body-frame corners, each
-                    # individually converted to GPS via body_to_gps.
-                    # Use minimum extent so a zero dimension still
-                    # produces a visible polygon (not a degenerate line).
-                    half_x = max(sx, _MIN_EXTENT) / 2.0
-                    half_y = max(sy, _MIN_EXTENT) / 2.0
-                    body_corners = [
-                        (pos_x + half_x, pos_y + half_y, pos_z),
-                        (pos_x + half_x, pos_y - half_y, pos_z),
-                        (pos_x - half_x, pos_y - half_y, pos_z),
-                        (pos_x - half_x, pos_y + half_y, pos_z),
-                    ]
-                    ring = [list(self.body_to_gps(cx, cy, cz))[:2]
-                            for cx, cy, cz in body_corners]
-                    ring.append(ring[0])  # close the ring (RFC-7946)
-                    geometry = {
-                        "type": "Polygon",
-                        "coordinates": [ring],
-                    }
-                else:
-                    # Fallback to Point when no bbox extents
-                    geometry = {
-                        "type": "Point",
-                        "coordinates": [lon, lat],
-                    }
+                # Build polygon from body-frame corners, each
+                # individually converted to GPS via body_to_gps.
+                # Use minimum extent so a zero dimension still
+                # produces a visible polygon (not a degenerate line).
+                half_x = max(sx, _MIN_EXTENT) / 2.0
+                half_y = max(sy, _MIN_EXTENT) / 2.0
+                body_corners = [
+                    (pos_x + half_x, pos_y + half_y, pos_z),
+                    (pos_x + half_x, pos_y - half_y, pos_z),
+                    (pos_x - half_x, pos_y - half_y, pos_z),
+                    (pos_x - half_x, pos_y + half_y, pos_z),
+                ]
+                ring = [list(self.body_to_gps(cx, cy, cz))[:2]
+                        for cx, cy, cz in body_corners]
+                ring.append(ring[0])  # close the ring (RFC-7946)
+                geometry = {
+                    "type": "Polygon",
+                    "coordinates": [ring],
+                }
 
             feature = {
                 "type": "Feature",
@@ -392,7 +395,7 @@ class GeoJSONBridge(Node):
                     "detection_type": detection_type,
                     "source": source,
                     "local_frame": not self.gps_valid,
-                    "gnss_altitude_m": round(alt, 2),
+                    "ellipsoidal_alt_m": round(alt, 2),
                     "height_m": round(float(sz), 2),
                     "marker-color": self._class_color(class_name),
                     "marker-size": "medium",

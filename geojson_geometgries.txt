@@ -1,0 +1,64 @@
+ID	Class	Category	GeoJSON Type																							
+0	Water	obstacle	Polygon																							
+1	Fence	obstacle	Line																							
+2	Green tree	nature	Polygon																							
+3	Helmet	equipment	Point																							
+4	Flame	hazard	Polygon																							
+5	Smoke	hazard	Polygon																							
+6	First responder	person	Point																							
+7	Destroyed vehicle	vehicle	Point																							
+8	Fire hose	equipment	Point																							
+9	SCBA	equipment	Point																							
+10	Boot	equipment	Point																							
+11	Green plant	nature	Polygon																							
+12	Mask	equipment	Point																							
+13	Window	infrastructure	Point																							
+14	Building	infrastructure	Polygon																							
+15	Destroyed building	infrastructure	Polygon																							
+16	Debris	obstacle	Polygon																							
+17	Ladder	equipment	Polygon																							
+18	Dirt road	infrastructure	Polygon																							
+19	Dry tree	nature	Polygon																							
+20	Wall	infrastructure	Line																							
+21	Civilian vehicle	vehicle	Point																							
+22	Road	infrastructure	Polygon																							
+23	Citizen	person	Point																							
+24	Green grass	nature	Polygon																							
+25	Pole	infrastructure	Point																							
+26	Boat	vehicle	Polygon																							
+27	Pavement	infrastructure	Polygon																							
+28	Dry grass	nature	Polygon																							
+29	Animal	nature	Point																							
+30	Excavator	equipment	Polygon																							
+31	Door	infrastructure	Point																							
+32	Mud	obstacle	Polygon																							
+33	Barrier	obstacle	Polygon																							
+34	Hole in the ground	obstacle	Point																							
+35	Bag	equipment	Point																							
+36	Burnt tree	hazard	Polygon																							
+37	Ambulance	vehicle	Point																							
+38	Fire truck	vehicle	Point																							
+39	Cone	obstacle	Point																							
+40	Bicycle	vehicle	Polygon																							
+41	Tower	infrastructure	Polygon																							
+42	Silo	infrastructure	Polygon																							
+43	Military personnel	person	Point																							
+44	Burnt grass	hazard	Polygon																							
+45	Ax	equipment	Point																							
+46	Glove	equipment	Point																							
+47	Crane	equipment	Polygon																							
+48	Stairs	infrastructure	Point																							
+49	Dry plant	nature	Polygon																							
+50	Furniture	equipment	Polygon																							
+51	Tank	equipment	Polygon																							
+52	Protective glasses	equipment	Point																							
+53	Barrel	equipment	Polygon																							
+54	Shovel	equipment	Point																							
+55	Fire hydrant	equipment	Point																							
+56	Police vehicle	vehicle	Point																							
+57	Burnt plant	hazard	Polygon																							
+58	Army vehicle	vehicle	Point																							
+59	Chainsaw	equipment	Point																							
+60	aerial vehicle	vehicle	Point																							
+61	Lifesaver	equipment	Point																							
+62	Extinguisher	equipment	Point																							

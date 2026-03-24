@@ -29,9 +29,9 @@ BAG_PLAY_RATE = 1.0         # playback rate
 
 # Output topics that must be recorded into the output rosbag
 OUTPUT_TOPICS = [
-    '/ugv/perception/front/detections_3d',
-    '/triffid/front/geojson',
-    '/ugv/perception/front/segmentation',
+    '/ugv/detections/front/detections_3d',
+    '/ugv/detections/front/geojson',
+    '/ugv/detections/front/segmentation',
 ]
 
 # QoS override file — needed so ros2 bag play publishes /tf_static, with TRANSIENT_LOCAL durability (otherwise TF2 never receives static
@@ -49,7 +49,7 @@ EXPECTED_TOPICS = {
     '/camera_front/camera_info': 'sensor_msgs/msg/CameraInfo',
     '/camera_front/realsense_front/depth/image_rect_raw': 'sensor_msgs/msg/Image',
     '/camera_front/realsense_front/depth/camera_info': 'sensor_msgs/msg/CameraInfo',
-    '/ugv/perception/front/detections_3d': 'vision_msgs/msg/Detection3DArray',
+    '/ugv/detections/front/detections_3d': 'vision_msgs/msg/Detection3DArray',
 }
 
 
@@ -87,9 +87,9 @@ class IntegrationTestNode(Node):
         self._sub(CameraInfo, '/camera_front/realsense_front/depth/camera_info',
                   QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                              durability=DurabilityPolicy.VOLATILE))
-        self._sub(Detection3DArray, '/ugv/perception/front/detections_3d', 10)
-        self._sub(String, '/triffid/front/geojson', 10)
-        self._sub(Image, '/ugv/perception/front/segmentation', sensor_qos)
+        self._sub(Detection3DArray, '/ugv/detections/front/detections_3d', 10)
+        self._sub(String, '/ugv/detections/front/geojson', 10)
+        self._sub(Image, '/ugv/detections/front/segmentation', sensor_qos)
 
     def _sub(self, msg_type, topic, qos):
         self.received[topic] = []
@@ -204,7 +204,7 @@ def check_message_types(node: IntegrationTestNode):
         '/camera_front/camera_info': CameraInfo,
         '/camera_front/realsense_front/depth/image_rect_raw': Image,
         '/camera_front/realsense_front/depth/camera_info': CameraInfo,
-        '/ugv/perception/front/detections_3d': Detection3DArray,
+        '/ugv/detections/front/detections_3d': Detection3DArray,
     }
     errors = []
     for topic, expected_type in type_map.items():
@@ -221,7 +221,7 @@ def check_message_types(node: IntegrationTestNode):
 
 def check_timestamps(node: IntegrationTestNode):
     # Requirement #5: detection timestamps come from input images, not wall clock.
-    det_msgs = node.received.get('/ugv/perception/front/detections_3d', [])
+    det_msgs = node.received.get('/ugv/detections/front/detections_3d', [])
     rgb_msgs = node.received.get('/camera_front/raw_image', [])
 
     if not det_msgs:
@@ -269,7 +269,7 @@ def check_timestamps(node: IntegrationTestNode):
 
 def check_detection_fields(node: IntegrationTestNode):
     # Requirement #1: Detection3D messages have all required fields populated, verifies frame_id is b2/base_link (not map)
-    det_msgs = node.received.get('/ugv/perception/front/detections_3d', [])
+    det_msgs = node.received.get('/ugv/detections/front/detections_3d', [])
     if not det_msgs:
         return False, 'No detections received'
 
@@ -314,7 +314,7 @@ def check_detection_fields(node: IntegrationTestNode):
 
 def check_geojson(node: IntegrationTestNode):
     # Requirement #6: GeoJSON output is valid RFC-7946
-    geojson_msgs = node.received.get('/triffid/front/geojson', [])
+    geojson_msgs = node.received.get('/ugv/detections/front/geojson', [])
     if not geojson_msgs:
         return False, 'No GeoJSON messages received'
 
@@ -459,7 +459,7 @@ def check_tf_tree(node: IntegrationTestNode):
 
 def check_3d_positions(node: IntegrationTestNode):
     # verify that 3D positions in detections are finite, non-zero, within a plausible range from b2/base_link
-    det_msgs = node.received.get('/ugv/perception/front/detections_3d', [])
+    det_msgs = node.received.get('/ugv/detections/front/detections_3d', [])
     if not det_msgs:
         return False, 'No detections received'
 
@@ -506,7 +506,7 @@ def check_3d_positions(node: IntegrationTestNode):
 
 def check_tracking(node: IntegrationTestNode):
     # Verify tracking IDs are persistent positive integers with no duplicate IDs within a single frame and consistent class assignment.# 
-    det_msgs = node.received.get('/ugv/perception/front/detections_3d', [])
+    det_msgs = node.received.get('/ugv/detections/front/detections_3d', [])
     if not det_msgs:
         return False, 'No detections received'
 
@@ -551,7 +551,7 @@ def check_tracking(node: IntegrationTestNode):
 
 def check_segmentation(node: IntegrationTestNode):
     # Verify segmentation overlay images are published and valid.
-    seg_msgs = node.received.get('/ugv/perception/front/segmentation', [])
+    seg_msgs = node.received.get('/ugv/detections/front/segmentation', [])
     if not seg_msgs:
         return False, 'No segmentation messages received (is anything subscribed?)'
 

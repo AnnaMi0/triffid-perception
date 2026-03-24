@@ -159,18 +159,27 @@ cmd_record() {
     _ensure_running
 
     local bag_out="/ws/output_rosbag"
-    local topics="\
-        /ugv/perception/front/detections_3d \
-        /ugv/perception/front/segmentation \
-        /triffid/front/geojson"
+    local output_topics="\
+        /ugv/detections/front/detections_3d \
+        /ugv/detections/front/segmentation \
+        /ugv/detections/front/geojson"
+    local input_topics="\
+        /camera_front/raw_image \
+        /camera_front/camera_info \
+        /camera_front/realsense_front/depth/image_rect_raw \
+        /camera_front/realsense_front/depth/camera_info \
+        /fix \
+        /dog_odom \
+        /tf \
+        /tf_static"
 
     # Clean previous recording
     docker exec "$CONTAINER" bash -c "rm -rf $bag_out/*" 2>/dev/null || true
 
-    # Start recorder in background
-    echo "▸ Recording output topics to ./output_rosbag/ ..."
+    # Start recorder in background — output + input topics
+    echo "▸ Recording output + input topics to ./output_rosbag/ ..."
     docker exec -d "$CONTAINER" bash -c "$ROS_ENV && ros2 bag record \
-        $topics \
+        $output_topics $input_topics \
         -o $bag_out/recording \
         --max-cache-size 200000000 \
         2>&1 | tee /tmp/record.log"
