@@ -18,7 +18,7 @@ Coordinate handling:
   - When no GPS is available, raw local (x, y, z) are emitted and a
     ``"local_frame": true`` property is added.
   - 2D coordinates are emitted: [lon, lat] (RFC 7946 §3.1.1).
-   - WGS-84 ellipsoidal altitude is stored in ``ellipsoidal_alt_m``.
+   - WGS-84 ellipsoidal altitude is stored in ``altitude_m``.
 
 API endpoint (when enabled): https://crispres.com/wp-json/map-manager/v1/features
 """
@@ -323,7 +323,7 @@ class GeoJSONBridge(Node):
         """Build a GeoJSON FeatureCollection from detection dicts.
 
         Geometry coordinates are 2D [lon, lat] only (RFC 7946).
-        WGS-84 ellipsoidal altitude is stored in ``ellipsoidal_alt_m``.
+        WGS-84 ellipsoidal altitude is stored in ``altitude_m``.
         Geometry type is class-dependent (Point / LineString / Polygon).
         """
         features = []
@@ -395,7 +395,7 @@ class GeoJSONBridge(Node):
                     "detection_type": detection_type,
                     "source": source,
                     "local_frame": not self.gps_valid,
-                    "ellipsoidal_alt_m": round(alt, 2),
+                    "altitude_m": round(alt, 2),
                     "height_m": round(float(sz), 2),
                     "marker-color": self._class_color(class_name),
                     "marker-size": "medium",

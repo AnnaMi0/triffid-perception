@@ -23,6 +23,7 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -39,6 +40,7 @@ from triffid_uav_perception.geo import (
     project_bbox_to_ground,
     estimate_object_height,
 )
+from triffid_uav_perception.api_client import FuturisedClient
 
 try:
     from ultralytics import YOLO
@@ -392,7 +394,7 @@ class UAVPipeline:
                 "detection_type": "seg",
                 "source": "uav",
                 "local_frame": False,
-                "gnss_altitude_m": round(centre_alt, 2),
+                "altitude_m": round(centre_alt, 2),
                 "height_m": round(height_m, 2),
                 "marker-color": _CLASS_COLORS.get(class_name, '#808080'),
                 "marker-size": "medium",
@@ -503,6 +505,58 @@ def _watch_directory(pipeline: UAVPipeline, watch_dir: str,
     log.info('Watch stopped.')
 
 
+def _poll_api(pipeline: UAVPipeline, client: FuturisedClient,
+              poll_interval: float = 10.0, camera: str = 'Wide',
+              output_dir: Optional[str] = None):
+    """Poll the FUTURISED API for new images and process them.
+
+    Checks for new image uploads at ``poll_interval`` seconds.
+    Downloads new images, processes them through the pipeline, and
+    optionally saves merged GeoJSON output.
+
+    Parameters
+    ----------
+    pipeline : UAVPipeline
+        The perception pipeline instance.
+    client : FuturisedClient
+        Configured API client.
+    poll_interval : float
+        Seconds between API polls.
+    camera : str
+        Camera filter (e.g. 'Wide'). Empty string for all cameras.
+    output_dir : str, optional
+        Directory to save merged GeoJSON output.
+    """
+    log.info(
+        f'Polling FUTURISED API every {poll_interval}s '
+        f'(camera={camera or "all"}) ...'
+    )
+    all_features = []
+
+    while True:
+        try:
+            new_images = client.poll_new_images(camera_filter=camera)
+            for img_path in new_images:
+                geojson = pipeline.process_image(str(img_path))
+                if geojson is not None:
+                    all_features.extend(geojson['features'])
+
+            time.sleep(poll_interval)
+        except KeyboardInterrupt:
+            break
+
+    # Save merged output
+    if output_dir and all_features:
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        merged = {"type": "FeatureCollection", "features": all_features}
+        merged_path = out / 'geojson_merged.json'
+        merged_path.write_text(json.dumps(merged, indent=2))
+        log.info(f'Saved merged GeoJSON: {merged_path} ({len(all_features)} features)')
+
+    log.info('API polling stopped.')
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='TRIFFID UAV Perception Pipeline',
@@ -511,6 +565,8 @@ def main():
     mode.add_argument('--image', type=str, help='Process a single image')
     mode.add_argument('--batch', type=str, help='Process all images in directory')
     mode.add_argument('--watch', type=str, help='Watch directory for new images')
+    mode.add_argument('--poll-api', action='store_true',
+                      help='Poll FUTURISED API for new drone images')
 
     parser.add_argument('--model', type=str, default='yolo11n-seg.pt',
                         help='YOLO model path (default: yolo11n-seg.pt)')
@@ -524,6 +580,43 @@ def main():
     parser.add_argument('--output', type=str, default=None,
                         help='Output directory for saved GeoJSON (batch mode)')
     parser.add_argument('-v', '--verbose', action='store_true')
+
+    # FUTURISED API options
+    api_group = parser.add_argument_group('FUTURISED API options')
+    api_group.add_argument(
+        '--api-media-key', type=str,
+        default=os.environ.get('FUTURISED_MEDIA_API_KEY', ''),
+        help='Media Files API key (or env FUTURISED_MEDIA_API_KEY)',
+    )
+    api_group.add_argument(
+        '--api-org-id', type=str,
+        default=os.environ.get(
+            'FUTURISED_ORG_ID',
+            '66f9f3ae-cd33-4313-b474-ae24e923a185',
+        ),
+        help='Organisation UUID for media API (or env FUTURISED_ORG_ID)',
+    )
+    api_group.add_argument(
+        '--api-telemetry-token', type=str,
+        default=os.environ.get('FUTURISED_TELEMETRY_TOKEN', ''),
+        help='Telemetry API bearer token (or env FUTURISED_TELEMETRY_TOKEN)',
+    )
+    api_group.add_argument(
+        '--api-telemetry-project', type=str, default='Triffid_test',
+        help='Telemetry project name (default: Triffid_test)',
+    )
+    api_group.add_argument(
+        '--api-poll-interval', type=float, default=10.0,
+        help='Seconds between API polls (default: 10)',
+    )
+    api_group.add_argument(
+        '--api-camera', type=str, default='Wide',
+        help='Camera filter: Wide, Zoom, Thermal, or empty for all (default: Wide)',
+    )
+    api_group.add_argument(
+        '--api-download-dir', type=str, default='./uav_images',
+        help='Local directory for downloaded images (default: ./uav_images)',
+    )
 
     args = parser.parse_args()
 
@@ -550,6 +643,25 @@ def main():
             _process_batch(pipeline, args.batch, args.output)
         elif args.watch:
             _watch_directory(pipeline, args.watch)
+        elif args.poll_api:
+            if not args.api_media_key:
+                parser.error(
+                    '--poll-api requires --api-media-key or '
+                    'env FUTURISED_MEDIA_API_KEY'
+                )
+            client = FuturisedClient(
+                media_api_key=args.api_media_key,
+                org_id=args.api_org_id,
+                telemetry_token=args.api_telemetry_token or None,
+                telemetry_project=args.api_telemetry_project,
+                download_dir=args.api_download_dir,
+            )
+            _poll_api(
+                pipeline, client,
+                poll_interval=args.api_poll_interval,
+                camera=args.api_camera,
+                output_dir=args.output,
+            )
     except KeyboardInterrupt:
         pass
     finally:

@@ -37,6 +37,11 @@ from triffid_uav_perception.uav_node import (
     _CLASS_COLORS,
     _CLASS_CATEGORIES,
 )
+from triffid_uav_perception.api_client import (
+    FuturisedClient,
+    MediaFile,
+    _CAMERA_SUFFIX,
+)
 
 
 # ── Sample XMP for testing ──────────────────────────────────────────
@@ -431,7 +436,7 @@ class TestGeoJSONOutput:
         assert props['category'] == 'infrastructure'
         assert props['detection_type'] == 'seg'
         assert props['local_frame'] is False
-        assert 'gnss_altitude_m' in props
+        assert 'altitude_m' in props
         assert 'height_m' in props
         assert 'marker-color' in props
         assert 'stroke' in props
@@ -487,3 +492,183 @@ class TestGeoJSONOutput:
         parsed = json.loads(text)
         assert parsed['type'] == 'FeatureCollection'
         assert len(parsed['features']) == 1
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  API Client tests
+# ═══════════════════════════════════════════════════════════════════
+
+class TestCameraSuffix:
+
+    def test_wide(self):
+        assert _CAMERA_SUFFIX['_W'] == 'Wide'
+
+    def test_zoom(self):
+        assert _CAMERA_SUFFIX['_Z'] == 'Zoom'
+
+    def test_thermal(self):
+        assert _CAMERA_SUFFIX['_T'] == 'Thermal'
+
+
+class TestTelemetryCoordParsing:
+    """Test FuturisedClient.parse_telemetry_coord for the various formats
+    returned by the getDJIData endpoint."""
+
+    def test_normal_degrees(self):
+        assert FuturisedClient.parse_telemetry_coord('49.726') == pytest.approx(49.726)
+
+    def test_euro_comma_sci_notation(self):
+        # "5,15493453694969E+15" → 5.15493453694969e15 / 1e14 ≈ 51.549
+        result = FuturisedClient.parse_telemetry_coord('5,15493453694969E+15')
+        assert result is not None
+        assert 40 < abs(result) < 90  # plausible latitude
+
+    def test_plain_integer(self):
+        # "515493451026715" → ambiguous scale; parser returns a plausible
+        # coordinate but the exact divisor depends on heuristic order.
+        # The key requirement: it doesn't return None and the value is
+        # in a plausible geographic range (< 180°).
+        result = FuturisedClient.parse_telemetry_coord('515493451026715')
+        assert result is not None
+        assert abs(result) < 180
+
+    def test_zero_returns_none(self):
+        assert FuturisedClient.parse_telemetry_coord('0') is None
+
+    def test_empty_returns_none(self):
+        assert FuturisedClient.parse_telemetry_coord('') is None
+
+    def test_negative_degrees(self):
+        result = FuturisedClient.parse_telemetry_coord('-33.868')
+        assert result == pytest.approx(-33.868)
+
+
+class TestMediaFileParsing:
+    """Test that list_media correctly parses API responses."""
+
+    def _make_client(self, tmp_path):
+        return FuturisedClient(
+            media_api_key='test-key',
+            download_dir=str(tmp_path),
+        )
+
+    def test_camera_detection_wide(self, tmp_path):
+        client = self._make_client(tmp_path)
+        # Simulate API response
+        api_response = [
+            {
+                'id': 'abc-123',
+                'name': 'DJI_20260317100842_0003_W.JPG',
+                'uploaded_at': 1773738524938,
+                'path': 'DJI_album',
+            },
+        ]
+        with patch.object(client, '_get_json', return_value=api_response):
+            files = client.list_media()
+
+        assert len(files) == 1
+        assert files[0].camera == 'Wide'
+        assert files[0].extension == '.JPG'
+        assert files[0].id == 'abc-123'
+
+    def test_camera_detection_thermal(self, tmp_path):
+        client = self._make_client(tmp_path)
+        api_response = [
+            {
+                'id': 'def-456',
+                'name': 'DJI_20260317100842_0003_T.JPG',
+                'uploaded_at': 0,
+                'path': '',
+            },
+        ]
+        with patch.object(client, '_get_json', return_value=api_response):
+            files = client.list_media()
+
+        assert files[0].camera == 'Thermal'
+
+    def test_mp4_extension(self, tmp_path):
+        client = self._make_client(tmp_path)
+        api_response = [
+            {
+                'id': 'vid-789',
+                'name': 'DJI_20260317100717_0001_W.MP4',
+                'uploaded_at': 0,
+                'path': '',
+            },
+        ]
+        with patch.object(client, '_get_json', return_value=api_response):
+            files = client.list_media()
+
+        assert files[0].extension == '.MP4'
+
+    def test_api_error_returns_empty(self, tmp_path):
+        client = self._make_client(tmp_path)
+        with patch.object(client, '_get_json', return_value=None):
+            files = client.list_media()
+        assert files == []
+
+
+class TestPollNewImages:
+
+    def test_filters_by_camera_and_extension(self, tmp_path):
+        client = FuturisedClient(
+            media_api_key='test-key',
+            download_dir=str(tmp_path),
+        )
+        api_response = [
+            {'id': '1', 'name': 'DJI_0001_W.JPG', 'uploaded_at': 0, 'path': ''},
+            {'id': '2', 'name': 'DJI_0001_T.JPG', 'uploaded_at': 0, 'path': ''},
+            {'id': '3', 'name': 'DJI_0001_W.MP4', 'uploaded_at': 0, 'path': ''},
+        ]
+        # Mock list_media to return parsed files, and download_image to return a path
+        with patch.object(client, '_get_json', return_value=api_response):
+            files = client.list_media()
+
+        # Manually call poll logic — Wide JPGs only
+        candidates = [
+            f for f in files
+            if f.extension in {'.JPG', '.JPEG'}
+            and f.camera == 'Wide'
+        ]
+        assert len(candidates) == 1
+        assert candidates[0].id == '1'
+
+    def test_skips_already_seen(self, tmp_path):
+        client = FuturisedClient(
+            media_api_key='test-key',
+            download_dir=str(tmp_path),
+        )
+        client._seen_ids.add('1')
+        api_response = [
+            {'id': '1', 'name': 'DJI_0001_W.JPG', 'uploaded_at': 0, 'path': ''},
+            {'id': '2', 'name': 'DJI_0002_W.JPG', 'uploaded_at': 0, 'path': ''},
+        ]
+        with patch.object(client, '_get_json', return_value=api_response):
+            with patch.object(client, 'download_image', return_value=tmp_path / 'img.jpg'):
+                downloaded = client.poll_new_images(camera_filter='Wide')
+
+        # Only file '2' should be downloaded (file '1' already seen)
+        assert len(downloaded) == 1
+
+
+class TestDownloadImage:
+
+    def test_skips_existing_file(self, tmp_path):
+        client = FuturisedClient(
+            media_api_key='test-key',
+            download_dir=str(tmp_path),
+        )
+        # Pre-create the file
+        existing = tmp_path / 'DJI_test.JPG'
+        existing.write_bytes(b'fake jpeg')
+
+        details = MediaFile(
+            id='abc', name='DJI_test.JPG', uploaded_at=0,
+            path='', camera='Wide', extension='.JPG',
+            download_url='https://example.com/img.jpg',
+        )
+        with patch.object(client, 'get_file_details', return_value=details):
+            result = client.download_image('abc')
+
+        assert result == existing
+        assert 'abc' in client._seen_ids

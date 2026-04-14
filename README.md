@@ -14,7 +14,7 @@ For UAV-specific documentation see [src/triffid_uav_perception/README.md](src/tr
 ## UGV Perception
 
 Real-time 3D object detection pipeline for the TRIFFID UGV platform.  
-Fuses RGB and depth from separate cameras via cross-camera projection, runs a fine-tuned YOLOv11l-seg model for 2D detection, back-projects to 3D, tracks objects across frames, and publishes results as ROS 2 messages and GeoJSON.
+Uses a pixel-aligned RGB-D camera (Intel RealSense with depth aligned to colour), runs a fine-tuned YOLOv11l-seg model for 2D detection, samples depth directly at detection pixels and back-projects to 3D, tracks objects across frames, and publishes results as ROS 2 messages and GeoJSON.
 
 ---
 
@@ -40,26 +40,30 @@ Fuses RGB and depth from separate cameras via cross-camera projection, runs a fi
 ## Architecture Overview
 
 ```
-┌─────────────┐   ┌──────────────┐
-│ Front RGB    │   │ Front Depth  │
-│ USB Camera   │   │ RealSense    │
-│ (f_oc_link)  │   │ (f_depth_    │
-│ 1280×720 bgr8│   │ optical_frame)│
-│ straight fwd │   │ 640×480 16UC1│
-│              │   │ tilted 45° ↓ │
-└──────┬───────┘   └──────┬───────┘
-       │                  │
-       ▼                  ▼
+ ┌──────────────────────────────┐
+ │  Intel RealSense (RGB-D)     │
+ │  Depth aligned to colour     │
+ │  Shared intrinsics & grid    │
+ │                              │
+ │  RGB: /b2/camera/color/      │
+ │       image_raw (bgr8)       │
+ │  Depth: /b2/camera/          │
+ │    aligned_depth_to_color/   │
+ │    image_raw (16UC1, mm)     │
+ │  Info: /b2/camera/color/     │
+ │        camera_info            │
+ └──────────────┬───────────────┘
+                │
+                ▼
  ┌─────────────────────────────────┐
  │         ugv_node                │
  │  1. YOLO on RGB → 2D bboxes    │
- │  2. Grid-sample depth → 3D pts │
- │  3. TF transform → RGB frame   │
- │  4. Pinhole project → RGB px   │
- │  5. Match pts inside bboxes    │
- │  6. Median 3D position         │
- │  7. ByteTrack tracker → ID     │
- │  8. Publish Detection3DArray   │
+ │  2. Sample depth at det pixels  │
+ │  3. Back-project → 3D optical   │
+ │  4. TF → b2/base_link           │
+ │  5. Median 3D position          │
+ │  6. ByteTrack tracker → ID      │
+ │  7. Publish Detection3DArray    │
  └──────────┬──────────────────────┘
             │
             ▼
@@ -84,21 +88,23 @@ Fuses RGB and depth from separate cameras via cross-camera projection, runs a fi
 
 ## Hardware Assumptions
 
-These are taken as given from the robot platform; the perception pipeline does not configure them:
+The UGV platform uses an Intel RealSense camera with **depth aligned to colour** (`aligned_depth_to_color`). Both streams share the same pixel grid, resolution, and intrinsics — no cross-camera projection is needed.
 
-| Property | Front RGB (USB) | Front Depth (RealSense) |
-|---|---|---|
-| **Topic (image)** | `/camera_front/raw_image` | `/camera_front/realsense_front/depth/image_rect_raw` |
-| **Topic (info)** | `/camera_front/camera_info` | `/camera_front/realsense_front/depth/camera_info` |
-| **Resolution** | 1280 × 720 | 640 × 480 |
-| **Encoding** | `bgr8` | `16UC1` (millimetres) |
-| **TF frame** | `f_oc_link` (body convention) | `f_depth_optical_frame` (optical convention) |
-| **Orientation** | Straight forward | Pitched ~45° downward |
-| **Intrinsics (K)** | fx = fy = 500, cx = 640, cy = 360 | From `CameraInfo.k` (RealSense factory calibration) |
+| Property | Value |
+|---|---|
+| **Camera** | Intel RealSense (RGB-D, depth aligned to colour) |
+| **RGB topic** | `/b2/camera/color/image_raw` (configurable) |
+| **Depth topic** | `/b2/camera/aligned_depth_to_color/image_raw` (configurable) |
+| **CameraInfo topic** | `/b2/camera/color/camera_info` (configurable) |
+| **Resolution** | Shared (e.g. 1280 × 720) |
+| **RGB encoding** | `bgr8` |
+| **Depth encoding** | `16UC1` (millimetres) |
+| **TF frame** | Read dynamically from `CameraInfo.header.frame_id` (e.g. `b2/camera_optical_frame`) |
+| **Intrinsics** | Shared K matrix from the single `CameraInfo` topic |
 
-The RGB and depth cameras are physically separate sensors with different resolutions, fields of view, and mounting angles. Depth cannot be sampled at RGB pixel coordinates directly — the pipeline performs cross-camera 3D projection to bridge them.
+Because depth is pixel-aligned to the colour image, the pipeline samples depth directly at detection pixels — there is no separate depth camera frame, no grid sampling, and no cross-camera TF transform.
 
-The robot also publishes `/tf_static` with the full transform chain, `/dog_odom`, `/dog_imu_raw`, and various Unitree topics. Only the camera and TF topics are consumed by this package.
+The robot also publishes `/tf_static` with the transform chain (including `camera_optical_frame → b2/base_link`), `/dog_odom`, `/dog_imu_raw`, and various Unitree topics. Only the camera, CameraInfo, and TF topics are consumed by this package.
 
 ---
 
@@ -108,13 +114,14 @@ The robot also publishes `/tf_static` with the full transform chain, `/dog_odom`
 
 | Topic | Type | Rate | Description |
 |---|---|---|---|
-| `/camera_front/raw_image` | `sensor_msgs/Image` | ~15 Hz | Front RGB image (bgr8, 1280×720) |
-| `/camera_front/camera_info` | `sensor_msgs/CameraInfo` | ~15 Hz | RGB intrinsics matrix K |
-| `/camera_front/realsense_front/depth/image_rect_raw` | `sensor_msgs/Image` | ~15 Hz | Depth image (16UC1, mm, 640×480) |
-| `/camera_front/realsense_front/depth/camera_info` | `sensor_msgs/CameraInfo` | ~15 Hz | Depth intrinsics matrix K |
+| `/b2/camera/color/image_raw` | `sensor_msgs/Image` | ~15 Hz | RGB image (bgr8) |
+| `/b2/camera/aligned_depth_to_color/image_raw` | `sensor_msgs/Image` | ~15 Hz | Pixel-aligned depth image (16UC1, mm) |
+| `/b2/camera/color/camera_info` | `sensor_msgs/CameraInfo` | ~15 Hz | Shared intrinsics matrix K |
 | `/tf`, `/tf_static` | `tf2_msgs/TFMessage` | — | Transform tree (see below) |
 | `/fix` | `sensor_msgs/NavSatFix` | ~0.4 Hz | GPS fix (optional, for GeoJSON GPS coords) |
 | `/dog_odom` | `nav_msgs/Odometry` | ~500 Hz | Odometry with magnetometer-fused heading (optional, for GeoJSON heading rotation) |
+
+> **Note**: Topic names are configurable via ROS parameters (`rgb_image_topic`, `depth_image_topic`, `camera_info_topic`). The defaults above use the `/b2/camera/` namespace.
 
 ### Published (Output)
 
@@ -140,7 +147,7 @@ Each `Detection3D` in the array contains:
 - **`header.stamp`**: Copied from the triggering RGB frame (rosbag time, not wall clock)
 - **`id`**: Persistent tracking ID (positive integer, never reused)
 - **`bbox.center.position`**: Median 3D position (x, y, z) in metres relative to `b2/base_link`
-- **`bbox.size`**: 3D bounding box extent (x, y, z) in metres in `b2/base_link`. Derived from the spread of matched depth points (or back-projected 2D bbox corners when depth points cluster too tightly). May be `(0, 0, 0)` when the TF transform for extent corners fails.. With the tracker fix (v1.6), this now carries the actual depth-derived extent; previously it was always zero due to the tracker dropping the `extent` field.
+- **`bbox.size`**: 3D bounding box extent (x, y, z) in metres in `b2/base_link`. Derived from the spread of matched depth points (or back-projected 2D bbox corners when depth points cluster too tightly). May be `(0, 0, 0)` when the TF transform for extent corners fails.
 - **`results[0].hypothesis.class_id`**: Class name string (e.g. `First responder`, `Civilian vehicle`, `Flame`, `Debris`)
 - **`results[0].hypothesis.score`**: YOLO confidence (0–1)
 
@@ -158,31 +165,18 @@ When masks overlap, the highest-confidence detection’s class ID wins.
 
 ## TF Frame Tree
 
-The pipeline requires four static transforms, published by the launch file:
+The pipeline requires a single transform from the camera's optical frame to `b2/base_link`. The camera frame ID is **read dynamically** from the `CameraInfo.header.frame_id` field (typically `b2/camera_optical_frame`).
 
 ```
 b2/base_link
-├── f_oc_link                    (RGB camera, X=forward, Y=left, Z=up)
-│   Translation: (0.3993, 0.0, -0.0158)
-│   Rotation:    identity
-│
-└── f_dc_link                    (depth camera mount, ~45° pitch down)
-    Translation: (0.4216, 0.025, 0.0619)
-    Rotation:    qy=0.3827, qw=0.9239  (≈45° about Y)
-    │
-    └── f_depth_frame            (identity from f_dc_link)
-        │
-        └── f_depth_optical_frame  (ROS optical convention: Z=forward)
-            Rotation: qx=-0.5, qy=0.5, qz=-0.5, qw=0.5
+└── b2/camera_optical_frame     (from CameraInfo header)
+      Convention: ROS optical (X=right, Y=down, Z=forward)
+      Published by robot's driver / localization stack
 ```
 
-**Key detail**: `f_oc_link` uses ROS body convention (X=forward, Y=left, Z=up), but the `CameraInfo.K` matrix uses optical convention (X=right, Y=down, Z=forward). The node converts between conventions before pinhole projection:
+The static transforms for the old cross-camera setup (`f_oc_link`, `f_dc_link`, `f_depth_frame`, `f_depth_optical_frame`) have been removed from the launch file. The transform chain is now managed by Angel's localization stack: `map → b2/map → b2/odom → b2/base_link → b2/camera_optical_frame`.
 
-```
-X_optical = −Y_body   (right  = −left)
-Y_optical = −Z_body   (down   = −up)
-Z_optical =  X_body   (forward = forward)
-```
+The node uses **camera_optical_frame convention** (X=right, Y=down, Z=forward) directly for all back-projection. There is no body↓optical conversion inside the node.
 
 ---
 
@@ -192,19 +186,17 @@ The core processing runs on every RGB frame in `rgb_callback`:
 
 1. **YOLO Detection** — Run the fine-tuned YOLOv11l-seg model on the RGB image. The model detects 63 disaster-response classes (see `classes.txt`): people (citizens, first responders, military personnel), vehicles (civilian, police, army, fire truck, ambulance, excavator), hazards (flame, smoke, debris, destroyed buildings), terrain (roads, grass, mud), equipment (helmets, SCBA, fire hose, extinguisher), and more. Or use a full-image dummy bbox for testing without YOLO.
 
-2. **Depth Grid Sampling** — Sample the depth image on a coarse grid (default 64×48 px step → ~100 points). Discard zero-depth pixels. Back-project valid samples to 3D points in `f_depth_optical_frame` using the depth camera's intrinsics from `CameraInfo.K`.
+2. **Pixel-aligned Depth Sampling** — For each detection, sample depth at the instance mask pixels (or bbox pixels if no mask). Because the depth image is aligned to the colour image (same resolution, same pixel grid, shared intrinsics), depth is read directly at the detection's pixel coordinates — no grid sampling, no cross-camera TF transform, no pinhole projection. Large masks are sub-sampled to a maximum of 500 depth samples for efficiency. Zero-depth pixels (no reading) are discarded.
 
-3. **TF Batch Transform** — Look up the static transform `f_depth_optical_frame → f_oc_link` once. Apply as a single matrix multiply to all ~100 depth points (efficient batch operation, not per-point TF calls).
+3. **Back-project to 3D** — Using the shared intrinsics from the single `CameraInfo` topic, back-project the valid depth samples to 3D points in **camera_optical_frame** (X=right, Y=down, Z=forward).
 
-4. **Pinhole Projection to RGB** — Convert the 3D points (now in `f_oc_link` body frame) to optical convention, then project onto the RGB image plane using the RGB `CameraInfo.K`. Points behind the camera (Z_optical ≤ 0) are assigned sentinel pixel values (−1, −1).
+4. **Median 3D Position** — Take the median of the back-projected 3D points as the detection's position in camera_optical_frame. Transform this point to `b2/base_link` via TF.
 
-5. **Mask-based Depth Matching** — For each detection, use the instance segmentation mask (not the bounding box) to select which projected depth points belong to the object. This gives pixel-precise matching and eliminates background depth contamination. Falls back to bbox matching if no mask is available.
+5. **3D Extent Estimation** — Compute the 3D bounding box extent from the spread of matched points. When depth points cluster too tightly, fall back to back-projecting the 2D bbox corners at the median depth.
 
-6. **Median 3D Position** — Take the median of matched 3D points in `f_oc_link` as the object's position. Transform this point to `b2/base_link` via TF.
+6. **ByteTrack Tracking** — A ByteTrack-style tracker with Kalman-filter motion prediction, Hungarian (optimal) assignment, and two-pass association (high-confidence detections first, then low-confidence). Tracks go through TENTATIVE → CONFIRMED → LOST states; only confirmed tracks (seen for `n_init` consecutive frames) are published. A 3D position gate allows re-identification when the 2D IoU is low but the 3D distance is close (useful for small objects like poles). Tracks are retired after `max_age=30` frames without a match. A **class gate** prevents cross-class matches (e.g. a Fence track cannot be reassigned to a Civilian vehicle detection). Class labels use **majority voting** — each observation votes for a class, and the track takes the class with the most votes, making labels stable even if one frame disagrees. Requires `scipy` for optimal assignment (falls back to greedy if unavailable).
 
-7. **ByteTrack Tracking** — A ByteTrack-style tracker with Kalman-filter motion prediction, Hungarian (optimal) assignment, and two-pass association (high-confidence detections first, then low-confidence). Tracks go through TENTATIVE → CONFIRMED → LOST states; only confirmed tracks (seen for `n_init` consecutive frames) are published. A 3D position gate allows re-identification when the 2D IoU is low but the 3D distance is close (useful for small objects like poles). Tracks are retired after `max_age=30` frames without a match. A **class gate** prevents cross-class matches (e.g. a Fence track cannot be reassigned to a Civilian vehicle detection). Class labels use **majority voting** — each observation votes for a class, and the track takes the class with the most votes, making labels stable even if one frame disagrees. Requires `scipy` for optimal assignment (falls back to greedy if unavailable).
-
-8. **Publish** — Emit a `Detection3DArray` with all tracked detections and a per-pixel semantic label map on `/ugv/detections/front/segmentation` (`mono8`, pixel = 1-based class ID, 0 = background).
+7. **Publish** — Emit a `Detection3DArray` with all tracked detections and a per-pixel semantic label map on `/ugv/detections/front/segmentation` (`mono8`, pixel = 1-based class ID, 0 = background).
 
 ---
 
@@ -215,10 +207,12 @@ The core processing runs on every RGB frame in `rgb_callback`:
 The core pipeline node. Subscribes to RGB, depth, CameraInfo, and TF. Publishes `Detection3DArray` and segmentation overlay.
 
 - Uses fine-tuned `yolo11l-seg` (ultralytics) for 2D detection + instance segmentation (63 classes)
-- Segmentation masks used for pixel-precise depth matching (not rectangular bboxes)
+- Segmentation masks used for pixel-precise depth sampling (depth read at mask pixels, not via grid)
 - Publishes semantic segmentation label map on `/ugv/detections/front/segmentation` (mono8, only when subscribed)
 - 3D NMS deduplication: overlapping detections at the same 3D position are merged (highest confidence kept)
-- Cross-camera depth–RGB fusion via 3D projection
+- Pixel-aligned RGB-D: single camera with shared intrinsics, no cross-camera TF required
+- Camera frame read dynamically from `CameraInfo.header.frame_id`
+- Configurable topic names via ROS parameters (default `/b2/camera/` namespace)
 - ByteTrack-style tracker (Kalman + Hungarian + class gate + majority-vote class + 3D gate) for persistent object IDs
 - Frame synchronisation: uses latest available depth image when an RGB frame arrives (not strict time-sync)
 
@@ -245,8 +239,9 @@ All parameters are declared on `ugv_node` and configurable via the launch file:
 | `model_path` | `/ws/best.pt` | YOLO model weights file (mounted from host) |
 | `confidence_threshold` | `0.35` | Minimum YOLO confidence to accept a detection |
 | `target_frame` | `b2/base_link` | Output frame for 3D positions |
-| `depth_grid_step_u` | `64` | Horizontal step (px) for depth grid sampling |
-| `depth_grid_step_v` | `48` | Vertical step (px) for depth grid sampling |
+| `rgb_image_topic` | `/b2/camera/color/image_raw` | RGB image topic name |
+| `depth_image_topic` | `/b2/camera/aligned_depth_to_color/image_raw` | Depth image topic name |
+| `camera_info_topic` | `/b2/camera/color/camera_info` | CameraInfo topic name (shared intrinsics) |
 | `use_dummy_detections` | `false` | Bypass YOLO with a full-image dummy bbox (for testing) |
 | `yolo_imgsz` | `1280` | YOLO input resolution (pixels) |
 | `tracker_iou_threshold` | `0.30` | High-confidence IoU threshold for first-pass matching |
@@ -353,7 +348,7 @@ sudo docker compose exec perception bash -c "
 
 ### 3. Run the pipeline
 
-Inside the container, launch both nodes (ugv_node + static TF publishers):
+Inside the container, launch both nodes:
 
 ```bash
 sudo docker compose exec perception bash -c "
@@ -361,6 +356,8 @@ sudo docker compose exec perception bash -c "
   ros2 launch triffid_ugv_perception ugv_perception.launch.py
 "
 ```
+
+> **Note**: The launch file no longer publishes static TF transforms. The camera→base_link transform chain must be provided by the robot's driver or localization stack.
 
 ### 4. Play the rosbag (in a separate terminal)
 
@@ -446,11 +443,12 @@ The rosbag is not included in the repository (17+ GB binary). Mount it via `dock
 
 ### Required topics in the bag
 
-- `/camera_front/raw_image` — Front RGB frames
-- `/camera_front/camera_info` — RGB camera intrinsics
-- `/camera_front/realsense_front/depth/image_rect_raw` — Depth frames
-- `/camera_front/realsense_front/depth/camera_info` — Depth intrinsics
-- `/tf_static` — Static transforms (frame tree)
+- `/b2/camera/color/image_raw` — RGB frames
+- `/b2/camera/color/camera_info` — Camera intrinsics (shared)
+- `/b2/camera/aligned_depth_to_color/image_raw` — Pixel-aligned depth frames
+- `/tf_static` — Static transforms (camera_optical_frame → base_link)
+
+> **Legacy bags**: Older rosbags with separate RGB/depth camera topics (`/camera_front/raw_image`, `/camera_front/realsense_front/depth/...`) are no longer compatible. Use topic remapping or re-record with the new sensor configuration.
 
 ### Note on YOLO detection
 
@@ -480,17 +478,17 @@ hua_ws/
     │   ├── config/
     │   │   └── bag_qos_overrides.yaml    # QoS overrides for ros2 bag play
     │   ├── launch/
-    │   │   └── ugv_perception.launch.py  # Launch all nodes + static TFs
+    │   │   └── ugv_perception.launch.py  # Launch nodes (no static TFs)
     │   ├── triffid_ugv_perception/
     │   │   ├── __init__.py
-    │   │   ├── ugv_node.py               # Main perception node
+    │   │   ├── ugv_node.py               # Main perception node (pixel-aligned RGB-D)
     │   │   ├── tracker.py                # ByteTrack-style multi-object tracker
     │   │   └── geojson_bridge.py         # Detection3D → GeoJSON + API
     │   ├── scripts/
     │   │   └── collect_samples.py        # Output sample collector
     │   └── test/
     │       ├── integration_test.py       # End-to-end integration test
-    │       └── test_unit.py              # 182 unit tests
+    │       └── test_unit.py              # 164 unit tests
     │
     └── triffid_uav_perception/     # UAV perception (standalone, MQTT only)
         ├── requirements.txt

@@ -8,6 +8,7 @@
 #   ./run_uav.sh process <image>    # Process a single image
 #   ./run_uav.sh batch [dir]        # Process all images in directory
 #   ./run_uav.sh watch [dir]        # Watch directory for new images
+#   ./run_uav.sh poll-api            # Poll FUTURISED API for new images
 #   ./run_uav.sh stop               # Stop container
 #   ./run_uav.sh shell              # Open bash inside the container
 #   ./run_uav.sh test               # Run unit tests
@@ -21,6 +22,13 @@
 #   MQTT_PORT   MQTT broker port                   (default: 1883)
 #   MQTT_TOPIC  MQTT topic                         (default: triffid/uav/geojson)
 #   IMGSZ       YOLO input size                    (default: 1280)
+#
+# FUTURISED API:
+#   FUTURISED_MEDIA_API_KEY   Media Files API key (required for poll-api)
+#   FUTURISED_ORG_ID          Organisation UUID (has default)
+#   FUTURISED_TELEMETRY_TOKEN Telemetry API bearer token (optional)
+#   API_CAMERA                Camera filter (default: Wide)
+#   API_POLL_INTERVAL         Seconds between polls (default: 10)
 # =============================================================
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -192,6 +200,28 @@ cmd_test() {
         "cd /app && PYTHONPATH=/app/src/triffid_uav_perception python -m pytest src/triffid_uav_perception/test/ -v"
 }
 
+cmd_poll_api() {
+    if [[ -z "${FUTURISED_MEDIA_API_KEY:-}" ]]; then
+        echo "✗ FUTURISED_MEDIA_API_KEY env var is required for poll-api mode."
+        echo "  export FUTURISED_MEDIA_API_KEY='your-api-key'"
+        return 1
+    fi
+    _ensure_running
+    _start_mosquitto
+
+    local api_args="--api-media-key $FUTURISED_MEDIA_API_KEY"
+    api_args="$api_args --api-camera ${API_CAMERA:-Wide}"
+    api_args="$api_args --api-poll-interval ${API_POLL_INTERVAL:-10}"
+    api_args="$api_args --api-download-dir /app/images"
+    [[ -n "${FUTURISED_ORG_ID:-}" ]] && api_args="$api_args --api-org-id $FUTURISED_ORG_ID"
+    [[ -n "${FUTURISED_TELEMETRY_TOKEN:-}" ]] && api_args="$api_args --api-telemetry-token $FUTURISED_TELEMETRY_TOKEN"
+
+    echo "▸ Polling FUTURISED API for new images (camera=${API_CAMERA:-Wide})..."
+    echo "  (Press Ctrl+C to stop)"
+    docker exec -it "$CONTAINER" bash -c \
+        "PYTHONPATH=/app/src/triffid_uav_perception $PY_CMD $PY_ARGS --poll-api $api_args --output /app/samples"
+}
+
 cmd_status() {
     if _running; then
         echo "✓ Container $CONTAINER is running."
@@ -208,13 +238,14 @@ cmd_help() {
 # ── dispatch ─────────────────────────────────────────────────
 
 case "${1:-help}" in
-    build)   cmd_build ;;
-    process) cmd_process "${2:-}" ;;
-    batch)   cmd_batch "${2:-}" ;;
-    watch)   cmd_watch "${2:-}" ;;
-    stop)    cmd_stop ;;
-    shell)   cmd_shell ;;
-    test)    cmd_test ;;
-    status)  cmd_status ;;
-    help|*)  cmd_help ;;
+    build)    cmd_build ;;
+    process)  cmd_process "${2:-}" ;;
+    batch)    cmd_batch "${2:-}" ;;
+    watch)    cmd_watch "${2:-}" ;;
+    poll-api) cmd_poll_api ;;
+    stop)     cmd_stop ;;
+    shell)    cmd_shell ;;
+    test)     cmd_test ;;
+    status)   cmd_status ;;
+    help|*)   cmd_help ;;
 esac

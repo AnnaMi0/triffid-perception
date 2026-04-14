@@ -10,14 +10,15 @@ Processes drone images with embedded XMP metadata, runs segmentation, projects d
 1. [Architecture Overview](#architecture-overview)
 2. [Hardware Assumptions](#hardware-assumptions)
 3. [Pipeline Steps](#pipeline-steps)
-4. [Geo-Projection](#geo-projection)
-5. [GeoJSON Schema](#geojson-schema)
-6. [Docker Setup](#docker-setup)
-7. [Quick Start (`run_uav.sh`)](#quick-start-run_uavsh)
-8. [Running Tests](#running-tests)
-9. [Project Structure](#project-structure)
-10. [Configuration](#configuration)
-11. [Future Work](#future-work)
+4. [FUTURISED API Integration](#futurised-api-integration)
+5. [Geo-Projection](#geo-projection)
+6. [GeoJSON Schema](#geojson-schema)
+7. [Docker Setup](#docker-setup)
+8. [Quick Start (`run_uav.sh`)](#quick-start-run_uavsh)
+9. [Running Tests](#running-tests)
+10. [Project Structure](#project-structure)
+11. [Configuration](#configuration)
+12. [Future Work](#future-work)
 
 ---
 
@@ -26,34 +27,35 @@ Processes drone images with embedded XMP metadata, runs segmentation, projects d
 Unlike the UGV pipeline (which uses ROS2), the UAV pipeline is a standalone Python application that communicates solely via MQTT. This keeps it lightweight and decoupled from the ROS2 ecosystem.
 
 ```
-┌─────────────────────────────────┐
-│  DJI M30T Image (JPEG/TIFF)    │
-│  with embedded XMP metadata     │
-│  (GPS, gimbal, LRF, RTK)       │
-└──────────┬──────────────────────┘
-           │
-           ▼
-┌──────────────────────────────────────┐
-│         uav_node.py                  │
-│                                      │
-│  1. Extract XMP metadata from image  │
-│  2. Validate RTK quality + LRF      │
-│  3. Run YOLO-seg on RGB             │
-│  4. For each detection:              │
-│     a. Get mask contour (pixels)     │
-│     b. Project pixels → ground GPS   │
-│        via gimbal angles + altitude  │
-│     c. Estimate object height        │
-│  5. Build GeoJSON FeatureCollection  │
-│  6. Publish to MQTT                  │
-└──────────┬───────────────────────────┘
-           │
-           ▼
-┌──────────────────────────┐
-│  MQTT Broker              │
-│  triffid/uav/geojson      │
-│  (Mosquitto, port 1883)   │
-└──────────────────────────┘
+┌──────────────────────────────┐     ┌──────────────────────────────────┐
+│  Local Image (JPEG/TIFF)     │     │  FUTURISED API (--poll-api)      │
+│  --image / --batch / --watch │     │  dji.getfuturised.com            │
+└──────────┬───────────────────┘     │  ┌ list media files             │
+           │                         │  ├ download JPEG (temp S3 URL)  │
+           │                         │  └ filter by camera (Wide/etc.) │
+           │                         └──────────┬───────────────────────┘
+           ▼                                    ▼
+       ┌────────────────────────────────────────────┐
+       │              uav_node.py                    │
+       │                                            │
+       │  1. Extract XMP metadata from image         │
+       │  2. Validate RTK quality + LRF             │
+       │  3. Run YOLO-seg on RGB                    │
+       │  4. For each detection:                     │
+       │     a. Get mask contour (pixels)            │
+       │     b. Project pixels → ground GPS          │
+       │        via gimbal angles + altitude         │
+       │     c. Estimate object height               │
+       │  5. Build GeoJSON FeatureCollection         │
+       │  6. Publish to MQTT                         │
+       └────────────────────┬───────────────────────┘
+                            │
+                            ▼
+       ┌──────────────────────────┐
+       │  MQTT Broker              │
+       │  triffid/uav/geojson      │
+       │  (Mosquitto, port 1883)   │
+       └──────────────────────────┘
 ```
 
 ---
@@ -134,7 +136,7 @@ Ground altitude is determined (in priority order):
 
 Same schema as the UGV pipeline for consistency:
 - `"source": "uav"` (vs `"ugv"` for the ground vehicle)
-- Same properties: `class`, `id`, `confidence`, `category`, `detection_type`, `gnss_altitude_m`, `height_m`
+- Same properties: `class`, `id`, `confidence`, `category`, `detection_type`, `altitude_m`, `height_m`
 - Same SimpleStyle: `marker-color`, `stroke`, `fill`, etc.
 - Same geometry rules: Polygon for most classes, Point for persons, LineString for fences
 
@@ -144,6 +146,74 @@ Publishes compact JSON to `triffid/uav/geojson` (QoS 0). Subscribe with:
 ```bash
 mosquitto_sub -h localhost -t 'triffid/uav/geojson'
 ```
+
+---
+
+## FUTURISED API Integration
+
+The pipeline can fetch drone images directly from the FUTURISED cloud platform instead of reading local files. This uses two API layers:
+
+### Media Files API (`dji.getfuturised.com`)
+
+- **Auth**: `x-api-key` header
+- **Purpose**: List uploaded media files (JPEG, MP4), get temporary S3 download URLs
+- **Camera types**: Wide (`_W`), Zoom (`_Z`), Thermal (`_T`), Split (`_S`)
+- **Default filter**: Wide camera JPGs only (configurable)
+
+### Telemetry API (`api.getfuturised.com/getDJIData`)
+
+- **Auth**: `Authorization: Bearer <token>`
+- **Purpose**: Real-time drone state (position, heading, battery, gimbal target)
+- **Note**: Coordinate values use inconsistent European number formatting; not used for geo-projection (XMP metadata from images is more reliable)
+
+### Workflow
+
+```
+ ┌──────────────────────────┐
+ │ FuturisedClient          │
+ │  poll_new_images()       │
+ │   ├ list_media()         │  ← GET /dji_media_files?uploaded_after=0
+ │   ├ filter (camera, ext) │
+ │   ├ skip already-seen    │
+ │   └ download_image()     │  ← GET /dji_media_files/{id} → S3 URL → local JPEG
+ └────────────┬─────────────┘
+              │ local file path
+              ▼
+ ┌──────────────────────────┐
+ │ UAVPipeline              │
+ │  process_image()         │  ← existing pipeline (XMP → YOLO → GeoJSON → MQTT)
+ └──────────────────────────┘
+```
+
+### Usage
+
+```bash
+# Set the API key (required)
+export FUTURISED_MEDIA_API_KEY='your-media-api-key'
+
+# Optional: telemetry token
+export FUTURISED_TELEMETRY_TOKEN='your-bearer-token'
+
+# Poll for new Wide camera images every 10 seconds
+./run_uav.sh poll-api
+
+# Or run directly:
+python -m triffid_uav_perception.uav_node \
+    --poll-api \
+    --api-media-key "$FUTURISED_MEDIA_API_KEY" \
+    --api-camera Wide \
+    --api-poll-interval 10
+```
+
+### Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `FUTURISED_MEDIA_API_KEY` | Yes (for `--poll-api`) | Media Files API key (`x-api-key`) |
+| `FUTURISED_ORG_ID` | No | Organisation UUID (has default) |
+| `FUTURISED_TELEMETRY_TOKEN` | No | Telemetry API bearer token |
+| `API_CAMERA` | No | Camera filter: `Wide`, `Zoom`, `Thermal`, or empty (default: `Wide`) |
+| `API_POLL_INTERVAL` | No | Seconds between polls (default: `10`) |
 
 ---
 
@@ -206,7 +276,7 @@ Identical to the UGV output (see main [INTERFACE.md](../INTERFACE.md)):
         "detection_type": "seg",
         "source": "uav",
         "local_frame": false,
-        "gnss_altitude_m": 409.1,
+        "altitude_m": 409.1,
         "height_m": 16.5,
         "marker-color": "#708090",
         "marker-size": "medium",
@@ -265,6 +335,10 @@ cp /path/to/drone_photo.jpg uav_images/
 
 # Watch for new images (processes as they appear)
 ./run_uav.sh watch
+
+# Poll FUTURISED API for new drone images
+export FUTURISED_MEDIA_API_KEY='your-key'
+./run_uav.sh poll-api
 
 # Run unit tests
 ./run_uav.sh test
@@ -332,11 +406,12 @@ hua_ws/
     │   ├── requirements.txt
     │   ├── triffid_uav_perception/
     │   │   ├── __init__.py
+    │   │   ├── api_client.py        # FUTURISED API client (media + telemetry)
     │   │   ├── metadata.py          # XMP metadata extraction
     │   │   ├── geo.py               # Geo-projection (pixel → GPS)
-    │   │   └── uav_node.py          # Main pipeline + MQTT
+    │   │   └── uav_node.py          # Main pipeline + MQTT + API polling
     │   └── test/
-    │       └── test_unit.py         # 34 unit tests
+    │       └── test_unit.py         # 50 unit tests
     │
     └── triffid_ugv_perception/      # UGV package (unchanged)
         └── ...
@@ -376,9 +451,11 @@ MODEL=yolo11n-seg.pt ./run_uav.sh batch
 
 ## Future Work
 
-1. **API integration**: When the DJI frame API is available, replace the file-based input with a streaming HTTP/WebSocket client
-2. **SegFormer model**: Train and integrate the planned SegFormer model (override `_detect()`)
-3. **Tracking**: Add cross-frame tracking (IoU or feature-based) when processing video sequences
-4. **Thermal camera**: Extend metadata extraction to handle thermal (`ThermalCamera`) ImageSource
-5. **GPU support**: Add NVIDIA runtime to `Dockerfile.uav` when GPU inference is needed for larger models
-6. **Camera calibration**: Replace default intrinsics with factory-calibrated or self-calibrated values
+1. ~~**API integration**: When the DJI frame API is available, replace the file-based input with a streaming HTTP/WebSocket client~~ → **Done** (v2.1: `--poll-api` mode via FUTURISED Media Files API)
+2. **RTMP streaming**: When FUTURISED switches to RTMP video streaming, add a frame-extraction front-end
+3. **3DGS depth**: Replace LRF-based ground-plane projection with depth from 3D Gaussian Splatting
+4. **SegFormer model**: Train and integrate the planned SegFormer model (override `_detect()`)
+5. **Tracking**: Add cross-frame tracking (IoU or feature-based) when processing video sequences
+6. **Thermal camera**: Extend metadata extraction to handle thermal (`ThermalCamera`) ImageSource
+7. **GPU support**: Add NVIDIA runtime to `Dockerfile.uav` when GPU inference is needed for larger models
+8. **Camera calibration**: Replace default intrinsics with factory-calibrated or self-calibrated values

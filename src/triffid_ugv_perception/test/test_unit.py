@@ -4,11 +4,11 @@ TRIFFID UGV Perception – Unit Tests
 =====================================
 Comprehensive tests for the UGV perception pipeline, covering:
 
-  1. Geometry & math  (quaternion→matrix, back-projection, projection, pinhole model)
-  2. Cross-camera pipeline logic  (depth grid → RGB frame → bbox filtering → median)
+  1. Geometry & math  (quaternion→matrix, back-projection, pinhole model)
+  2. Pixel-aligned pipeline logic  (depth sampling per detection, median 3D)
   3. IoU tracker  (matching, ID persistence, aging, edge cases)
   4. GeoJSON bridge  (local_to_gps, GeoJSON schema, local_frame flag)
-  5. Depth handling  (mm→m conversion, zero-depth filtering, grid sampling)
+  5. Depth handling  (mm→m conversion, zero-depth filtering)
 
 Run with:
     cd /ws && colcon build --symlink-install && source install/setup.bash
@@ -131,124 +131,55 @@ class TestQuatToMatrix:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  2.  PINHOLE PROJECTION (3D → 2D pixel)
+#  2.  PINHOLE BACK-PROJECTION (pixel → 3D, optical convention)
 # ═══════════════════════════════════════════════════════════════════════════
 
-class TestProjectToRGB:
-    """Tests for _project_to_rgb logic (extracted without ROS node)."""
+class TestBackProjectionOptical:
+    """Tests for pinhole back-projection in camera_optical_frame
+    (X=right, Y=down, Z=forward) — the convention used by
+    _sample_depth_for_detection."""
 
-    # Replicate the projection math from ugv_node._project_to_rgb
-    @staticmethod
-    def _project(pts, fx, fy, cx, cy):
-        """Pure-python re-implementation matching ugv_node._project_to_rgb."""
-        X, Y, Z = pts[:, 0], pts[:, 1], pts[:, 2]
-        pixels = np.full((len(X), 2), -1.0)
-        valid = Z > 0
-        pixels[valid, 0] = fx * (X[valid] / Z[valid]) + cx
-        pixels[valid, 1] = fy * (Y[valid] / Z[valid]) + cy
-        return pixels
-
-    # --- RGB intrinsics from bag ---
     FX, FY, CX, CY = 500.0, 500.0, 640.0, 360.0
-
-    def test_principal_point(self):
-        """Point on optical axis projects to (cx, cy)."""
-        pts = np.array([[0.0, 0.0, 5.0]])
-        px = self._project(pts, self.FX, self.FY, self.CX, self.CY)
-        np.testing.assert_allclose(px[0], [640.0, 360.0])
-
-    def test_known_offset(self):
-        """Point at (1, 0, 5) projects to (cx + fx/5, cy)."""
-        pts = np.array([[1.0, 0.0, 5.0]])
-        px = self._project(pts, self.FX, self.FY, self.CX, self.CY)
-        expected_u = 500.0 * 1.0 / 5.0 + 640.0  # = 740
-        np.testing.assert_allclose(px[0, 0], expected_u)
-        np.testing.assert_allclose(px[0, 1], 360.0)
-
-    def test_behind_camera(self):
-        """Points with Z ≤ 0 should get (-1, -1)."""
-        pts = np.array([
-            [1.0, 2.0, -1.0],
-            [0.0, 0.0,  0.0],
-        ])
-        px = self._project(pts, self.FX, self.FY, self.CX, self.CY)
-        np.testing.assert_array_equal(px, [[-1, -1], [-1, -1]])
-
-    def test_symmetry(self):
-        """Symmetric points project symmetrically around principal point."""
-        pts = np.array([
-            [ 1.0,  1.0, 10.0],
-            [-1.0, -1.0, 10.0],
-        ])
-        px = self._project(pts, self.FX, self.FY, self.CX, self.CY)
-        # u1 - cx == cx - u2
-        assert abs((px[0, 0] - self.CX) + (px[1, 0] - self.CX)) < 1e-10
-        assert abs((px[0, 1] - self.CY) + (px[1, 1] - self.CY)) < 1e-10
-
-    def test_batch_mixed_validity(self):
-        """Mix of valid and behind-camera points."""
-        pts = np.array([
-            [0.0, 0.0,  3.0],   # valid
-            [1.0, 2.0, -1.0],   # behind
-            [2.0, 1.0,  4.0],   # valid
-        ])
-        px = self._project(pts, self.FX, self.FY, self.CX, self.CY)
-        assert px[0, 0] != -1 and px[0, 1] != -1
-        assert px[1, 0] == -1 and px[1, 1] == -1
-        assert px[2, 0] != -1 and px[2, 1] != -1
-
-    def test_close_vs_far_magnification(self):
-        """Closer point projects further from centre than farther point."""
-        pts = np.array([
-            [1.0, 0.0, 2.0],   # close
-            [1.0, 0.0, 10.0],  # far
-        ])
-        px = self._project(pts, self.FX, self.FY, self.CX, self.CY)
-        assert px[0, 0] > px[1, 0]  # closer → larger u offset
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  3.  BACK-PROJECTION (depth pixel → 3D)
-# ═══════════════════════════════════════════════════════════════════════════
-
-class TestBackProjection:
-    """Tests for the pinhole back-projection math used in
-    _depth_grid_to_rgb_frame (depth pixel → 3D in depth frame)."""
-
-    # Depth intrinsics from bag
-    FX_D = 391.5248718261719
-    FY_D = 391.5248718261719
-    CX_D = 319.7847900390625
-    CY_D = 237.64898681640625
 
     @staticmethod
     def _backproject(u, v, z_m, fx, fy, cx, cy):
-        """Back-project a single pixel."""
-        x = (u - cx) * z_m / fx
-        y = (v - cy) * z_m / fy
-        return np.array([x, y, z_m])
+        """Back-project a single pixel to optical frame."""
+        X = (u - cx) * z_m / fx
+        Y = (v - cy) * z_m / fy
+        return np.array([X, Y, z_m])
 
-    def test_principal_point_backprojects_to_axis(self):
-        """Pixel at (cx, cy) with depth Z → (0, 0, Z)."""
-        pt = self._backproject(self.CX_D, self.CY_D, 5.0,
-                               self.FX_D, self.FY_D, self.CX_D, self.CY_D)
+    def test_principal_point(self):
+        """Pixel at (cx, cy) → (0, 0, Z)."""
+        pt = self._backproject(self.CX, self.CY, 5.0,
+                               self.FX, self.FY, self.CX, self.CY)
         np.testing.assert_allclose(pt, [0.0, 0.0, 5.0], atol=1e-10)
 
-    def test_roundtrip_project_backproject(self):
-        """Back-project then forward-project should recover the pixel."""
+    def test_pixel_right_of_centre(self):
+        """Pixel right of cx → positive X."""
+        pt = self._backproject(self.CX + 100, self.CY, 5.0,
+                               self.FX, self.FY, self.CX, self.CY)
+        assert pt[0] > 0  # X = right
+
+    def test_pixel_below_centre(self):
+        """Pixel below cy → positive Y."""
+        pt = self._backproject(self.CX, self.CY + 100, 5.0,
+                               self.FX, self.FY, self.CX, self.CY)
+        assert pt[1] > 0  # Y = down
+
+    def test_roundtrip(self):
+        """Back-project then forward-project recovers original pixel."""
         u_orig, v_orig, z = 200.0, 300.0, 3.5
-        pt3d = self._backproject(u_orig, v_orig, z,
-                                 self.FX_D, self.FY_D, self.CX_D, self.CY_D)
-        # Forward project
-        u_rec = self.FX_D * (pt3d[0] / pt3d[2]) + self.CX_D
-        v_rec = self.FY_D * (pt3d[1] / pt3d[2]) + self.CY_D
+        pt = self._backproject(u_orig, v_orig, z,
+                               self.FX, self.FY, self.CX, self.CY)
+        u_rec = self.FX * (pt[0] / pt[2]) + self.CX
+        v_rec = self.FY * (pt[1] / pt[2]) + self.CY
         np.testing.assert_allclose([u_rec, v_rec], [u_orig, v_orig], atol=1e-10)
 
-    def test_depth_scale(self):
-        """Z component of back-projected point equals input depth."""
+    def test_depth_preserved(self):
+        """Z component equals input depth."""
         for z in [0.5, 1.0, 5.0, 15.0]:
             pt = self._backproject(100, 200, z,
-                                   self.FX_D, self.FY_D, self.CX_D, self.CY_D)
+                                   self.FX, self.FY, self.CX, self.CY)
             assert abs(pt[2] - z) < 1e-12
 
     def test_mm_to_m_conversion(self):
@@ -258,385 +189,197 @@ class TestBackProjection:
         assert abs(z_m - 3.5) < 1e-10
 
     def test_zero_depth_rejected(self):
-        """Zero depth pixels should be filtered (they mean 'no reading')."""
+        """Zero depth pixels should be filtered (no reading)."""
         z_mm = np.array([0, 0, 1500, 0, 2000], dtype=np.uint16)
         valid = z_mm > 0
         assert np.sum(valid) == 2
-        z_m = z_mm[valid].astype(np.float64) / 1000.0
-        np.testing.assert_allclose(z_m, [1.5, 2.0])
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  4.  DEPTH GRID SAMPLING
+#  3.  PIXEL-ALIGNED DEPTH SAMPLING (_sample_depth_for_detection)
 # ═══════════════════════════════════════════════════════════════════════════
 
-class TestDepthGridSampling:
-    """Tests for the depth grid creation logic from _depth_grid_to_rgb_frame."""
+class TestSampleDepthForDetection:
+    """Tests for _sample_depth_for_detection (pixel-aligned RGB-D)."""
 
-    def test_grid_shape_default_steps(self):
-        """Default steps (64, 48) on a 640×480 image → known grid size.
-        Actual code starts at step//2 to avoid edges."""
-        w, h = 640, 480
-        step_u, step_v = 64, 48
-        us = np.arange(step_u // 2, w, step_u)   # [32, 96, ..., 608]  → 10 points
-        vs = np.arange(step_v // 2, h, step_v)   # [24, 72, ..., 456]  → 10 points
-        assert len(us) == 10
-        assert len(vs) == 10
-        uu, vv = np.meshgrid(us, vs)
-        assert uu.shape == (10, 10)
-        total = uu.size
-        assert total == 100
-
-    def test_grid_avoids_edges(self):
-        """Grid starts at half-step offset, not at pixel 0."""
-        step_u, step_v = 64, 48
-        us = np.arange(step_u // 2, 640, step_u)
-        vs = np.arange(step_v // 2, 480, step_v)
-        assert us[0] == 32
-        assert vs[0] == 24
-        assert us[-1] < 640
-        assert vs[-1] < 480
-
-    def test_grid_within_bounds(self):
-        """All grid coordinates must be within image bounds."""
-        w, h = 640, 480
-        for step_u, step_v in [(64, 48), (32, 24), (128, 96), (1, 1)]:
-            us = np.arange(step_u // 2, w, step_u)
-            vs = np.arange(step_v // 2, h, step_v)
-            assert np.all(us >= 0) and np.all(us < w)
-            assert np.all(vs >= 0) and np.all(vs < h)
-
-    def test_all_zero_depth_returns_empty(self):
-        """If entire depth image is zero, no valid points should remain."""
-        depth = np.zeros((480, 640), dtype=np.uint16)
-        step_u, step_v = 64, 48
-        us = np.arange(step_u // 2, 640, step_u)
-        vs = np.arange(step_v // 2, 480, step_v)
-        uu, vv = np.meshgrid(us, vs)
-        z_mm = depth[vv.ravel(), uu.ravel()]
-        valid = z_mm > 0
-        assert np.sum(valid) == 0
-
-    def test_partial_depth_filters_correctly(self):
-        """Only grid points with non-zero depth survive."""
-        depth = np.zeros((480, 640), dtype=np.uint16)
-        # Set a patch of valid depth
-        depth[40:100, 60:130] = 2500  # 2.5m
-        step_u, step_v = 64, 48
-        us = np.arange(step_u // 2, 640, step_u)
-        vs = np.arange(step_v // 2, 480, step_v)
-        uu, vv = np.meshgrid(us, vs)
-        z_mm = depth[vv.ravel(), uu.ravel()]
-        valid = z_mm > 0
-        n_valid = int(np.sum(valid))
-        assert n_valid > 0
-        assert n_valid < uu.size  # not all should be valid
-        # All valid depths should be 2500 mm
-        assert np.all(z_mm[valid] == 2500)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  5.  CROSS-CAMERA PIPELINE (end-to-end geometry check)
-# ═══════════════════════════════════════════════════════════════════════════
-
-class TestCrossCameraPipeline:
-    """End-to-end test of the geometry pipeline:
-    depth pixel → 3D depth frame → transform → 3D RGB frame → project → RGB pixel
-    Using the actual bag intrinsics and TF values.
-    """
-
-    # From bag
-    FX_D, FY_D, CX_D, CY_D = 391.525, 391.525, 319.785, 237.649
-    FX_R, FY_R, CX_R, CY_R = 500.0, 500.0, 640.0, 360.0
-
-    # TF: f_depth_optical_frame → f_oc_link
-    TF_QUAT = (0.653, -0.653, 0.271, 0.271)  # (x, y, z, w)
-    TF_TRANS = np.array([0.025, 0.071, 0.039])
+    FX, FY, CX, CY = 500.0, 500.0, 320.0, 240.0
 
     @staticmethod
-    def _backproject_batch(uu, vv, z_m, fx, fy, cx, cy):
-        x = (uu - cx) * z_m / fx
-        y = (vv - cy) * z_m / fy
-        return np.column_stack([x, y, z_m])
+    def _sample(det, depth_img, fx, fy, cx, cy):
+        """Re-implement the method's core math for unit testing."""
+        from triffid_ugv_perception.ugv_node import _MAX_DEPTH_SAMPLES
+        h, w = depth_img.shape[:2]
+        mask = det.get('mask')
+        x1, y1, x2, y2 = det['bbox']
 
-    @staticmethod
-    def _project_batch(pts, fx, fy, cx, cy):
-        X, Y, Z = pts[:, 0], pts[:, 1], pts[:, 2]
-        pixels = np.full((len(X), 2), -1.0)
-        valid = Z > 0
-        pixels[valid, 0] = fx * (X[valid] / Z[valid]) + cx
-        pixels[valid, 1] = fy * (Y[valid] / Z[valid]) + cy
-        return pixels
+        if mask is not None:
+            ys, xs = np.where(mask)
+            if len(xs) == 0:
+                return None
+            if len(xs) > _MAX_DEPTH_SAMPLES:
+                step = max(1, len(xs) // _MAX_DEPTH_SAMPLES)
+                xs, ys = xs[::step], ys[::step]
+        else:
+            ix1 = max(0, min(int(x1), w - 1))
+            ix2 = max(ix1 + 1, min(int(x2), w))
+            iy1 = max(0, min(int(y1), h - 1))
+            iy2 = max(iy1 + 1, min(int(y2), h))
+            side = max(1, min(ix2 - ix1, iy2 - iy1) // 10)
+            xs_g, ys_g = np.meshgrid(
+                np.arange(ix1, ix2, max(1, side)),
+                np.arange(iy1, iy2, max(1, side)),
+            )
+            xs, ys = xs_g.ravel(), ys_g.ravel()
+            if len(xs) > _MAX_DEPTH_SAMPLES:
+                step = max(1, len(xs) // _MAX_DEPTH_SAMPLES)
+                xs, ys = xs[::step], ys[::step]
 
-    def _full_pipeline(self, depth_pixels, z_m_values):
-        """Run the pipeline: back-project → transform → project."""
-        uu = np.array([p[0] for p in depth_pixels], dtype=np.float64)
-        vv = np.array([p[1] for p in depth_pixels], dtype=np.float64)
-        z_m = np.array(z_m_values, dtype=np.float64)
+        ok = (xs >= 0) & (xs < w) & (ys >= 0) & (ys < h)
+        xs, ys = xs[ok], ys[ok]
+        if len(xs) == 0:
+            return None
+        z_mm = depth_img[ys, xs].astype(np.float64)
+        valid = z_mm > 0
+        if not np.any(valid):
+            return None
+        xs = xs[valid].astype(np.float64)
+        ys = ys[valid].astype(np.float64)
+        z_m = z_mm[valid] / 1000.0
+        X = (xs - cx) * z_m / fx
+        Y = (ys - cy) * z_m / fy
+        return np.column_stack([X, Y, z_m])
 
-        # Step 1: Back-project to 3D in depth frame
-        pts_depth = self._backproject_batch(uu, vv, z_m,
-                                            self.FX_D, self.FY_D,
-                                            self.CX_D, self.CY_D)
+    def test_mask_sampling_basic(self):
+        """Mask with valid depth → correct 3D points."""
+        depth = np.zeros((480, 640), dtype=np.uint16)
+        depth[100:200, 150:250] = 3000  # 3 m
 
-        # Step 2: Transform depth→RGB frame
-        R = UGVPerceptionNode._quat_to_matrix(*self.TF_QUAT)
-        pts_rgb = (R @ pts_depth.T).T + self.TF_TRANS
+        mask = np.zeros((480, 640), dtype=bool)
+        mask[100:200, 150:250] = True
 
-        # Step 3: Project to RGB pixels
-        rgb_pixels = self._project_batch(pts_rgb,
-                                         self.FX_R, self.FY_R,
-                                         self.CX_R, self.CY_R)
-        return pts_depth, pts_rgb, rgb_pixels
+        det = {'bbox': (150, 100, 250, 200), 'mask': mask}
+        pts = self._sample(det, depth, self.FX, self.FY, self.CX, self.CY)
+        assert pts is not None
+        assert pts.shape[1] == 3
+        # All Z should be 3.0 m
+        np.testing.assert_allclose(pts[:, 2], 3.0)
 
-    def test_points_remain_in_front_of_rgb_camera(self):
-        """Points at reasonable depth should stay in front of RGB camera (Z > 0)."""
-        pixels = [(320, 240), (100, 100), (500, 400)]
-        z_vals = [3.0, 5.0, 2.0]
-        _, pts_rgb, _ = self._full_pipeline(pixels, z_vals)
-        # At these distances, Z in RGB frame should be positive
-        # (cameras are close together and roughly co-pointed)
-        for i in range(len(pixels)):
-            # The transform may rearrange axes, but at > 2m depth
-            # the point should project validly
-            assert np.any(pts_rgb[i] != 0), f"Point {i} is at origin after transform"
+    def test_all_zero_depth_returns_none(self):
+        """Zero depth everywhere → None."""
+        depth = np.zeros((480, 640), dtype=np.uint16)
+        mask = np.zeros((480, 640), dtype=bool)
+        mask[100:200, 150:250] = True
+        det = {'bbox': (150, 100, 250, 200), 'mask': mask}
+        pts = self._sample(det, depth, self.FX, self.FY, self.CX, self.CY)
+        assert pts is None
 
-    def test_projected_pixels_are_finite(self):
-        """Projected RGB pixels should be finite numbers."""
-        pixels = [(320, 240), (0, 0), (639, 479)]
-        z_vals = [4.0, 4.0, 4.0]
-        _, pts_rgb, rgb_px = self._full_pipeline(pixels, z_vals)
-        for i in range(len(pixels)):
-            if pts_rgb[i, 2] > 0:  # only check if in front
-                assert np.all(np.isfinite(rgb_px[i])), \
-                    f"Pixel {i} is not finite: {rgb_px[i]}"
-
-    def test_depth_centre_projects_near_rgb_centre(self):
-        """Depth principal point at medium range should project
-        somewhere near centre of RGB image (not at edge)."""
-        pixels = [(self.CX_D, self.CY_D)]
-        z_vals = [5.0]
-        _, pts_rgb, rgb_px = self._full_pipeline(pixels, z_vals)
-        if pts_rgb[0, 2] > 0:
-            u, v = rgb_px[0]
-            # Should be within the 1280×720 image, not necessarily exact centre
-            assert 0 <= u <= 1280, f"u={u} out of RGB image"
-            assert 0 <= v <= 720, f"v={v} out of RGB image"
-
-    def test_bbox_filtering_logic(self):
-        """Simulate bbox filtering: points inside bbox are selected."""
-        # Create points projected to known RGB locations
-        rgb_pixels = np.array([
-            [100, 100],  # outside bbox
-            [500, 300],  # inside bbox
-            [600, 350],  # inside bbox
-            [900, 500],  # outside bbox
-            [ -1,  -1],  # invalid (behind camera)
-        ], dtype=np.float64)
-
-        pts_rgb = np.array([
-            [0.1, 0.1, 3.0],
-            [0.5, 0.3, 4.0],
-            [0.7, 0.4, 3.5],
-            [1.2, 0.8, 5.0],
-            [0.0, 0.0, -1.0],
-        ])
-
-        # bbox (x1, y1, x2, y2)
-        bbox = (400, 250, 700, 400)
-        x1, y1, x2, y2 = bbox
-
-        inside = (
-            (rgb_pixels[:, 0] >= x1) & (rgb_pixels[:, 0] <= x2) &
-            (rgb_pixels[:, 1] >= y1) & (rgb_pixels[:, 1] <= y2) &
-            (pts_rgb[:, 2] > 0)
-        )
-
-        assert int(np.sum(inside)) == 2  # indices 1 and 2
-        matched = pts_rgb[inside]
-        median_pt = np.median(matched, axis=0)
-        np.testing.assert_allclose(median_pt, [0.6, 0.35, 3.75])
-
-    def test_no_points_in_bbox(self):
-        """If no grid points project inside a bbox, detection is skipped."""
-        rgb_pixels = np.array([
-            [100, 100],
-            [200, 200],
-        ], dtype=np.float64)
-        pts_rgb = np.array([
-            [0.1, 0.1, 3.0],
-            [0.2, 0.2, 4.0],
-        ])
-
-        bbox = (800, 600, 900, 700)
-        x1, y1, x2, y2 = bbox
-        inside = (
-            (rgb_pixels[:, 0] >= x1) & (rgb_pixels[:, 0] <= x2) &
-            (rgb_pixels[:, 1] >= y1) & (rgb_pixels[:, 1] <= y2) &
-            (pts_rgb[:, 2] > 0)
-        )
-        assert int(np.sum(inside)) == 0
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  5b.  MASK-BASED DEPTH MATCHING
-# ═══════════════════════════════════════════════════════════════════════════
-
-class TestMaskBasedDepthMatching:
-    """Tests for the mask-based depth filtering (replaces bbox matching)."""
-
-    def test_mask_selects_correct_points(self):
-        """Points whose projected pixel falls inside the mask are selected."""
-        rgb_h, rgb_w = 720, 1280
-
-        # Create a simple mask: True in a horizontal strip
-        mask = np.zeros((rgb_h, rgb_w), dtype=bool)
-        mask[300:400, 400:800] = True
-
-        # Projected pixel coordinates
-        rgb_pixels = np.array([
-            [500.0, 350.0],   # inside mask
-            [600.0, 350.0],   # inside mask
-            [100.0, 350.0],   # outside (left)
-            [500.0, 100.0],   # outside (above)
-            [ -1.0,  -1.0],   # invalid (behind camera)
-        ])
-        pts_rgb = np.array([
-            [1.0, 0.0, 3.0],
-            [1.5, 0.0, 3.5],
-            [0.2, 0.0, 4.0],
-            [1.0, 1.0, 5.0],
-            [0.0, 0.0, -1.0],
-        ])
-
-        px_u = rgb_pixels[:, 0].astype(int)
-        px_v = rgb_pixels[:, 1].astype(int)
-        in_bounds = (
-            (px_u >= 0) & (px_u < rgb_w) &
-            (px_v >= 0) & (px_v < rgb_h)
-        )
-        inside = np.zeros(len(rgb_pixels), dtype=bool)
-        inside[in_bounds] = mask[px_v[in_bounds], px_u[in_bounds]]
-
-        assert int(np.sum(inside)) == 2
-        matched = pts_rgb[inside]
-        median_pt = np.median(matched, axis=0)
-        np.testing.assert_allclose(median_pt, [1.25, 0.0, 3.25])
-
-    def test_empty_mask_selects_nothing(self):
-        """All-False mask → no depth points matched."""
-        rgb_h, rgb_w = 720, 1280
-        mask = np.zeros((rgb_h, rgb_w), dtype=bool)
-        rgb_pixels = np.array([[500.0, 350.0], [600.0, 400.0]])
-
-        px_u = rgb_pixels[:, 0].astype(int)
-        px_v = rgb_pixels[:, 1].astype(int)
-        in_bounds = (
-            (px_u >= 0) & (px_u < rgb_w) &
-            (px_v >= 0) & (px_v < rgb_h)
-        )
-        inside = np.zeros(len(rgb_pixels), dtype=bool)
-        inside[in_bounds] = mask[px_v[in_bounds], px_u[in_bounds]]
-
-        assert int(np.sum(inside)) == 0
-
-    def test_full_mask_selects_all_valid(self):
-        """All-True mask → all in-bounds points matched."""
-        rgb_h, rgb_w = 720, 1280
-        mask = np.ones((rgb_h, rgb_w), dtype=bool)
-        rgb_pixels = np.array([
-            [500.0, 350.0],
-            [600.0, 400.0],
-            [ -1.0,  -1.0],   # out of bounds
-        ])
-
-        px_u = rgb_pixels[:, 0].astype(int)
-        px_v = rgb_pixels[:, 1].astype(int)
-        in_bounds = (
-            (px_u >= 0) & (px_u < rgb_w) &
-            (px_v >= 0) & (px_v < rgb_h)
-        )
-        inside = np.zeros(len(rgb_pixels), dtype=bool)
-        inside[in_bounds] = mask[px_v[in_bounds], px_u[in_bounds]]
-
-        assert int(np.sum(inside)) == 2  # only the 2 in-bounds points
+    def test_empty_mask_returns_none(self):
+        """All-False mask → None."""
+        depth = np.full((480, 640), 2000, dtype=np.uint16)
+        mask = np.zeros((480, 640), dtype=bool)
+        det = {'bbox': (100, 100, 200, 200), 'mask': mask}
+        pts = self._sample(det, depth, self.FX, self.FY, self.CX, self.CY)
+        assert pts is None
 
     def test_bbox_fallback_when_no_mask(self):
-        """When mask is None, fallback bbox logic should be used."""
-        rgb_pixels = np.array([
-            [500.0, 300.0],   # inside bbox
-            [100.0, 100.0],   # outside bbox
-        ])
-        bbox = (400, 250, 700, 400)
-        x1, y1, x2, y2 = bbox
+        """No mask → bbox grid sampling produces points."""
+        depth = np.full((480, 640), 5000, dtype=np.uint16)
+        det = {'bbox': (100, 100, 300, 300), 'mask': None}
+        pts = self._sample(det, depth, self.FX, self.FY, self.CX, self.CY)
+        assert pts is not None
+        assert pts.shape[1] == 3
+        np.testing.assert_allclose(pts[:, 2], 5.0)
 
-        # Bbox matching (fallback)
-        inside = (
-            (rgb_pixels[:, 0] >= x1) & (rgb_pixels[:, 0] <= x2) &
-            (rgb_pixels[:, 1] >= y1) & (rgb_pixels[:, 1] <= y2)
-        )
-        assert int(np.sum(inside)) == 1
+    def test_principal_point_projects_to_origin(self):
+        """Mask centered on (cx, cy) at depth Z → median X≈0, Y≈0."""
+        depth = np.zeros((480, 640), dtype=np.uint16)
+        cx, cy = int(self.CX), int(self.CY)
+        depth[cy - 2:cy + 3, cx - 2:cx + 3] = 4000
+
+        mask = np.zeros((480, 640), dtype=bool)
+        mask[cy - 2:cy + 3, cx - 2:cx + 3] = True
+        det = {'bbox': (cx - 2, cy - 2, cx + 3, cy + 3), 'mask': mask}
+        pts = self._sample(det, depth, self.FX, self.FY, self.CX, self.CY)
+        assert pts is not None
+        median = np.median(pts, axis=0)
+        assert abs(median[0]) < 0.05  # X ≈ 0
+        assert abs(median[1]) < 0.05  # Y ≈ 0
+        np.testing.assert_allclose(median[2], 4.0)
+
+    def test_subsampling_caps_points(self):
+        """Large mask gets sub-sampled to ≤ _MAX_DEPTH_SAMPLES."""
+        from triffid_ugv_perception.ugv_node import _MAX_DEPTH_SAMPLES
+        depth = np.full((480, 640), 2000, dtype=np.uint16)
+        mask = np.ones((480, 640), dtype=bool)  # 307,200 True pixels
+        det = {'bbox': (0, 0, 640, 480), 'mask': mask}
+        pts = self._sample(det, depth, self.FX, self.FY, self.CX, self.CY)
+        assert pts is not None
+        assert len(pts) <= _MAX_DEPTH_SAMPLES + 1
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  5c.  BODY → OPTICAL COORDINATE CONVERSION
+#  4.  PIXEL-ALIGNED PIPELINE (end-to-end geometry check)
 # ═══════════════════════════════════════════════════════════════════════════
 
-class TestBodyToOpticalConversion:
-    """Tests for the ROS body (X fwd, Y left, Z up) → optical
-    (X right, Y down, Z forward) coordinate conversion used in
-    _project_to_rgb."""
+class TestPixelAlignedPipeline:
+    """End-to-end test: pixel-aligned depth sampling → back-project →
+    median position in camera_optical_frame."""
 
-    @staticmethod
-    def _body_to_optical(pts):
-        """Convert body-frame points to optical-frame points."""
-        X_opt = -pts[:, 1]   # right  = −Y_body
-        Y_opt = -pts[:, 2]   # down   = −Z_body
-        Z_opt =  pts[:, 0]   # forward = X_body
-        return np.column_stack([X_opt, Y_opt, Z_opt])
+    FX, FY, CX, CY = 500.0, 500.0, 640.0, 360.0
 
-    def test_forward_point_maps_to_z(self):
-        """Point at (1,0,0) body → (0,0,1) optical."""
-        pts = np.array([[1.0, 0.0, 0.0]])
-        opt = self._body_to_optical(pts)
-        np.testing.assert_allclose(opt[0], [0.0, 0.0, 1.0])
+    def test_single_detection_median(self):
+        """A uniform-depth detection gives a median at its centroid."""
+        depth = np.zeros((720, 1280), dtype=np.uint16)
+        depth[200:400, 400:800] = 5000  # 5 m
 
-    def test_left_point_maps_to_minus_x(self):
-        """Point at (0,1,0) body → (-1,0,0) optical."""
-        pts = np.array([[0.0, 1.0, 0.0]])
-        opt = self._body_to_optical(pts)
-        np.testing.assert_allclose(opt[0], [-1.0, 0.0, 0.0])
+        mask = np.zeros((720, 1280), dtype=bool)
+        mask[200:400, 400:800] = True
 
-    def test_up_point_maps_to_minus_y(self):
-        """Point at (0,0,1) body → (0,-1,0) optical."""
-        pts = np.array([[0.0, 0.0, 1.0]])
-        opt = self._body_to_optical(pts)
-        np.testing.assert_allclose(opt[0], [0.0, -1.0, 0.0])
+        det = {'bbox': (400, 200, 800, 400), 'mask': mask}
+        ys, xs = np.where(mask)
+        z_m = depth[ys, xs].astype(np.float64) / 1000.0
+        X = (xs.astype(np.float64) - self.CX) * z_m / self.FX
+        Y = (ys.astype(np.float64) - self.CY) * z_m / self.FY
+        pts = np.column_stack([X, Y, z_m])
+        median = np.median(pts, axis=0)
 
-    def test_forward_point_projects_to_centre(self):
-        """Point 5m forward in body frame should project to image centre."""
-        fx, fy, cx, cy = 500.0, 500.0, 640.0, 360.0
-        pts = np.array([[5.0, 0.0, 0.0]])
-        opt = self._body_to_optical(pts)
-        u = fx * opt[0, 0] / opt[0, 2] + cx
-        v = fy * opt[0, 1] / opt[0, 2] + cy
-        np.testing.assert_allclose([u, v], [cx, cy])
+        # Centroid of mask is ~(600, 300), depth=5m
+        expected_x = (600.0 - self.CX) * 5.0 / self.FX  # (600-640)*5/500 = -0.4
+        expected_y = (300.0 - self.CY) * 5.0 / self.FY  # (300-360)*5/500 = -0.6
+        np.testing.assert_allclose(median[0], expected_x, atol=0.15)
+        np.testing.assert_allclose(median[1], expected_y, atol=0.15)
+        np.testing.assert_allclose(median[2], 5.0)
 
-    def test_object_left_of_camera_projects_left(self):
-        """Object to the left (positive Y body) projects to left side of image."""
-        fx, fy, cx, cy = 500.0, 500.0, 640.0, 360.0
-        pts = np.array([[5.0, 2.0, 0.0]])  # 5m forward, 2m left
-        opt = self._body_to_optical(pts)
-        u = fx * opt[0, 0] / opt[0, 2] + cx
-        assert u < cx, "Object left of camera should project to u < cx"
+    def test_no_depth_in_mask_skips(self):
+        """If mask region has zero depth, detection is skipped."""
+        depth = np.zeros((720, 1280), dtype=np.uint16)
+        mask = np.zeros((720, 1280), dtype=bool)
+        mask[100:200, 100:200] = True
+        det = {'bbox': (100, 100, 200, 200), 'mask': mask}
 
-    def test_object_above_camera_projects_up(self):
-        """Object above (positive Z body) projects to upper half of image."""
-        fx, fy, cx, cy = 500.0, 500.0, 640.0, 360.0
-        pts = np.array([[5.0, 0.0, 1.0]])  # 5m forward, 1m up
-        opt = self._body_to_optical(pts)
-        v = fy * opt[0, 1] / opt[0, 2] + cy
-        assert v < cy, "Object above camera should project to v < cy"
+        ys, xs = np.where(mask)
+        z_mm = depth[ys, xs]
+        valid = z_mm > 0
+        assert not np.any(valid)  # no depth → skip
+
+    def test_partial_depth_coverage(self):
+        """Only mask pixels with valid depth contribute."""
+        depth = np.zeros((720, 1280), dtype=np.uint16)
+        depth[150:180, 150:180] = 3000  # partial coverage
+
+        mask = np.zeros((720, 1280), dtype=bool)
+        mask[100:200, 100:200] = True
+
+        ys, xs = np.where(mask)
+        z_mm = depth[ys, xs].astype(np.float64)
+        valid = z_mm > 0
+        n_valid = np.sum(valid)
+        assert 0 < n_valid < np.sum(mask)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  5.  BACK-PROJECTION (raw pinhole math — frame-agnostic)
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1016,7 +759,7 @@ class TestGeoJSONSchema:
     REQUIRED_PROPERTIES = [
         'class', 'id', 'confidence',
         'category', 'detection_type', 'source',
-        'local_frame', 'ellipsoidal_alt_m', 'height_m',
+        'local_frame', 'altitude_m', 'height_m',
         'marker-color', 'marker-size', 'marker-symbol',
     ]
 
@@ -1028,7 +771,7 @@ class TestGeoJSONSchema:
         Optionally includes 'size' (sx, sy, sz) and 'position' (x, y, z).
         Geometry type is class-dependent: person→Point, Fence→LineString,
         default→Polygon. Coordinates are 2D [lon, lat] only; altitude
-        is in ellipsoidal_alt_m property.
+        is in altitude_m property.
         """
         from triffid_ugv_perception.geojson_bridge import (
             GeoJSONBridge, _MIN_EXTENT, _POINT_CLASSES, _LINE_CLASSES,
@@ -1083,7 +826,7 @@ class TestGeoJSONSchema:
                     "detection_type": "seg",
                     "source": "ugv",
                     "local_frame": not gps_valid,
-                    "ellipsoidal_alt_m": round(alt, 2),
+                    "altitude_m": round(alt, 2),
                     "height_m": round(float(sz), 2),
                     "marker-color": GeoJSONBridge._class_color(cls),
                     "marker-size": "medium",
@@ -1158,7 +901,7 @@ class TestGeoJSONSchema:
         assert coords[1] == lat
         # Altitude should be in properties, not in coordinates
         props = gj['features'][0]['properties']
-        assert props['ellipsoidal_alt_m'] == round(alt, 2)
+        assert props['altitude_m'] == round(alt, 2)
 
     def test_empty_detections_yield_empty_collection(self):
         gj = self._make_geojson([])
@@ -1197,13 +940,13 @@ class TestGeoJSONSchema:
     # ── 3D coordinate tests ──────────────────────────────────────────
 
     def test_gnss_altitude_property_present(self):
-        """ellipsoidal_alt_m property must be present and match z coordinate."""
+        """altitude_m property must be present and match z coordinate."""
         dets = [{'coordinates': (13.35, 49.73, 321.5), 'class_name': 'Building',
                  'confidence': 0.8, 'track_id': '1'}]
         gj = self._make_geojson(dets, gps_valid=True)
         props = gj['features'][0]['properties']
-        assert 'ellipsoidal_alt_m' in props
-        np.testing.assert_allclose(props['ellipsoidal_alt_m'], 321.5)
+        assert 'altitude_m' in props
+        np.testing.assert_allclose(props['altitude_m'], 321.5)
 
     def test_height_property_present(self):
         """height_m property must reflect bbox size.z."""
@@ -1445,19 +1188,27 @@ class TestDepthEncoding:
 # ═══════════════════════════════════════════════════════════════════════════
 
 class TestFrameConstants:
-    """Verify frame IDs and constants match the rosbag data."""
-
-    def test_depth_frame_id(self):
-        from triffid_ugv_perception.ugv_node import DEPTH_FRAME
-        assert DEPTH_FRAME == 'f_depth_optical_frame'
-
-    def test_rgb_frame_id(self):
-        from triffid_ugv_perception.ugv_node import RGB_FRAME
-        assert RGB_FRAME == 'f_oc_link'
+    """Verify frame IDs and constants match the pixel-aligned RGB-D setup."""
 
     def test_base_frame_id(self):
         from triffid_ugv_perception.ugv_node import BASE_FRAME
         assert BASE_FRAME == 'b2/base_link'
+
+    def test_default_rgb_topic(self):
+        from triffid_ugv_perception.ugv_node import DEFAULT_RGB_TOPIC
+        assert DEFAULT_RGB_TOPIC == '/b2/camera/color/image_raw'
+
+    def test_default_depth_topic(self):
+        from triffid_ugv_perception.ugv_node import DEFAULT_DEPTH_TOPIC
+        assert DEFAULT_DEPTH_TOPIC == '/b2/camera/aligned_depth_to_color/image_raw'
+
+    def test_default_camera_info_topic(self):
+        from triffid_ugv_perception.ugv_node import DEFAULT_CAMERA_INFO_TOPIC
+        assert DEFAULT_CAMERA_INFO_TOPIC == '/b2/camera/color/camera_info'
+
+    def test_max_depth_samples(self):
+        from triffid_ugv_perception.ugv_node import _MAX_DEPTH_SAMPLES
+        assert _MAX_DEPTH_SAMPLES == 500
 
     def test_target_classes_include_water(self):
         from triffid_ugv_perception.ugv_node import TARGET_CLASSES
@@ -1472,68 +1223,42 @@ class TestFrameConstants:
                          'Road', 'Citizen', 'Debris', 'Green tree'):
             assert expected in class_names, f'{expected} not in TARGET_CLASSES'
 
-    def test_grid_step_defaults(self):
-        from triffid_ugv_perception.ugv_node import (
-            DEFAULT_GRID_STEP_U, DEFAULT_GRID_STEP_V
-        )
-        assert DEFAULT_GRID_STEP_U == 64
-        assert DEFAULT_GRID_STEP_V == 48
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  11.  INTRINSICS VALIDATION (from bag)
 # ═══════════════════════════════════════════════════════════════════════════
 
 class TestIntrinsicsConsistency:
-    """Validate that intrinsic values from the bag are self-consistent."""
+    """Validate that intrinsic values for the pixel-aligned camera are
+    self-consistent (single shared K matrix for both RGB and depth)."""
 
-    # Depth intrinsics (from bag /camera_front/realsense_front/depth/camera_info)
-    DEPTH_K = [391.5248718261719, 0.0, 319.7847900390625,
-               0.0, 391.5248718261719, 237.64898681640625,
-               0.0, 0.0, 1.0]
-    DEPTH_W, DEPTH_H = 640, 480
+    # Shared intrinsics (pixel-aligned RealSense: aligned_depth_to_color)
+    K = [642.0186767578125, 0.0, 646.3067626953125,
+         0.0, 641.4913330078125, 364.65814208984375,
+         0.0, 0.0, 1.0]
+    W, H = 1280, 720
 
-    # RGB intrinsics (from bag /camera_front/camera_info)
-    RGB_K = [500.0, 0.0, 640.0,
-             0.0, 500.0, 360.0,
-             0.0, 0.0, 1.0]
-    RGB_W, RGB_H = 1280, 720
+    def test_principal_point_inside_image(self):
+        cx, cy = self.K[2], self.K[5]
+        assert 0 < cx < self.W
+        assert 0 < cy < self.H
 
-    def test_depth_principal_point_inside_image(self):
-        cx, cy = self.DEPTH_K[2], self.DEPTH_K[5]
-        assert 0 < cx < self.DEPTH_W
-        assert 0 < cy < self.DEPTH_H
-
-    def test_rgb_principal_point_inside_image(self):
-        cx, cy = self.RGB_K[2], self.RGB_K[5]
-        assert 0 < cx < self.RGB_W
-        assert 0 < cy < self.RGB_H
-
-    def test_depth_focal_lengths_positive(self):
-        assert self.DEPTH_K[0] > 0  # fx
-        assert self.DEPTH_K[4] > 0  # fy
-
-    def test_rgb_focal_lengths_positive(self):
-        assert self.RGB_K[0] > 0
-        assert self.RGB_K[4] > 0
+    def test_focal_lengths_positive(self):
+        assert self.K[0] > 0  # fx
+        assert self.K[4] > 0  # fy
 
     def test_k_matrix_last_row(self):
         """K matrix last row should be [0, 0, 1]."""
-        assert self.DEPTH_K[6:] == [0.0, 0.0, 1.0]
-        assert self.RGB_K[6:] == [0.0, 0.0, 1.0]
+        assert self.K[6:] == [0.0, 0.0, 1.0]
 
-    def test_depth_is_square_pixel(self):
-        """Depth camera has fx == fy (square pixels)."""
-        np.testing.assert_allclose(self.DEPTH_K[0], self.DEPTH_K[4])
+    def test_near_square_pixel(self):
+        """fx ≈ fy (nearly square pixels)."""
+        np.testing.assert_allclose(self.K[0], self.K[4], rtol=0.01)
 
-    def test_rgb_is_square_pixel(self):
-        """RGB camera has fx == fy."""
-        np.testing.assert_allclose(self.RGB_K[0], self.RGB_K[4])
-
-    def test_rgb_principal_point_is_image_centre(self):
-        """RGB cx=W/2, cy=H/2 (ideal pinhole)."""
-        assert self.RGB_K[2] == self.RGB_W / 2
-        assert self.RGB_K[5] == self.RGB_H / 2
+    def test_principal_point_near_centre(self):
+        """cx ≈ W/2, cy ≈ H/2 (close to ideal pinhole)."""
+        np.testing.assert_allclose(self.K[2], self.W / 2, atol=20)
+        np.testing.assert_allclose(self.K[5], self.H / 2, atol=20)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1731,15 +1456,6 @@ class TestPipelineMathValidation:
         # Median should be close to (1.0, 1.0, 3.0), not pulled by outlier
         np.testing.assert_allclose(median, [1.0, 1.0, 3.0], atol=0.11)
 
-    def test_depth_grid_count_matches_expectation(self):
-        """Given image size and grid steps, count should be predictable."""
-        w, h = 640, 480
-        step_u, step_v = 64, 48
-        expected_cols = len(range(step_u // 2, w, step_u))  # 10
-        expected_rows = len(range(step_v // 2, h, step_v))  # 10
-        expected_total = expected_cols * expected_rows  # 100
-        assert expected_total == 100
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  14.  SIMPLESTYLE HELPERS
@@ -1793,65 +1509,65 @@ class TestSimpleStyleHelpers:
 # ═══════════════════════════════════════════════════════════════════════════
 
 class TestBboxTo3DCorners:
-    """Tests for UGVPerceptionNode._bbox_to_3d_corners."""
+    """Tests for UGVPerceptionNode._bbox_to_3d_corners (optical convention).
 
-    fn = staticmethod(UGVPerceptionNode._bbox_to_3d_corners)
+    New signature: _bbox_to_3d_corners(self, u1, v1, u2, v2, depth, fx, fy, cx, cy)
+    Convention: camera_optical_frame (X=right, Y=down, Z=forward).
+    """
 
-    # Use actual RGB intrinsics from the bag
-    class _FakeInfo:
-        k = [
-            642.0186767578125, 0.0, 646.3067626953125,
-            0.0, 641.4913330078125, 364.65814208984375,
-            0.0, 0.0, 1.0,
-        ]
-
-    def setup_method(self):
-        # Monkey-patch: _bbox_to_3d_corners reads self.rgb_camera_info
-        self._dummy = type('obj', (object,), {'rgb_camera_info': self._FakeInfo()})()
+    FX = 642.0186767578125
+    FY = 641.4913330078125
+    CX = 646.3067626953125
+    CY = 364.65814208984375
 
     def _call(self, u1, v1, u2, v2, depth):
-        # Bind to the dummy self
-        return UGVPerceptionNode._bbox_to_3d_corners(self._dummy, u1, v1, u2, v2, depth)
+        """Call the method with a dummy self."""
+        dummy = type('obj', (object,), {})()
+        return UGVPerceptionNode._bbox_to_3d_corners(
+            dummy, u1, v1, u2, v2, depth,
+            self.FX, self.FY, self.CX, self.CY,
+        )
 
     def test_returns_8x3(self):
         corners = self._call(100, 100, 300, 300, 5.0)
         assert corners.shape == (8, 3)
 
-    def test_x_equals_depth(self):
-        """All X (forward) values should equal the input depth."""
+    def test_z_equals_depth(self):
+        """All Z values should equal the input depth (optical: Z=forward)."""
         corners = self._call(50, 50, 200, 200, 3.0)
-        np.testing.assert_allclose(corners[:, 0], 3.0)
+        np.testing.assert_allclose(corners[:, 2], 3.0)
 
-    def test_nonzero_yz_extent(self):
-        """Y and Z extent must be positive for any non-degenerate bbox."""
+    def test_nonzero_xy_extent(self):
+        """X and Y extent must be positive for any non-degenerate bbox."""
         corners = self._call(100, 100, 500, 400, 4.0)
         extent = np.ptp(corners, axis=0)
+        assert extent[0] > 0.1, "X extent should be positive"
         assert extent[1] > 0.1, "Y extent should be positive"
-        assert extent[2] > 0.1, "Z extent should be positive"
 
     def test_principal_point_bbox_centered(self):
-        """A bbox centred on the principal point should give symmetric Y, Z."""
-        cx = self._FakeInfo.k[2]
-        cy = self._FakeInfo.k[5]
+        """Bbox centred on principal point → symmetric X, Y."""
         half = 50.0
-        corners = self._call(cx - half, cy - half, cx + half, cy + half, 5.0)
+        corners = self._call(
+            self.CX - half, self.CY - half,
+            self.CX + half, self.CY + half, 5.0,
+        )
+        x_extent = np.ptp(corners[:, 0])
         y_extent = np.ptp(corners[:, 1])
-        z_extent = np.ptp(corners[:, 2])
+        assert x_extent > 0
         assert y_extent > 0
-        assert z_extent > 0
 
     def test_larger_bbox_larger_extent(self):
-        """A wider 2-D bbox at the same depth should give larger Y extent."""
+        """Wider 2D bbox at same depth → larger X extent."""
         small = self._call(300, 200, 400, 300, 5.0)
         large = self._call(100, 200, 600, 300, 5.0)
-        assert np.ptp(large[:, 1]) > np.ptp(small[:, 1])
+        assert np.ptp(large[:, 0]) > np.ptp(small[:, 0])
 
     def test_farther_depth_larger_extent(self):
         """Same pixel bbox at greater depth → proportionally larger extent."""
         near = self._call(200, 200, 400, 400, 2.0)
         far  = self._call(200, 200, 400, 400, 8.0)
+        assert np.ptp(far[:, 0]) > np.ptp(near[:, 0])
         assert np.ptp(far[:, 1]) > np.ptp(near[:, 1])
-        assert np.ptp(far[:, 2]) > np.ptp(near[:, 2])
 
 
 # ═══════════════════════════════════════════════════════════════════════════

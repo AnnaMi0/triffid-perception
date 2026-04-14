@@ -1,0 +1,16 @@
+UGV MODULE
+
+1. new model for the UGV: assume realsense RGB-D camera, pixel aligned RGB-Depth (remove tf transforms to extract depth etc, just use the same picel -> simpler). This is an additional camera mounted on top of the UGV robot. Topic names etc remain unknown for now, so make a note of any placeholders and what to change when the topic names become available or change, for now implement the logic of pixel-aligned depth and anything else that may be needed.
+2. ensure it uses gyro data from the /heading topic. This will be changed once the tf tree becomes available from the partners and we'll be able to publish the detections on the map frame, but for now we will use GPS + gyro data to extract the geoJSON. We'll also probably publish the detections on the base_link (i think this is what we already do but please confirm, and give me your input on what you think is the best frame to publish the detections)
+
+
+UAV MODULE
+
+1. get data from the FUTURISED API: more details in futurised_api.txt
+2. produce geoJSON - we already do that but ensure its fields are identical to the UGVs module (also change gnss_altitude or sth like that to just altitude for both modules)
+3. the depth will be extracted from the 3DGS, for now we'll just keep the LRF solution but keep in mind that'll change
+
+
+FINAL: theoretically UAV and UGV systems will run in parallel, so we want to compare their geoJSONs and fuse the UGV's with the UAV's predictions into one geoJSON that will be published to the TELESTO backend, more details on telesto_backend.txt. Can you help me with that?
+
+Don't forget to update the documentation!

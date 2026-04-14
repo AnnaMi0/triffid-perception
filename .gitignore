@@ -35,7 +35,12 @@ dist/
 *.env
 secrets.yaml
 mqtt_traces/*.jsonl
+futurised_api.txt
+telesto_backend.txt
 
+# Downloaded drone images (fetched via API, can be large)
+uav_images/
+uav_data/
 
 predictions_rosbag.zip
 output_rosbag/

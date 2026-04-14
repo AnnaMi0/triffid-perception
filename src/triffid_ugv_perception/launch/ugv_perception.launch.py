@@ -11,64 +11,14 @@ def generate_launch_description():
         DeclareLaunchArgument('confidence_threshold', default_value='0.35'),
         DeclareLaunchArgument('target_frame', default_value='b2/base_link'),
 
-        # Depth grid sampling resolution (lower = more points, slower)
-        DeclareLaunchArgument('depth_grid_step_u', default_value='64'),
-        DeclareLaunchArgument('depth_grid_step_v', default_value='48'),
+        # Configurable topic names (pixel-aligned RGB-D camera)
+        DeclareLaunchArgument('rgb_image_topic',
+                              default_value='/b2/camera/color/image_raw'),
+        DeclareLaunchArgument('depth_image_topic',
+                              default_value='/b2/camera/aligned_depth_to_color/image_raw'),
+        DeclareLaunchArgument('camera_info_topic',
+                              default_value='/b2/camera/color/camera_info'),
         DeclareLaunchArgument('use_dummy_detections', default_value='false'),
-
-        # Static TF publishers
-
-        # b2/base_link -> f_oc_link  (front USB RGB camera)
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='tf_base_to_rgb',
-            arguments=[
-                '--x', '0.3993', '--y', '0.0', '--z', '-0.0158',
-                '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1',
-                '--frame-id', 'b2/base_link',
-                '--child-frame-id', 'f_oc_link',
-            ],
-        ),
-
-        # b2/base_link -> f_dc_link  (depth camera base, tilted ~45 deg down)
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='tf_base_to_dc',
-            arguments=[
-                '--x', '0.4216', '--y', '0.025', '--z', '0.0619',
-                '--qx', '0', '--qy', '0.3827', '--qz', '0', '--qw', '0.9239',
-                '--frame-id', 'b2/base_link',
-                '--child-frame-id', 'f_dc_link',
-            ],
-        ),
-
-        # f_dc_link -> f_depth_frame  (identity)
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='tf_dc_to_depth',
-            arguments=[
-                '--x', '0', '--y', '0', '--z', '0',
-                '--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1',
-                '--frame-id', 'f_dc_link',
-                '--child-frame-id', 'f_depth_frame',
-            ],
-        ),
-
-        # f_depth_frame -> f_depth_optical_frame  (ROS optical convention)
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='tf_depth_to_optical',
-            arguments=[
-                '--x', '0', '--y', '0', '--z', '0',
-                '--qx', '-0.5', '--qy', '0.5', '--qz', '-0.5', '--qw', '0.5',
-                '--frame-id', 'f_depth_frame',
-                '--child-frame-id', 'f_depth_optical_frame',
-            ],
-        ),
 
         # UGV Perception Node
         Node(
@@ -80,8 +30,9 @@ def generate_launch_description():
                 'model_path': LaunchConfiguration('model_path'),
                 'confidence_threshold': LaunchConfiguration('confidence_threshold'),
                 'target_frame': LaunchConfiguration('target_frame'),
-                'depth_grid_step_u': LaunchConfiguration('depth_grid_step_u'),
-                'depth_grid_step_v': LaunchConfiguration('depth_grid_step_v'),
+                'rgb_image_topic': LaunchConfiguration('rgb_image_topic'),
+                'depth_image_topic': LaunchConfiguration('depth_image_topic'),
+                'camera_info_topic': LaunchConfiguration('camera_info_topic'),
                 'use_dummy_detections': LaunchConfiguration('use_dummy_detections'),
             }],
         ),

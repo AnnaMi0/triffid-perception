@@ -1,9 +1,9 @@
 # TRIFFID UGV Perception — Interface Specification
 
-> **Version**: 1.9  
-> **Date**: 2026-03-24  
+> **Version**: 2.0  
+> **Date**: 2026-04-13  
 > **Status**: FROZEN — changes require version bump and partner notification
-> **ROS 2 Distribution**: Humble  
+> **ROS 2 Distribution**: Jazzy  
 > **DDS**: CycloneDDS  
 > **ROS_DOMAIN_ID**: 42  
 
@@ -49,52 +49,46 @@ All output timestamps are copied from the triggering RGB frame (rosbag sim time)
 
 | Topic | Message Type | Encoding | Expected Rate | Required |
 |---|---|---|---|---|
-| `/camera_front/raw_image` | `sensor_msgs/msg/Image` | `bgr8` | ~15 Hz | Yes |
-| `/camera_front/camera_info` | `sensor_msgs/msg/CameraInfo` | — | ~15 Hz | Yes |
-| `/camera_front/realsense_front/depth/image_rect_raw` | `sensor_msgs/msg/Image` | `16UC1` (mm) | ~15 Hz | Yes |
-| `/camera_front/realsense_front/depth/camera_info` | `sensor_msgs/msg/CameraInfo` | — | ~15 Hz | Yes |
+| `/b2/camera/color/image_raw` | `sensor_msgs/msg/Image` | `bgr8` | ~15 Hz | Yes |
+| `/b2/camera/aligned_depth_to_color/image_raw` | `sensor_msgs/msg/Image` | `16UC1` (mm) | ~15 Hz | Yes |
+| `/b2/camera/color/camera_info` | `sensor_msgs/msg/CameraInfo` | — | ~15 Hz | Yes |
 | `/tf` | `tf2_msgs/msg/TFMessage` | — | — | Yes |
 | `/tf_static` | `tf2_msgs/msg/TFMessage` | — | Once | Yes |
 | `/fix` | `sensor_msgs/msg/NavSatFix` | — | ~0.4 Hz | Optional (GPS) |
 | `/dog_odom` | `nav_msgs/msg/Odometry` | — | ~500 Hz | Optional (heading) |
 
+> **Note**: Image and CameraInfo topic names are configurable via ROS parameters (`rgb_image_topic`, `depth_image_topic`, `camera_info_topic`). The defaults above use the `/b2/camera/` namespace. A single `CameraInfo` topic provides shared intrinsics for both RGB and depth (pixel-aligned camera).
+
 ---
 
 ## 3. TF Frames
 
-### Required Static Transform Chain
+### Required Transform Chain
+
+The pipeline requires a transform from the camera optical frame to `b2/base_link`. The camera frame ID is read dynamically from `CameraInfo.header.frame_id`.
 
 ```
 b2/base_link
-├── f_oc_link                          RGB camera (body convention)
-│     Translation: (0.3993, 0.0, -0.0158)
-│     Rotation:    (0, 0, 0, 1)         identity
-│
-└── f_dc_link                          Depth camera mount (~45° pitch)
-      Translation: (0.4216, 0.025, 0.0619)
-      Rotation:    (0, 0.3827, 0, 0.9239)  ~45° about Y
-      │
-      └── f_depth_frame                (identity from f_dc_link)
-            │
-            └── f_depth_optical_frame  ROS optical convention
-                  Rotation: (-0.5, 0.5, -0.5, 0.5)
+└── b2/camera_optical_frame     (from CameraInfo header)
+      Convention: ROS optical (X=right, Y=down, Z=forward)
 ```
+
+The full TF chain is managed externally by the robot's localization stack (Angel's TF tree):
+
+```
+map → b2/map → b2/odom → b2/base_link → b2/camera_optical_frame
+```
+
+The launch file **no longer publishes static TF transforms**. The previous 4 static transforms (`f_oc_link`, `f_dc_link`, `f_depth_frame`, `f_depth_optical_frame`) have been removed.
 
 ### Frame Conventions
 
 | Frame | Convention | Axes |
 |---|---|---|
 | `b2/base_link` | ROS body | X = forward, Y = left, Z = up |
-| `f_oc_link` | ROS body | X = forward, Y = left, Z = up |
-| `f_depth_optical_frame` | ROS optical | X = right, Y = down, Z = forward |
+| `b2/camera_optical_frame` | ROS optical | X = right, Y = down, Z = forward |
 
-### Body ↔ Optical Conversion (used internally)
-
-```
-X_optical = −Y_body     (right  = −left)
-Y_optical = −Z_body     (down   = −up)
-Z_optical =  X_body     (forward = forward)
-```
+The node works entirely in camera_optical_frame for back-projection. There is **no body↔optical axis conversion** inside the node — intrinsics from `CameraInfo.K` are used directly in optical convention.
 
 ---
 
@@ -132,6 +126,7 @@ Z_optical =  X_body     (forward = forward)
 - `bbox.size` may be `(0, 0, 0)` if depth evidence is insufficient (rare)
 - Detections at the same 3D position (within 0.5 m) are deduplicated; highest confidence kept
 - Tracking uses ByteTrack-style assignment: Kalman-filter prediction, Hungarian (optimal) matching, two-pass association (high-conf then low-conf), a **class gate** (cross-class matches forbidden), **majority-vote class labelling** (most-frequent class across observations wins), and a 3D position gate (2.0 m) for small-object recovery. Tracks must be seen for `n_init` consecutive frames before being published (confirmation gate).
+- Back-projection uses camera_optical_frame convention (X=right, Y=down, Z=forward) directly from CameraInfo intrinsics; no body↔optical conversion in the node
 
 ---
 
@@ -179,7 +174,7 @@ This topic is **lazy-published** — only emitted when at least one subscriber i
 
 Each frame is the original RGB image overlaid with:
 - **Coloured bounding box** per tracked detection (deterministic colour from track ID)
-- **Text label**: `<class> #<track_id> <confidence> d=<depth_pts>` where `d=N` is the number of depth grid points that matched the detection's segmentation mask
+- **Text label**: `<class> #<track_id> <confidence> d=<depth_pts>` where `d=N` is the number of depth pixels that matched the detection's segmentation mask
 
 This topic is recorded by `collect_samples.py` as `tracking_debug.mp4` (H.264).
 
@@ -267,7 +262,7 @@ The polygon is a closed axis-aligned rectangle (5 points, first = last) derived 
 | `detection_type` | string | `"seg"` | Detection source model type |
 | `source` | string | `"ugv"` | Platform identifier |
 | `local_frame` | bool | `false` | `true` if no GPS origin available |
-| `ellipsoidal_alt_m` | float | `321.5` | Altitude above WGS-84 ellipsoid (m) — **not** height above mean sea level |
+| `altitude_m` | float | `321.5` | Altitude above WGS-84 ellipsoid (m) — **not** height above mean sea level |
 | `height_m` | float | `4.5` | Object height from `bbox.size.z` (m) |
 | `marker-color` | string | `"#0000ff"` | SimpleStyle hex colour |
 | `marker-size` | string | `"medium"` | SimpleStyle marker size |
@@ -475,6 +470,8 @@ Units: **metres**.
 | 1.7 | 2026-03-23 | Added `/ugv/detections/front/debug_image` topic to interface spec (lazy-published `bgr8` debug overlay with bbox, class, track ID, and depth-point count `d=N`); documented `samples/` output artefacts |
 | 1.8 | 2026-03-24 | **Class gate**: cross-class tracker matches now forbidden (cost +1e5), preventing ID hijacking when bboxes overlap across classes; **majority-vote class label**: track class determined by most-frequent observation (not overwritten each frame); `geojson_raw.json` added to sample output (all confirmed tracks, no spatial dedup) |
 | 1.9 | 2026-03-24 | **Renamed** `gnss_altitude_m` property to `ellipsoidal_alt_m` to clarify it is WGS-84 ellipsoidal height (not geoid/MSL); `run.sh record` now records subscribed input topics alongside output topics |
+| 2.0 | 2026-04-13 | **BREAKING — Pixel-aligned RGB-D refactor**: replaced cross-camera depth–RGB fusion with pixel-aligned depth pipeline; removed 4 static TF publishers from launch (`f_oc_link`, `f_dc_link`, `f_depth_frame`, `f_depth_optical_frame`); camera frame now read dynamically from `CameraInfo.header.frame_id`; subscribed topics changed from `/camera_front/*` to configurable `/b2/camera/*` topics; removed `depth_grid_step_u/v` parameters, added `rgb_image_topic`, `depth_image_topic`, `camera_info_topic` parameters; single shared `CameraInfo` replaces dual RGB+depth `CameraInfo`; back-projection now in camera_optical_frame convention directly (no body↔optical conversion); `_bbox_to_3d_corners` takes explicit intrinsics; ROS distro updated from Humble to Jazzy; unit tests updated (164, was 182) |
+| 2.1 | 2026-04-13 | **GeoJSON field alignment**: renamed `ellipsoidal_alt_m` (UGV) and `gnss_altitude_m` (UAV) to unified `altitude_m` across both modules; added `triffid_telesto` package with `TelestoClient` (CRUD for Map Manager API) and MQTT→TELESTO bridge; observer sync API support |
 
 ---
 
@@ -486,3 +483,5 @@ Units: **metres**.
 4. **2D segmentation mask**: The segmentation output is a 2D mono8 label map. True 3D volumetric segmentation is not performed.
 5. **GPU required**: YOLO inference requires an NVIDIA GPU with CUDA support.
 6. **No heading → raw axis mapping**: Without `/dog_odom`, body-frame X is treated as East and Y as North (yaw = 0°). Detections will be misaligned on the map.
+7. **Pixel-aligned depth required**: The pipeline assumes depth is aligned to colour (`aligned_depth_to_color`). Using a raw depth stream with a different resolution or intrinsics will produce incorrect 3D positions.
+8. **External TF required**: The launch file no longer publishes static transforms. The `camera_optical_frame → b2/base_link` transform must be provided by the robot's localization stack or a separate TF publisher.
