@@ -892,7 +892,7 @@ class TestGeoJSONSchema:
     def test_coordinates_are_lon_lat_only(self):
         """GeoJSON geometry uses 2D [lon, lat] only; altitude in properties."""
         lon, lat, alt = 23.7348, 37.9755, 310.5
-        dets = [{'coordinates': (lon, lat, alt), 'class_name': 'Citizen',
+        dets = [{'coordinates': (lon, lat, alt), 'class_name': 'citizen',
                  'confidence': 0.9, 'track_id': '1'}]
         gj = self._make_geojson(dets, gps_valid=True)
         coords = gj['features'][0]['geometry']['coordinates']
@@ -909,7 +909,7 @@ class TestGeoJSONSchema:
         assert len(gj['features']) == 0
 
     def test_marker_color_for_known_classes(self):
-        for cls, expected_color in [('Flame', '#ff0000'), ('Civilian vehicle', '#0000ff')]:
+        for cls, expected_color in [('flame', '#ff0000'), ('civilian vehicle', '#0000ff')]:
             dets = [{'coordinates': (0, 0, 0), 'class_name': cls,
                      'confidence': 0.9, 'track_id': '1'}]
             gj = self._make_geojson(dets)
@@ -925,10 +925,10 @@ class TestGeoJSONSchema:
     def test_category_varies_by_class(self):
         """Category should reflect semantic class grouping, not a constant."""
         cases = [
-            ('Flame', 'hazard'), ('First responder', 'person'),
-            ('Civilian vehicle', 'vehicle'), ('Green tree', 'nature'),
-            ('Building', 'infrastructure'), ('Fence', 'obstacle'),
-            ('Helmet', 'equipment'), ('alien', 'unknown'),
+            ('flame', 'hazard'), ('first responder', 'person'),
+            ('civilian vehicle', 'vehicle'), ('green tree', 'nature'),
+            ('building', 'infrastructure'), ('fence', 'obstacle'),
+            ('helmet', 'equipment'), ('alien', 'unknown'),
         ]
         for cls, expected_cat in cases:
             dets = [{'coordinates': (0, 0, 0), 'class_name': cls,
@@ -959,7 +959,7 @@ class TestGeoJSONSchema:
 
     def test_point_coordinates_are_2d(self):
         """Point geometry coordinates must have 2 elements [lon, lat]."""
-        dets = [{'coordinates': (13.35, 49.73, 320.0), 'class_name': 'First responder',
+        dets = [{'coordinates': (13.35, 49.73, 320.0), 'class_name': 'first responder',
                  'confidence': 0.9, 'track_id': '1'}]
         gj = self._make_geojson(dets, gps_valid=True)
         coords = gj['features'][0]['geometry']['coordinates']
@@ -987,7 +987,7 @@ class TestGeoJSONSchema:
 
     def test_person_emits_point_geometry(self):
         """Person classes always emit Point geometry regardless of bbox size."""
-        for cls in ('First responder', 'Citizen', 'Military personnel'):
+        for cls in ('first responder', 'citizen', 'military personnel'):
             dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': cls,
                      'confidence': 0.9, 'track_id': '1',
                      'size': (1.0, 0.5, 1.8), 'position': (5.0, 0.0, 0.0)}]
@@ -999,12 +999,12 @@ class TestGeoJSONSchema:
     def test_expanded_point_classes(self):
         """Equipment/vehicle/small-object classes emit Point geometry."""
         point_classes = [
-            'Helmet', 'Destroyed vehicle', 'Fire hose', 'SCBA', 'Boot',
-            'Mask', 'Window', 'Pole', 'Animal', 'Door', 'Civilian vehicle',
-            'Hole in the ground', 'Bag', 'Ambulance', 'Fire truck', 'Cone',
-            'Ax', 'Glove', 'Stairs', 'Protective glasses', 'Shovel',
-            'Fire hydrant', 'Police vehicle', 'Army vehicle', 'Chainsaw',
-            'aerial vehicle', 'Lifesaver', 'Extinguisher',
+            'helmet', 'destroyed vehicle', 'fire hose', 'scba', 'boot',
+            'mask', 'window', 'pole', 'animal', 'door', 'civilian vehicle',
+            'hole in the ground', 'bag', 'ambulance', 'fire truck', 'cone',
+            'ax', 'glove', 'stairs', 'protective glasses', 'shovel',
+            'fire hydrant', 'police vehicle', 'army vehicle', 'chainsaw',
+            'aerial vehicle', 'lifesaver', 'extinguisher',
         ]
         for cls in point_classes:
             dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': cls,
@@ -1016,7 +1016,7 @@ class TestGeoJSONSchema:
 
     def test_wall_emits_linestring_geometry(self):
         """Wall class emits LineString geometry (same as Fence)."""
-        dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': 'Wall',
+        dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': 'wall',
                  'confidence': 0.7, 'track_id': '1',
                  'size': (3.0, 0.2, 2.0), 'position': (5.0, 0.0, 0.0)}]
         gj = self._make_geojson(dets, gps_valid=True)
@@ -1025,7 +1025,7 @@ class TestGeoJSONSchema:
 
     def test_fence_emits_linestring_geometry(self):
         """Fence class emits LineString geometry."""
-        dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': 'Fence',
+        dets = [{'coordinates': (13.0, 49.0, 300.0), 'class_name': 'fence',
                  'confidence': 0.7, 'track_id': '1',
                  'size': (5.0, 0.3, 1.2), 'position': (10.0, 0.0, 0.0)}]
         gj = self._make_geojson(dets, gps_valid=True)
@@ -1037,7 +1037,7 @@ class TestGeoJSONSchema:
 
     def test_linestring_has_stroke_properties(self):
         """LineString features should have stroke SimpleStyle but no fill."""
-        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Fence',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'fence',
                  'confidence': 0.7, 'track_id': '1',
                  'size': (5.0, 0.3, 1.2), 'position': (0.0, 0.0, 0.0)}]
         gj = self._make_geojson(dets)
@@ -1105,7 +1105,7 @@ class TestGeoJSONSchema:
 
     def test_point_lacks_fill_properties(self):
         """Point features should NOT have stroke/fill properties."""
-        dets = [{'coordinates': (0, 0, 0), 'class_name': 'Helmet',
+        dets = [{'coordinates': (0, 0, 0), 'class_name': 'helmet',
                  'confidence': 0.9, 'track_id': '1'}]
         gj = self._make_geojson(dets)
         props = gj['features'][0]['properties']
@@ -1115,7 +1115,7 @@ class TestGeoJSONSchema:
     def test_mixed_point_and_polygon(self):
         """FeatureCollection can contain both Point and Polygon features."""
         dets = [
-            {'coordinates': (1, 2, 0), 'class_name': 'Citizen',
+            {'coordinates': (1, 2, 0), 'class_name': 'citizen',
              'confidence': 0.9, 'track_id': '1'},
             {'coordinates': (3, 4, 0), 'class_name': 'Road',
              'confidence': 0.8, 'track_id': '2',
@@ -1213,14 +1213,14 @@ class TestFrameConstants:
     def test_target_classes_include_water(self):
         from triffid_ugv_perception.ugv_node import TARGET_CLASSES
         assert 0 in TARGET_CLASSES
-        assert TARGET_CLASSES[0] == 'Water'
+        assert TARGET_CLASSES[0] == 'water'
 
     def test_target_classes_include_key_classes(self):
         from triffid_ugv_perception.ugv_node import TARGET_CLASSES
         # Verify a selection of important TRIFFID classes exist
         class_names = set(TARGET_CLASSES.values())
-        for expected in ('Flame', 'Smoke', 'First responder', 'Building',
-                         'Road', 'Citizen', 'Debris', 'Green tree'):
+        for expected in ('flame', 'smoke', 'first responder', 'building',
+                         'road', 'citizen', 'debris', 'green tree'):
             assert expected in class_names, f'{expected} not in TARGET_CLASSES'
 
 
@@ -1470,29 +1470,29 @@ class TestSimpleStyleHelpers:
     _symbol = staticmethod(GeoJSONBridge._class_symbol)
 
     def test_person_color(self):
-        assert self._color('First responder') == '#1e90ff'
+        assert self._color('first responder') == '#1e90ff'
 
     def test_car_color(self):
-        assert self._color('Civilian vehicle') == '#0000ff'
+        assert self._color('civilian vehicle') == '#0000ff'
 
     def test_unknown_class_default_color(self):
         assert self._color('spaceship') == '#808080'
 
     def test_person_symbol(self):
-        assert self._symbol('First responder') == 'pitch'
+        assert self._symbol('first responder') == 'pitch'
 
     def test_unknown_class_default_symbol(self):
         assert self._symbol('spaceship') == 'marker'
 
     def test_fire_classes_have_red_tones(self):
         """Fire-related classes should have red/orange colors."""
-        for cls in ('Flame', 'Smoke', 'Burnt tree'):
+        for cls in ('flame', 'smoke', 'burnt tree'):
             color = self._color(cls)
             assert color != '#808080', f'{cls} has default color'
 
     def test_nature_classes_have_green_or_brown(self):
         """Green vegetation should be greenish."""
-        for cls in ('Green tree', 'Green grass', 'Green plant'):
+        for cls in ('green tree', 'green grass', 'green plant'):
             color = self._color(cls)
             assert color != '#808080', f'{cls} has default color'
 
@@ -1860,7 +1860,7 @@ class TestByteTrackerFeatures:
         # Frame 1: create Fence track at (100, 100, 200, 200)
         tracker.update([{
             'bbox': (100, 100, 200, 200),
-            'class_name': 'Fence',
+            'class_name': 'fence',
             'class_id': 1,
             'confidence': 0.8,
             'position': (5.0, 0.0, 0.0),

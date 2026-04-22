@@ -6,6 +6,75 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.2.0] — 2026-04-22
+
+### Added — RealSense D435i Live Camera Support
+
+- **YUYV colour encoding** (`ugv_node.py`): explicit `yuv422`/`yuv422_yuy2`/`YUV422` check in `rgb_callback`. YUYV frames are converted via `cv2.COLOR_YUV2BGR_YUY2` directly from the raw buffer (without `cv_bridge`, which may lack this conversion in older driver builds). All other encodings (including `bgr8` from rosbag) continue to go through `cv_bridge` — no regression on the existing test flow.
+
+- **Camera topic overrides** (`run.sh`): three optional env vars pass through to the `ugv_node` ROS parameters:
+  - `RGB_TOPIC`, `DEPTH_TOPIC`, `CAMERA_INFO_TOPIC` — leave empty for rosbag mode (preserves default `/b2/camera/` namespace); set to the 435i topics for live operation:
+    ```
+    RGB_TOPIC=/camera_front_435i/realsense_front_435i/color/image_raw
+    DEPTH_TOPIC=/camera_front_435i/realsense_front_435i/depth/image_rect_raw
+    CAMERA_INFO_TOPIC=/camera_front_435i/realsense_front_435i/color/camera_info
+    ```
+  - Depth alignment intentionally disabled for PoC (`align_depth.enable: False` on Jetson); raw `/depth/image_rect_raw` is used.
+
+- **`./run.sh camtest`**: one-shot frame-grab command that:
+  1. Subscribes to the live colour and depth topics (defaults to 435i topics; overrideable via `CAMTEST_RGB_TOPIC` / `CAMTEST_DEPTH_TOPIC` — independent from `RGB_TOPIC`/`DEPTH_TOPIC` to avoid picking up rosbag replay overrides from the shell environment)
+  2. Applies YUYV→BGR conversion (same logic as `ugv_node`)
+  3. Saves `samples/camtest_color.png` and a false-colour `samples/camtest_depth.png`
+  4. Exits with code 0 on success, 1 on timeout (10 s default)
+  - New file: `src/triffid_ugv_perception/scripts/camtest.py`
+
+### Added — MQTT Port Configurability
+
+- **`MQTT_PORT` env var** (`run.sh`, `docker-compose.yml`): Mosquitto broker port defaults to `1883` but is configurable when another user on the shared host occupies that port:
+  ```bash
+  MQTT_PORT=1884 ./run.sh start
+  ```
+  - `run.sh`: reads `MQTT_PORT` and passes it to `mosquitto -p $MQTT_PORT` and to `geojson_bridge --ros-args -p mqtt_port:=$MQTT_PORT`
+  - `docker-compose.yml`: bare `- MQTT_PORT` passthrough in `environment:` block
+  - `run_uav.sh` already handled this correctly; only the UGV side needed updating
+
+### Added — GeoJSON Pipeline: Class Name Normalisation + Spatial Deduplication
+
+- **Lowercase class names**: all 63 `TARGET_CLASSES` values lowercased at source in both `ugv_node.py` and `uav_node.py`. All lookup dict keys (`_POINT_CLASSES`, `_LINE_CLASSES`, `_CLASS_COLORS`, `_CLASS_CATEGORIES`, `_CLASS_SYMBOLS`) updated to match in both packages.
+
+- **Spatial deduplication in `geojson_bridge`** (`geojson_bridge.py`): before publishing each UGV FeatureCollection, overlapping features of the same class are merged (highest confidence kept):
+  - Algorithm: greedy, sort by confidence descending, suppress any feature within `dedup_radius_m` metres of an already-kept feature of the same class
+  - Haversine distance used for GPS-projected features; `local_frame: true` features always pass through unchanged
+  - New ROS parameter: `dedup_radius_m` (default `3.0 m`)
+  - New module-level helpers: `_haversine_m()`, `_feature_centroid()`, `_deduplicate_features()`
+
+- **Cross-platform deduplication in bridge** (`bridge.py`): `_merge()` now deduplicates after combining UGV + UAV features using the same algorithm with a larger 10 m radius (`_CROSS_DEDUP_RADIUS_M`) to account for UAV geo-projection uncertainty. `local_frame: true` UGV features always pass through.
+
+- **Class name normalisation in bridge** (`bridge.py`): `Bridge._normalize()` lowercases the `class` property of every incoming feature in `_on_message()`, making the bridge the single point of truth for class name casing regardless of source.
+
+### Added — TELESTO Bridge: Auto-Start + Smoke Test
+
+- **Bridge wired into `run.sh`**: `cmd_start()` now starts `bridge.py` as a daemon after mosquitto, `cmd_stop()` kills it. Log at `/tmp/bridge.log`, shown in `./run.sh logs`. New env vars `TELESTO_BASE_URL` and `TELESTO_OBSERVER_URL` passed through `docker-compose.yml` to override the built-in endpoint defaults.
+
+- **`./run.sh bridge-test`**: publishes mock UGV + UAV GeoJSON to the local MQTT broker, starts a short `--dry-run` bridge session, and prints the merged deduplicated output — no Telesto upload needed.
+
+- **`smoke_test.py`** (`src/triffid_telesto/smoke_test.py`): standalone smoke test that publishes a 4-feature scenario (UGV fire + UAV fire overlap, local_frame debris, unique vehicle) and asserts the bridge produces exactly 3 features with correct source and confidence.
+
+### Fixed
+
+- **Integration test crash on `./run.sh test`** (`integration_test.py`): `shutil.rmtree('/ws/output_rosbag')` failed with `OSError: [Errno 16] Device or resource busy` because `/ws/output_rosbag` is a Docker volume mount point. Fixed to clear the directory contents without deleting the mount point itself.
+
+- **No detections in rosbag mode** (`geojson_bridge.py`): GPS validity gate (`if not self.gps_valid: return`) completely blocked GeoJSON publishing when no `/fix` topic was present (rosbag datasets typically lack GPS). Hard block removed; node now logs a throttled warning and publishes with `"local_frame": true` — the property was already set correctly, features were just never reaching the publisher.
+
+### Changed
+
+- **Test suite** — 252 total (was 214 across UGV + UAV, plus 30 Telesto):
+  - UGV `test_unit.py`: all class name literals updated to lowercase — 164 tests, count unchanged
+  - UAV `test_unit.py`: class name literals updated to lowercase — 50 tests, count unchanged
+  - Telesto `test_telesto.py`: 30 → 38 tests; added `TestBridgeCrossPlatformDedup` (6 tests covering same-class overlap, different-class non-overlap, distance threshold, `local_frame` passthrough, source ordering) and two normalization tests in `TestBridgeOnMessage`; fixed `test_merge_both_sources` to use distinct classes/locations; updated `_point_feature` fixture to accept `confidence` and `local_frame` parameters and use lowercase class defaults
+
+---
+
 ## [2.1.0] — 2026-04-13
 
 ### GeoJSON Field Alignment

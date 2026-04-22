@@ -62,18 +62,97 @@ _MIN_EXTENT = 0.3
 #   Polygon    – everything else (areas, buildings, vegetation, …)
 
 _POINT_CLASSES = frozenset([
-    'Helmet', 'First responder', 'Destroyed vehicle', 'Fire hose',
-    'SCBA', 'Boot', 'Mask', 'Window', 'Citizen', 'Pole', 'Animal',
-    'Door', 'Civilian vehicle', 'Hole in the ground', 'Bag',
-    'Ambulance', 'Fire truck', 'Cone', 'Military personnel', 'Ax',
-    'Glove', 'Stairs', 'Protective glasses', 'Shovel', 'Fire hydrant',
-    'Police vehicle', 'Army vehicle', 'Chainsaw', 'aerial vehicle',
-    'Lifesaver', 'Extinguisher',
+    'helmet', 'first responder', 'destroyed vehicle', 'fire hose',
+    'scba', 'boot', 'mask', 'window', 'citizen', 'pole', 'animal',
+    'door', 'civilian vehicle', 'hole in the ground', 'bag',
+    'ambulance', 'fire truck', 'cone', 'military personnel', 'ax',
+    'glove', 'stairs', 'protective glasses', 'shovel', 'fire hydrant',
+    'police vehicle', 'army vehicle', 'chainsaw', 'aerial vehicle',
+    'lifesaver', 'extinguisher',
 ])
 
 _LINE_CLASSES = frozenset([
-    'Fence', 'Wall',
+    'fence', 'wall',
 ])
+
+
+def _haversine_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+    """Return the Haversine distance in metres between two GPS points."""
+    import math as _math
+    r = 6378137.0
+    d_lat = _math.radians(lat2 - lat1)
+    d_lon = _math.radians(lon2 - lon1)
+    a = (_math.sin(d_lat / 2) ** 2
+         + _math.cos(_math.radians(lat1)) * _math.cos(_math.radians(lat2))
+         * _math.sin(d_lon / 2) ** 2)
+    return r * 2.0 * _math.asin(_math.sqrt(a))
+
+
+def _feature_centroid(feature: dict):
+    """Return (lon, lat) centroid of a GeoJSON feature, or None."""
+    geom = feature.get('geometry') or {}
+    geom_type = geom.get('type')
+    coords = geom.get('coordinates')
+    if not coords:
+        return None
+    if geom_type == 'Point':
+        return (coords[0], coords[1])
+    if geom_type == 'LineString':
+        lons = [c[0] for c in coords]
+        lats = [c[1] for c in coords]
+        return (sum(lons) / len(lons), sum(lats) / len(lats))
+    if geom_type == 'Polygon' and coords:
+        ring = coords[0]
+        lons = [c[0] for c in ring]
+        lats = [c[1] for c in ring]
+        return (sum(lons) / len(lons), sum(lats) / len(lats))
+    return None
+
+
+def _deduplicate_features(features: list, radius_m: float) -> list:
+    """Remove duplicate features: same class + overlapping location.
+
+    Within each class group, if two features have centroids within
+    *radius_m* metres of each other, only the higher-confidence one is
+    kept.  Features with no GPS coordinates (local_frame) are passed
+    through unchanged.
+    """
+    if len(features) <= 1:
+        return features
+
+    # Sort descending by confidence so greedy keep is always the best
+    def _conf(f):
+        return f.get('properties', {}).get('confidence', 0.0)
+
+    sorted_feats = sorted(features, key=_conf, reverse=True)
+    kept = []
+    for candidate in sorted_feats:
+        props = candidate.get('properties', {})
+        if props.get('local_frame', False):
+            kept.append(candidate)
+            continue
+        centroid = _feature_centroid(candidate)
+        if centroid is None:
+            kept.append(candidate)
+            continue
+        cls = props.get('class', '')
+        suppressed = False
+        for existing in kept:
+            if existing.get('properties', {}).get('class', '') != cls:
+                continue
+            existing_centroid = _feature_centroid(existing)
+            if existing_centroid is None:
+                continue
+            dist = _haversine_m(
+                centroid[0], centroid[1],
+                existing_centroid[0], existing_centroid[1],
+            )
+            if dist < radius_m:
+                suppressed = True
+                break
+        if not suppressed:
+            kept.append(candidate)
+    return kept
 
 
 class GeoJSONBridge(Node):
@@ -93,6 +172,7 @@ class GeoJSONBridge(Node):
         self.declare_parameter('mqtt_host', 'localhost')
         self.declare_parameter('mqtt_port', 1883)
         self.declare_parameter('mqtt_topic', 'ugv/detections/front/geojson')
+        self.declare_parameter('dedup_radius_m', 3.0)
 
         self.api_url = self.get_parameter('api_url').value
         self.publish_to_api = self.get_parameter('publish_to_api').value
@@ -168,6 +248,9 @@ class GeoJSONBridge(Node):
                 'GPS not yet available — emitting local-frame coordinates. '
                 'Waiting for /fix topic.'
             )
+
+        # Spatial deduplication radius (metres)
+        self._dedup_radius_m = float(self.get_parameter('dedup_radius_m').value)
 
         # MQTT client
         self._mqtt_enabled = self.get_parameter('mqtt_enabled').value
@@ -457,17 +540,17 @@ class GeoJSONBridge(Node):
         if not detections:
             return
 
-        # Don't publish until GPS is valid — raw body-frame metres
-        # look like (lon, lat) near (0°, 0°) and mislead map viewers.
         if not self.gps_valid:
             self.get_logger().warn(
-                'Skipping GeoJSON publish — no GPS fix yet.',
+                'No GPS fix — publishing with local_frame=true (body-frame coords).',
                 throttle_duration_sec=5.0,
             )
-            return
 
         geojson = self.detections_to_geojson(
             detections, source='ugv', detection_type='seg',
+        )
+        geojson['features'] = _deduplicate_features(
+            geojson['features'], self._dedup_radius_m
         )
         self._publish(geojson)
 
@@ -535,75 +618,75 @@ class GeoJSONBridge(Node):
 
         colors = {
             # Fire / hazard (reds)
-            'Flame': '#ff0000',
-            'Smoke': '#ff4500',
-            'Burnt tree': '#8b0000',
-            'Burnt grass': '#a52a2a',
-            'Burnt plant': '#b22222',
-            'Fire hose': '#dc143c',
-            'Fire hydrant': '#ff6347',
-            'Fire truck': '#ff0000',
-            'Extinguisher': '#ff1493',
+            'flame': '#ff0000',
+            'smoke': '#ff4500',
+            'burnt tree': '#8b0000',
+            'burnt grass': '#a52a2a',
+            'burnt plant': '#b22222',
+            'fire hose': '#dc143c',
+            'fire hydrant': '#ff6347',
+            'fire truck': '#ff0000',
+            'extinguisher': '#ff1493',
             # People (blues)
-            'First responder': '#1e90ff',
-            'Citizen': '#4169e1',
-            'Military personnel': '#000080',
+            'first responder': '#1e90ff',
+            'citizen': '#4169e1',
+            'military personnel': '#000080',
             # Vehicles (dark blues)
-            'Civilian vehicle': '#0000ff',
-            'Destroyed vehicle': '#00008b',
-            'Ambulance': '#4682b4',
-            'Police vehicle': '#191970',
-            'Army vehicle': '#2f4f4f',
-            'Boat': '#5f9ea0',
-            'Bicycle': '#00ff00',
+            'civilian vehicle': '#0000ff',
+            'destroyed vehicle': '#00008b',
+            'ambulance': '#4682b4',
+            'police vehicle': '#191970',
+            'army vehicle': '#2f4f4f',
+            'boat': '#5f9ea0',
+            'bicycle': '#00ff00',
             'aerial vehicle': '#87ceeb',
             # Nature (greens)
-            'Green tree': '#228b22',
-            'Green plant': '#32cd32',
-            'Green grass': '#7cfc00',
-            'Dry tree': '#daa520',
-            'Dry grass': '#bdb76b',
-            'Dry plant': '#f0e68c',
-            'Animal': '#ff8c00',
+            'green tree': '#228b22',
+            'green plant': '#32cd32',
+            'green grass': '#7cfc00',
+            'dry tree': '#daa520',
+            'dry grass': '#bdb76b',
+            'dry plant': '#f0e68c',
+            'animal': '#ff8c00',
             # Infrastructure (greys)
-            'Building': '#708090',
-            'Destroyed building': '#696969',
-            'Wall': '#808080',
-            'Road': '#a9a9a9',
-            'Pavement': '#c0c0c0',
-            'Dirt road': '#d2b48c',
-            'Window': '#b0c4de',
-            'Door': '#8b4513',
-            'Stairs': '#a0522d',
-            'Pole': '#778899',
-            'Tower': '#556b2f',
-            'Silo': '#6b8e23',
+            'building': '#708090',
+            'destroyed building': '#696969',
+            'wall': '#808080',
+            'road': '#a9a9a9',
+            'pavement': '#c0c0c0',
+            'dirt road': '#d2b48c',
+            'window': '#b0c4de',
+            'door': '#8b4513',
+            'stairs': '#a0522d',
+            'pole': '#778899',
+            'tower': '#556b2f',
+            'silo': '#6b8e23',
             # Obstacles (oranges / yellows)
-            'Debris': '#ff8c00',
-            'Fence': '#daa520',
-            'Barrier': '#ffd700',
-            'Cone': '#ff7f50',
-            'Hole in the ground': '#8b4513',
-            'Mud': '#a0522d',
-            'Water': '#00bfff',
+            'debris': '#ff8c00',
+            'fence': '#daa520',
+            'barrier': '#ffd700',
+            'cone': '#ff7f50',
+            'hole in the ground': '#8b4513',
+            'mud': '#a0522d',
+            'water': '#00bfff',
             # Equipment (purples)
-            'Helmet': '#9370db',
-            'SCBA': '#8a2be2',
-            'Boot': '#4b0082',
-            'Mask': '#9400d3',
-            'Glove': '#da70d6',
-            'Protective glasses': '#ba55d3',
-            'Ladder': '#ff8c00',
-            'Ax': '#cd853f',
-            'Shovel': '#d2691e',
-            'Chainsaw': '#b8860b',
-            'Bag': '#bc8f8f',
-            'Barrel': '#8b8682',
-            'Furniture': '#deb887',
-            'Tank': '#2e8b57',
-            'Crane': '#b8860b',
-            'Excavator': '#daa520',
-            'Lifesaver': '#ff4500',
+            'helmet': '#9370db',
+            'scba': '#8a2be2',
+            'boot': '#4b0082',
+            'mask': '#9400d3',
+            'glove': '#da70d6',
+            'protective glasses': '#ba55d3',
+            'ladder': '#ff8c00',
+            'ax': '#cd853f',
+            'shovel': '#d2691e',
+            'chainsaw': '#b8860b',
+            'bag': '#bc8f8f',
+            'barrel': '#8b8682',
+            'furniture': '#deb887',
+            'tank': '#2e8b57',
+            'crane': '#b8860b',
+            'excavator': '#daa520',
+            'lifesaver': '#ff4500',
         }
         return colors.get(class_name, '#808080')
 
@@ -612,40 +695,40 @@ class GeoJSONBridge(Node):
 
         categories = {
             # Hazard
-            'Flame': 'hazard', 'Smoke': 'hazard',
-            'Burnt tree': 'hazard', 'Burnt grass': 'hazard', 'Burnt plant': 'hazard',
+            'flame': 'hazard', 'smoke': 'hazard',
+            'burnt tree': 'hazard', 'burnt grass': 'hazard', 'burnt plant': 'hazard',
             # People
-            'First responder': 'person', 'Citizen': 'person',
-            'Military personnel': 'person',
+            'first responder': 'person', 'citizen': 'person',
+            'military personnel': 'person',
             # Vehicles
-            'Civilian vehicle': 'vehicle', 'Destroyed vehicle': 'vehicle',
-            'Ambulance': 'vehicle', 'Police vehicle': 'vehicle',
-            'Fire truck': 'vehicle', 'Army vehicle': 'vehicle',
-            'Boat': 'vehicle', 'Bicycle': 'vehicle', 'aerial vehicle': 'vehicle',
+            'civilian vehicle': 'vehicle', 'destroyed vehicle': 'vehicle',
+            'ambulance': 'vehicle', 'police vehicle': 'vehicle',
+            'fire truck': 'vehicle', 'army vehicle': 'vehicle',
+            'boat': 'vehicle', 'bicycle': 'vehicle', 'aerial vehicle': 'vehicle',
             # Nature
-            'Green tree': 'nature', 'Green plant': 'nature',
-            'Green grass': 'nature', 'Dry tree': 'nature',
-            'Dry grass': 'nature', 'Dry plant': 'nature', 'Animal': 'nature',
+            'green tree': 'nature', 'green plant': 'nature',
+            'green grass': 'nature', 'dry tree': 'nature',
+            'dry grass': 'nature', 'dry plant': 'nature', 'animal': 'nature',
             # Infrastructure
-            'Building': 'infrastructure', 'Destroyed building': 'infrastructure',
-            'Wall': 'infrastructure', 'Road': 'infrastructure',
-            'Pavement': 'infrastructure', 'Dirt road': 'infrastructure',
-            'Window': 'infrastructure', 'Door': 'infrastructure',
-            'Stairs': 'infrastructure', 'Pole': 'infrastructure',
-            'Tower': 'infrastructure', 'Silo': 'infrastructure',
+            'building': 'infrastructure', 'destroyed building': 'infrastructure',
+            'wall': 'infrastructure', 'road': 'infrastructure',
+            'pavement': 'infrastructure', 'dirt road': 'infrastructure',
+            'window': 'infrastructure', 'door': 'infrastructure',
+            'stairs': 'infrastructure', 'pole': 'infrastructure',
+            'tower': 'infrastructure', 'silo': 'infrastructure',
             # Obstacle
-            'Debris': 'obstacle', 'Fence': 'obstacle', 'Barrier': 'obstacle',
-            'Cone': 'obstacle', 'Hole in the ground': 'obstacle',
-            'Mud': 'obstacle', 'Water': 'obstacle',
+            'debris': 'obstacle', 'fence': 'obstacle', 'barrier': 'obstacle',
+            'cone': 'obstacle', 'hole in the ground': 'obstacle',
+            'mud': 'obstacle', 'water': 'obstacle',
             # Equipment
-            'Fire hose': 'equipment', 'Fire hydrant': 'equipment',
-            'Extinguisher': 'equipment', 'Helmet': 'equipment',
-            'SCBA': 'equipment', 'Boot': 'equipment', 'Mask': 'equipment',
-            'Glove': 'equipment', 'Protective glasses': 'equipment',
-            'Ladder': 'equipment', 'Ax': 'equipment', 'Shovel': 'equipment',
-            'Chainsaw': 'equipment', 'Bag': 'equipment', 'Barrel': 'equipment',
-            'Furniture': 'equipment', 'Tank': 'equipment', 'Crane': 'equipment',
-            'Excavator': 'equipment', 'Lifesaver': 'equipment',
+            'fire hose': 'equipment', 'fire hydrant': 'equipment',
+            'extinguisher': 'equipment', 'helmet': 'equipment',
+            'scba': 'equipment', 'boot': 'equipment', 'mask': 'equipment',
+            'glove': 'equipment', 'protective glasses': 'equipment',
+            'ladder': 'equipment', 'ax': 'equipment', 'shovel': 'equipment',
+            'chainsaw': 'equipment', 'bag': 'equipment', 'barrel': 'equipment',
+            'furniture': 'equipment', 'tank': 'equipment', 'crane': 'equipment',
+            'excavator': 'equipment', 'lifesaver': 'equipment',
         }
         return categories.get(class_name, 'unknown')
 
@@ -653,24 +736,24 @@ class GeoJSONBridge(Node):
     def _class_symbol(class_name: str) -> str:
 
         symbols = {
-            'First responder': 'pitch',
-            'Citizen': 'pitch',
-            'Military personnel': 'pitch',
-            'Civilian vehicle': 'car',
-            'Destroyed vehicle': 'car',
-            'Ambulance': 'hospital',
-            'Police vehicle': 'police',
-            'Fire truck': 'fire-station',
-            'Army vehicle': 'car',
-            'Boat': 'harbor',
-            'Bicycle': 'bicycle',
+            'first responder': 'pitch',
+            'citizen': 'pitch',
+            'military personnel': 'pitch',
+            'civilian vehicle': 'car',
+            'destroyed vehicle': 'car',
+            'ambulance': 'hospital',
+            'police vehicle': 'police',
+            'fire truck': 'fire-station',
+            'army vehicle': 'car',
+            'boat': 'harbor',
+            'bicycle': 'bicycle',
             'aerial vehicle': 'airfield',
-            'Flame': 'fire-station',
-            'Smoke': 'fire-station',
-            'Building': 'building',
-            'Destroyed building': 'building',
-            'Water': 'water',
-            'Animal': 'dog-park',
+            'flame': 'fire-station',
+            'smoke': 'fire-station',
+            'building': 'building',
+            'destroyed building': 'building',
+            'water': 'water',
+            'animal': 'dog-park',
         }
         return symbols.get(class_name, 'marker')
 

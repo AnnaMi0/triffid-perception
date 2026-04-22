@@ -421,7 +421,7 @@ class TestGeoJSONOutput:
         det = {
             'bbox': (1800, 1300, 2200, 1700),
             'class_id': 14,
-            'class_name': 'Building',
+            'class_name': 'building',
             'confidence': 0.85,
             'mask': None,
         }
@@ -431,7 +431,7 @@ class TestGeoJSONOutput:
         assert feature['type'] == 'Feature'
         assert feature['geometry']['type'] == 'Polygon'
         props = feature['properties']
-        assert props['class'] == 'Building'
+        assert props['class'] == 'building'
         assert props['source'] == 'uav'
         assert props['category'] == 'infrastructure'
         assert props['detection_type'] == 'seg'
@@ -467,7 +467,7 @@ class TestGeoJSONOutput:
         det = {
             'bbox': (1900, 1400, 2100, 1600),
             'class_id': 23,
-            'class_name': 'Citizen',
+            'class_name': 'citizen',
             'confidence': 0.72,
             'mask': None,
         }

@@ -29,6 +29,41 @@ from typing import Any, Dict, List, Optional
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
+# Spatial helpers (used by accumulate_collection)
+# ---------------------------------------------------------------------------
+
+def _haversine_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+    import math as _math
+    r = 6378137.0
+    d_lat = _math.radians(lat2 - lat1)
+    d_lon = _math.radians(lon2 - lon1)
+    a = (_math.sin(d_lat / 2) ** 2
+         + _math.cos(_math.radians(lat1)) * _math.cos(_math.radians(lat2))
+         * _math.sin(d_lon / 2) ** 2)
+    return r * 2.0 * _math.asin(_math.sqrt(a))
+
+
+def _feature_centroid(feature: dict):
+    geom = feature.get('geometry') or {}
+    geom_type = geom.get('type')
+    coords = geom.get('coordinates')
+    if not coords:
+        return None
+    if geom_type == 'Point':
+        return (coords[0], coords[1])
+    if geom_type == 'LineString':
+        lons = [c[0] for c in coords]
+        lats = [c[1] for c in coords]
+        return (sum(lons) / len(lons), sum(lats) / len(lats))
+    if geom_type == 'Polygon' and coords:
+        ring = coords[0]
+        lons = [c[0] for c in ring]
+        lats = [c[1] for c in ring]
+        return (sum(lons) / len(lons), sum(lats) / len(lats))
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Defaults
 # ---------------------------------------------------------------------------
 _DEFAULT_BASE = 'https://crispres.com/wp-json/map-manager/v1'
@@ -287,6 +322,98 @@ class TelestoClient:
                 except TelestoError as e:
                     log.error(f'DELETE failed for {remote_sid}: {e}')
                     stats['errors'] += 1
+
+        return stats
+
+    def accumulate_collection(
+        self,
+        collection: dict,
+        radius_m: float = 10.0,
+    ) -> dict:
+        """Upgrade-or-insert sync: never delete remote features.
+
+        For each local feature:
+        - ``local_frame=True``: always PUT (body-frame coords, no geo-compare)
+        - No nearby remote within *radius_m* metres: PUT (new discovery)
+        - Nearby remote with lower confidence: PATCH (better reading)
+        - Nearby remote with same/higher confidence: skip
+
+        Returns
+        -------
+        dict
+            Summary: ``{"created": N, "updated": N, "skipped": N, "errors": N}``.
+        """
+        stats: Dict[str, int] = {
+            'created': 0, 'updated': 0, 'skipped': 0, 'errors': 0,
+        }
+        local_features = collection.get('features', [])
+        if not local_features:
+            return stats
+
+        try:
+            remote_coll = self.get_features()
+            remote_features = remote_coll.get('features', [])
+        except TelestoError as e:
+            log.error(f'GET remote features failed, falling back to blind PUT: {e}')
+            results = self.upload_collection(collection)
+            stats['created'] = sum(1 for r in results if 'error' not in r)
+            stats['errors'] = sum(1 for r in results if 'error' in r)
+            return stats
+
+        for local_f in local_features:
+            props = local_f.get('properties', {})
+            local_conf = float(props.get('confidence', 0.0))
+            local_centroid = _feature_centroid(local_f)
+
+            try:
+                if props.get('local_frame', False) or local_centroid is None:
+                    resp = self.put_feature(local_f)
+                    if resp.get('id'):
+                        self._remote_ids[
+                            (props.get('source', ''), props.get('id', ''))
+                        ] = resp['id']
+                    stats['created'] += 1
+                    continue
+
+                # Find nearest remote feature (any class)
+                best_remote = None
+                best_dist = float('inf')
+                for rf in remote_features:
+                    rc = _feature_centroid(rf)
+                    if rc is None:
+                        continue
+                    d = _haversine_m(
+                        local_centroid[0], local_centroid[1], rc[0], rc[1],
+                    )
+                    if d < radius_m and d < best_dist:
+                        best_dist = d
+                        best_remote = rf
+
+                if best_remote is None:
+                    resp = self.put_feature(local_f)
+                    if resp.get('id'):
+                        self._remote_ids[
+                            (props.get('source', ''), props.get('id', ''))
+                        ] = resp['id']
+                    stats['created'] += 1
+                else:
+                    remote_conf = float(
+                        best_remote.get('properties', {}).get('confidence', 0.0)
+                    )
+                    if local_conf > remote_conf:
+                        remote_id = best_remote.get('id', '')
+                        if remote_id:
+                            self.patch_feature(remote_id, local_f)
+                            stats['updated'] += 1
+                        else:
+                            self.put_feature(local_f)
+                            stats['created'] += 1
+                    else:
+                        stats['skipped'] += 1
+
+            except TelestoError as e:
+                log.error(f'accumulate_collection: feature error: {e}')
+                stats['errors'] += 1
 
         return stats
 

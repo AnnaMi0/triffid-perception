@@ -1,0 +1,40 @@
+Command: triffid@b2-jetson:~/uwb_ws/src/sensors/cameras/dual_realsense/launch$ ros2 launch front_435i_realsense.launch.py
+
+triffid@b2-jetson:~/uwb_ws/src/sensors/cameras/dual_realsense/launch$ cat front_435i_realsense.launch.py
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    return LaunchDescription([
+        # First camera
+        Node(
+            package='realsense2_camera',
+            executable='realsense2_camera_node',
+            namespace='camera_front_435i',
+            name='realsense_front_435i',
+            output='screen',
+            parameters=[{
+                'serial_no': '243122075282',  # Serial number can be found from rs-enumerate-devices
+                # Avoid USB re-enumeration races on Jetson.
+                'initial_reset': False,
+                'enable_accel': False,
+                'enable_gyro': False,
+                'enable_color': True,
+                'enable_depth': True,
+                # On this Jetson path, infra1/2 opens as Y8I and fails when ROS asks for Y8+Y8.
+                'enable_infra1': False,
+                'enable_infra2': False,
+                # realsense2_camera 4.57.x expects these parameter names and comma format.
+                'depth_module.depth_profile': '640,480,30',
+                'rgb_camera.color_profile': '640,480,30',
+                'depth_module.depth_format': 'Z16',
+                'rgb_camera.color_format': 'YUYV',
+                'rgb_camera.power_line_frequency': 1,
+                'wait_for_device_timeout': 10.0,
+                'align_depth.enable': False,
+                'pointcloud.enable': False,
+                'publish_tf': True,
+                'base_frame_id': 'front_link'
+            }]
+        )
+    ])

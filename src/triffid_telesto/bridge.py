@@ -44,6 +44,84 @@ _UGV_TOPIC = 'ugv/detections/front/geojson'
 _UAV_TOPIC = 'triffid/uav/geojson'
 _SYNC_INTERVAL = 2.0  # seconds between TELESTO uploads
 
+# Cross-platform deduplication radius (metres). UAV geo-projection has more
+# positional uncertainty than UGV depth-based estimates.
+_CROSS_DEDUP_RADIUS_M = 10.0
+
+
+# ---------------------------------------------------------------------------
+# Spatial deduplication helpers
+# ---------------------------------------------------------------------------
+
+def _haversine_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+    import math as _math
+    r = 6378137.0
+    d_lat = _math.radians(lat2 - lat1)
+    d_lon = _math.radians(lon2 - lon1)
+    a = (_math.sin(d_lat / 2) ** 2
+         + _math.cos(_math.radians(lat1)) * _math.cos(_math.radians(lat2))
+         * _math.sin(d_lon / 2) ** 2)
+    return r * 2.0 * _math.asin(_math.sqrt(a))
+
+
+def _feature_centroid(feature: dict):
+    geom = feature.get('geometry') or {}
+    geom_type = geom.get('type')
+    coords = geom.get('coordinates')
+    if not coords:
+        return None
+    if geom_type == 'Point':
+        return (coords[0], coords[1])
+    if geom_type == 'LineString':
+        lons = [c[0] for c in coords]
+        lats = [c[1] for c in coords]
+        return (sum(lons) / len(lons), sum(lats) / len(lats))
+    if geom_type == 'Polygon' and coords:
+        ring = coords[0]
+        lons = [c[0] for c in ring]
+        lats = [c[1] for c in ring]
+        return (sum(lons) / len(lons), sum(lats) / len(lats))
+    return None
+
+
+def _deduplicate_features(features: list, radius_m: float) -> list:
+    """Remove nearby duplicate features regardless of class.
+
+    Greedy: sort descending by confidence, keep first, suppress anything
+    within *radius_m* metres of an already-kept feature (any class).
+    UGV features with local_frame=True are always passed through unchanged.
+    """
+    if len(features) <= 1:
+        return features
+
+    def _conf(f):
+        return f.get('properties', {}).get('confidence', 0.0)
+
+    kept = []
+    for candidate in sorted(features, key=_conf, reverse=True):
+        props = candidate.get('properties', {})
+        if props.get('local_frame', False):
+            kept.append(candidate)
+            continue
+        centroid = _feature_centroid(candidate)
+        if centroid is None:
+            kept.append(candidate)
+            continue
+        suppressed = False
+        for existing in kept:
+            if existing.get('properties', {}).get('local_frame', False):
+                continue
+            existing_centroid = _feature_centroid(existing)
+            if existing_centroid is None:
+                continue
+            if _haversine_m(centroid[0], centroid[1],
+                            existing_centroid[0], existing_centroid[1]) < radius_m:
+                suppressed = True
+                break
+        if not suppressed:
+            kept.append(candidate)
+    return kept
+
 
 class Bridge:
     """MQTT → TELESTO bridge.
@@ -63,6 +141,7 @@ class Bridge:
         sync_interval: float = _SYNC_INTERVAL,
         notify_observer: bool = True,
         dry_run: bool = False,
+        samples_dir: Optional[str] = None,
     ):
         self.mqtt_host = mqtt_host
         self.mqtt_port = mqtt_port
@@ -71,6 +150,7 @@ class Bridge:
         self.sync_interval = sync_interval
         self.notify_observer = notify_observer
         self.dry_run = dry_run
+        self.samples_dir = samples_dir
 
         # Latest FeatureCollections from each source
         self._lock = threading.Lock()
@@ -98,6 +178,15 @@ class Bridge:
         else:
             log.error(f'MQTT connect failed: rc={rc}')
 
+    @staticmethod
+    def _normalize(payload: dict) -> dict:
+        """Normalise a FeatureCollection in-place: lowercase class names."""
+        for feature in payload.get('features', []):
+            props = feature.get('properties')
+            if props and 'class' in props:
+                props['class'] = str(props['class']).lower()
+        return payload
+
     def _on_message(self, client, userdata, msg):
         try:
             payload = json.loads(msg.payload.decode('utf-8'))
@@ -108,6 +197,8 @@ class Bridge:
         if payload.get('type') != 'FeatureCollection':
             log.warning(f'Ignoring non-FeatureCollection on {msg.topic}')
             return
+
+        payload = self._normalize(payload)
 
         with self._lock:
             if msg.topic == self.ugv_topic:
@@ -123,7 +214,7 @@ class Bridge:
             self._dirty = True
 
     def _merge(self) -> dict:
-        """Merge latest UGV + UAV features into one FeatureCollection."""
+        """Merge latest UGV + UAV features, then cross-platform deduplicate."""
         features = []
         with self._lock:
             if self._ugv_latest:
@@ -131,6 +222,14 @@ class Bridge:
             if self._uav_latest:
                 features.extend(self._uav_latest.get('features', []))
             self._dirty = False
+
+        if features:
+            before = len(features)
+            features = _deduplicate_features(features, _CROSS_DEDUP_RADIUS_M)
+            removed = before - len(features)
+            if removed:
+                log.debug(f'Cross-platform dedup removed {removed} duplicate feature(s)')
+
         return {'type': 'FeatureCollection', 'features': features}
 
     def _sync_loop(self):
@@ -152,54 +251,33 @@ class Bridge:
                 print(json.dumps(merged, indent=2))
                 continue
 
+            if self.samples_dir:
+                import os as _os
+                _os.makedirs(self.samples_dir, exist_ok=True)
+                out_path = _os.path.join(self.samples_dir, 'bridge_merged.geojson')
+                with open(out_path, 'w') as _fh:
+                    json.dump(merged, _fh, indent=2)
+                log.info(f'Saved {n} features → {out_path}')
+                continue
+
             if n == 0:
                 log.debug('No features to sync.')
                 continue
 
             try:
-                # Upload individual features grouped by source
-                ugv_features = [
-                    f for f in merged['features']
-                    if f.get('properties', {}).get('source') == 'ugv'
-                ]
-                uav_features = [
-                    f for f in merged['features']
-                    if f.get('properties', {}).get('source') == 'uav'
-                ]
-
-                stats_total = {
-                    'created': 0, 'updated': 0,
-                    'deleted': 0, 'errors': 0,
-                }
-
-                if ugv_features:
-                    ugv_coll = {
-                        'type': 'FeatureCollection',
-                        'features': ugv_features,
-                    }
-                    s = self._client.sync_collection(ugv_coll, source='ugv')
-                    for k in stats_total:
-                        stats_total[k] += s[k]
-
-                if uav_features:
-                    uav_coll = {
-                        'type': 'FeatureCollection',
-                        'features': uav_features,
-                    }
-                    s = self._client.sync_collection(uav_coll, source='uav')
-                    for k in stats_total:
-                        stats_total[k] += s[k]
-
+                stats = self._client.accumulate_collection(
+                    merged, radius_m=_CROSS_DEDUP_RADIUS_M,
+                )
                 log.info(
-                    f'Synced {n} features → '
-                    f'created={stats_total["created"]} '
-                    f'updated={stats_total["updated"]} '
-                    f'deleted={stats_total["deleted"]} '
-                    f'errors={stats_total["errors"]}'
+                    f'Accumulated {n} features → '
+                    f'created={stats["created"]} '
+                    f'updated={stats["updated"]} '
+                    f'skipped={stats.get("skipped", 0)} '
+                    f'errors={stats["errors"]}'
                 )
 
                 # Notify observer
-                if self.notify_observer and stats_total['errors'] == 0:
+                if self.notify_observer and stats['errors'] == 0:
                     try:
                         self._client.notify_observer(fe_updated=1)
                     except TelestoError as e:
@@ -277,6 +355,12 @@ def main():
         help='Print merged GeoJSON instead of uploading',
     )
     parser.add_argument(
+        '--samples-dir',
+        default=os.environ.get('BRIDGE_SAMPLES_DIR'),
+        metavar='PATH',
+        help='Write bridge_merged.geojson here each cycle instead of uploading',
+    )
+    parser.add_argument(
         '-v', '--verbose', action='store_true',
     )
     args = parser.parse_args()
@@ -297,6 +381,7 @@ def main():
         sync_interval=args.sync_interval,
         notify_observer=not args.no_observer,
         dry_run=args.dry_run,
+        samples_dir=args.samples_dir,
     )
     bridge.run()
 

@@ -1,7 +1,2 @@
 class,old_id,new_id,old_last_msg,new_first_msg,gap_msgs,distance_m,old_seen_count,new_seen_count
-Building,26,27,82,83,1,1.327,2,1
-Building,40,45,297,323,26,0.851,2,23
-Destroyed building,46,50,341,361,20,0.376,2,3
-Dry grass,87,89,686,691,5,0.761,7,8
-Pole,55,59,407,433,26,0.867,2,3
-Road,29,43,286,307,21,0.311,63,18
+window,276,286,93,95,2,1.826,3,4

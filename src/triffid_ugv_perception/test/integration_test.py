@@ -23,7 +23,8 @@ from geometry_msgs.msg import TransformStamped
 
 # Constants
 ROSBAG_PATH = '/ws/rosbag'
-OUTPUT_BAG_PATH = '/ws/output_rosbag'
+OUTPUT_BAG_ROOT = '/ws/output_rosbag'
+OUTPUT_BAG_PATH = '/ws/output_rosbag/recording'
 TIMEOUT_SEC = 30.0          # max time to wait for the full pipeline
 BAG_PLAY_RATE = 1.0         # playback rate
 
@@ -550,18 +551,18 @@ def check_tracking(node: IntegrationTestNode):
 
 
 def check_segmentation(node: IntegrationTestNode):
-    # Verify segmentation overlay images are published and valid.
+    # Verify segmentation label images are published and valid.
     seg_msgs = node.received.get('/ugv/detections/front/segmentation', [])
     if not seg_msgs:
         return False, 'No segmentation messages received (is anything subscribed?)'
 
     errors = []
     for i, msg in enumerate(seg_msgs[:5]):
-        if msg.encoding not in ('bgr8', 'rgb8'):
-            errors.append(f'msg[{i}]: encoding={msg.encoding}, expected bgr8/rgb8')
+        if msg.encoding != 'mono8':
+            errors.append(f'msg[{i}]: encoding={msg.encoding}, expected mono8')
         if msg.width == 0 or msg.height == 0:
             errors.append(f'msg[{i}]: zero dimensions {msg.width}x{msg.height}')
-        expected_step = msg.width * 3  # 3 bytes per pixel for bgr8/rgb8
+        expected_step = msg.width  # 1 byte per pixel for mono8
         if msg.step < expected_step:
             errors.append(f'msg[{i}]: step={msg.step} < expected {expected_step}')
         if len(msg.data) == 0:
@@ -657,8 +658,9 @@ def main():
 
     # Start output rosbag recorder
     import shutil
+    os.makedirs(OUTPUT_BAG_ROOT, exist_ok=True)
     if os.path.isdir(OUTPUT_BAG_PATH):
-        shutil.rmtree(OUTPUT_BAG_PATH)
+        shutil.rmtree(OUTPUT_BAG_PATH, ignore_errors=True)
     record_proc = subprocess.Popen(
         ['ros2', 'bag', 'record', '-o', OUTPUT_BAG_PATH] + OUTPUT_TOPICS,
         stdout=subprocess.DEVNULL,

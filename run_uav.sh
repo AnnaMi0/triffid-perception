@@ -33,6 +33,14 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Load .env if present (never committed — see .env.example)
+if [ -f .env ]; then
+    set -a
+    # shellcheck disable=SC1091
+    . ./.env
+    set +a
+fi
+
 CONTAINER=triffid_uav_perception
 COMPOSE_FILE=docker-compose.uav.yml
 MODEL="${MODEL:-/app/best.pt}"
@@ -218,7 +226,7 @@ cmd_poll_api() {
 
     echo "▸ Polling FUTURISED API for new images (camera=${API_CAMERA:-Wide})..."
     echo "  (Press Ctrl+C to stop)"
-    docker exec -it "$CONTAINER" bash -c \
+    docker exec "$CONTAINER" bash -c \
         "PYTHONPATH=/app/src/triffid_uav_perception $PY_CMD $PY_ARGS --poll-api $api_args --output /app/samples"
 }
 

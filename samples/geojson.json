@@ -3,36 +3,52 @@
   "features": [
     {
       "type": "Feature",
-      "id": "3",
+      "id": "265",
       "geometry": {
-        "type": "LineString",
+        "type": "Polygon",
         "coordinates": [
           [
-            13.351551981883784,
-            49.72627800880592
-          ],
-          [
-            13.351558269628278,
-            49.72627909154249
+            [
+              13.35163725566424,
+              49.72627809254916
+            ],
+            [
+              13.351606620892081,
+              49.7262791858987
+            ],
+            [
+              13.351609482479525,
+              49.72631269158395
+            ],
+            [
+              13.351640117251682,
+              49.72631159823441
+            ],
+            [
+              13.35163725566424,
+              49.72627809254916
+            ]
           ]
         ]
       },
       "properties": {
-        "class": "Wall",
-        "id": "3",
-        "confidence": 0.6368874907493591,
+        "class": "building",
+        "id": "265",
+        "confidence": 0.5998361110687256,
         "category": "infrastructure",
         "detection_type": "seg",
         "source": "ugv",
         "local_frame": false,
-        "gnss_altitude_m": 395.27,
-        "height_m": 0.06,
-        "marker-color": "#808080",
+        "altitude_m": 397.85,
+        "height_m": 3.19,
+        "marker-color": "#708090",
         "marker-size": "medium",
-        "marker-symbol": "marker",
-        "stroke": "#808080",
+        "marker-symbol": "building",
+        "stroke": "#708090",
         "stroke-width": 2,
-        "stroke-opacity": 1.0
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
       }
     }
   ]

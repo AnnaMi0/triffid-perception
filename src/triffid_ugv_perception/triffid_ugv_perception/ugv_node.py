@@ -53,69 +53,69 @@ except ImportError:
 
 # TRIFFID custom model classes (yolo11l-seg fine-tuned)
 TARGET_CLASSES = {
-    0: 'Water',
-    1: 'Fence',
-    2: 'Green tree',
-    3: 'Helmet',
-    4: 'Flame',
-    5: 'Smoke',
-    6: 'First responder',
-    7: 'Destroyed vehicle',
-    8: 'Fire hose',
-    9: 'SCBA',
-    10: 'Boot',
-    11: 'Green plant',
-    12: 'Mask',
-    13: 'Window',
-    14: 'Building',
-    15: 'Destroyed building',
-    16: 'Debris',
-    17: 'Ladder',
-    18: 'Dirt road',
-    19: 'Dry tree',
-    20: 'Wall',
-    21: 'Civilian vehicle',
-    22: 'Road',
-    23: 'Citizen',
-    24: 'Green grass',
-    25: 'Pole',
-    26: 'Boat',
-    27: 'Pavement',
-    28: 'Dry grass',
-    29: 'Animal',
-    30: 'Excavator',
-    31: 'Door',
-    32: 'Mud',
-    33: 'Barrier',
-    34: 'Hole in the ground',
-    35: 'Bag',
-    36: 'Burnt tree',
-    37: 'Ambulance',
-    38: 'Fire truck',
-    39: 'Cone',
-    40: 'Bicycle',
-    41: 'Tower',
-    42: 'Silo',
-    43: 'Military personnel',
-    44: 'Burnt grass',
-    45: 'Ax',
-    46: 'Glove',
-    47: 'Crane',
-    48: 'Stairs',
-    49: 'Dry plant',
-    50: 'Furniture',
-    51: 'Tank',
-    52: 'Protective glasses',
-    53: 'Barrel',
-    54: 'Shovel',
-    55: 'Fire hydrant',
-    56: 'Police vehicle',
-    57: 'Burnt plant',
-    58: 'Army vehicle',
-    59: 'Chainsaw',
+    0: 'water',
+    1: 'fence',
+    2: 'green tree',
+    3: 'helmet',
+    4: 'flame',
+    5: 'smoke',
+    6: 'first responder',
+    7: 'destroyed vehicle',
+    8: 'fire hose',
+    9: 'scba',
+    10: 'boot',
+    11: 'green plant',
+    12: 'mask',
+    13: 'window',
+    14: 'building',
+    15: 'destroyed building',
+    16: 'debris',
+    17: 'ladder',
+    18: 'dirt road',
+    19: 'dry tree',
+    20: 'wall',
+    21: 'civilian vehicle',
+    22: 'road',
+    23: 'citizen',
+    24: 'green grass',
+    25: 'pole',
+    26: 'boat',
+    27: 'pavement',
+    28: 'dry grass',
+    29: 'animal',
+    30: 'excavator',
+    31: 'door',
+    32: 'mud',
+    33: 'barrier',
+    34: 'hole in the ground',
+    35: 'bag',
+    36: 'burnt tree',
+    37: 'ambulance',
+    38: 'fire truck',
+    39: 'cone',
+    40: 'bicycle',
+    41: 'tower',
+    42: 'silo',
+    43: 'military personnel',
+    44: 'burnt grass',
+    45: 'ax',
+    46: 'glove',
+    47: 'crane',
+    48: 'stairs',
+    49: 'dry plant',
+    50: 'furniture',
+    51: 'tank',
+    52: 'protective glasses',
+    53: 'barrel',
+    54: 'shovel',
+    55: 'fire hydrant',
+    56: 'police vehicle',
+    57: 'burnt plant',
+    58: 'army vehicle',
+    59: 'chainsaw',
     60: 'aerial vehicle',
-    61: 'Lifesaver',
-    62: 'Extinguisher',
+    61: 'lifesaver',
+    62: 'extinguisher',
 }
 
 # Frame IDs
@@ -306,9 +306,15 @@ class UGVPerceptionNode(Node):
             )
             return
 
-        # Convert RGB image
+        # Convert RGB image — handle both standard bgr8/rgb8 and YUYV (RealSense 435i)
         try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            if msg.encoding in ('yuv422', 'yuv422_yuy2', 'YUV422'):
+                raw = np.frombuffer(msg.data, dtype=np.uint8).reshape(
+                    (msg.height, msg.width, 2)
+                )
+                cv_image = cv2.cvtColor(raw, cv2.COLOR_YUV2BGR_YUY2)
+            else:
+                cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
             self.get_logger().error(f'RGB conversion failed: {e}')
             return
@@ -316,13 +322,16 @@ class UGVPerceptionNode(Node):
         # Check pixel alignment: depth and RGB should share resolution
         depth_h, depth_w = self.depth_image.shape[:2]
         rgb_h, rgb_w = cv_image.shape[:2]
+        depth_scale_x = 1.0
+        depth_scale_y = 1.0
         if (depth_h, depth_w) != (rgb_h, rgb_w):
+            depth_scale_x = float(depth_w) / float(rgb_w)
+            depth_scale_y = float(depth_h) / float(rgb_h)
             self.get_logger().warn(
                 f'Depth ({depth_w}×{depth_h}) and RGB ({rgb_w}×{rgb_h}) '
-                f'resolutions differ — depth is not pixel-aligned!',
+                f'resolutions differ — using scaled depth sampling fallback.',
                 throttle_duration_sec=10.0,
             )
-            return
 
         # ── Step 1: YOLO detection on RGB ────────────────────────────
         if self.use_dummy:
@@ -356,6 +365,9 @@ class UGVPerceptionNode(Node):
             # Sample depth at detection pixels (pixel-aligned: same coords)
             matched_pts = self._sample_depth_for_detection(
                 det, self.depth_image, fx, fy, cx, cy,
+                depth_scale_x=depth_scale_x,
+                depth_scale_y=depth_scale_y,
+                rgb_shape=(rgb_h, rgb_w),
             )
             if matched_pts is None or len(matched_pts) == 0:
                 continue
@@ -585,7 +597,18 @@ class UGVPerceptionNode(Node):
 
     # ─── Cross-camera depth → RGB-frame geometry ───────────────────
 
-    def _sample_depth_for_detection(self, det, depth_img, fx, fy, cx, cy):
+    def _sample_depth_for_detection(
+        self,
+        det,
+        depth_img,
+        fx,
+        fy,
+        cx,
+        cy,
+        depth_scale_x=1.0,
+        depth_scale_y=1.0,
+        rgb_shape=None,
+    ):
         """Sample depth at detection pixels and back-project to 3D.
 
         For a pixel-aligned RGB-D camera the depth image shares the
@@ -596,7 +619,11 @@ class UGVPerceptionNode(Node):
             np.ndarray (M, 3) in camera_optical_frame
             (X=right, Y=down, Z=forward), or None.
         """
-        h, w = depth_img.shape[:2]
+        depth_h, depth_w = depth_img.shape[:2]
+        if rgb_shape is None:
+            rgb_h, rgb_w = depth_h, depth_w
+        else:
+            rgb_h, rgb_w = rgb_shape
         mask = det.get('mask')
         x1, y1, x2, y2 = det['bbox']
 
@@ -610,10 +637,10 @@ class UGVPerceptionNode(Node):
                 ys = ys[::step]
         else:
             # Bbox grid fallback (dummy mode / no mask)
-            ix1 = max(0, min(int(x1), w - 1))
-            ix2 = max(ix1 + 1, min(int(x2), w))
-            iy1 = max(0, min(int(y1), h - 1))
-            iy2 = max(iy1 + 1, min(int(y2), h))
+            ix1 = max(0, min(int(x1), rgb_w - 1))
+            ix2 = max(ix1 + 1, min(int(x2), rgb_w))
+            iy1 = max(0, min(int(y1), rgb_h - 1))
+            iy2 = max(iy1 + 1, min(int(y2), rgb_h))
             side = max(1, min(ix2 - ix1, iy2 - iy1) // 10)
             xs_g, ys_g = np.meshgrid(
                 np.arange(ix1, ix2, max(1, side)),
@@ -626,14 +653,24 @@ class UGVPerceptionNode(Node):
                 xs = xs[::step]
                 ys = ys[::step]
 
-        # Clip to image bounds
-        ok = (xs >= 0) & (xs < w) & (ys >= 0) & (ys < h)
-        xs, ys = xs[ok], ys[ok]
-        if len(xs) == 0:
+        # Map RGB coordinates onto depth indices for non-aligned fallback.
+        xs_depth = np.rint(xs.astype(np.float64) * depth_scale_x).astype(np.int32)
+        ys_depth = np.rint(ys.astype(np.float64) * depth_scale_y).astype(np.int32)
+
+        # Clip to depth image bounds
+        ok = (
+            (xs_depth >= 0) & (xs_depth < depth_w) &
+            (ys_depth >= 0) & (ys_depth < depth_h)
+        )
+        xs = xs[ok]
+        ys = ys[ok]
+        xs_depth = xs_depth[ok]
+        ys_depth = ys_depth[ok]
+        if len(xs_depth) == 0:
             return None
 
         # Read depth (uint16 mm)
-        z_mm = depth_img[ys, xs].astype(np.float64)
+        z_mm = depth_img[ys_depth, xs_depth].astype(np.float64)
         valid = z_mm > 0
         if not np.any(valid):
             return None

@@ -15,8 +15,9 @@ from triffid_telesto.telesto_client import (
 
 # ── Sample fixtures ──────────────────────────────────────────────────────
 
-def _point_feature(source='ugv', local_id='1', cls='Building',
-                   lon=23.72, lat=37.98, alt=320.0):
+def _point_feature(source='ugv', local_id='1', cls='building',
+                   lon=23.72, lat=37.98, alt=320.0, confidence=0.85,
+                   local_frame=False):
     return {
         'type': 'Feature',
         'id': local_id,
@@ -24,11 +25,11 @@ def _point_feature(source='ugv', local_id='1', cls='Building',
         'properties': {
             'class': cls,
             'id': local_id,
-            'confidence': 0.85,
+            'confidence': confidence,
             'category': 'infrastructure',
             'detection_type': 'seg',
             'source': source,
-            'local_frame': False,
+            'local_frame': local_frame,
             'altitude_m': alt,
             'height_m': 4.5,
             'marker-color': '#708090',
@@ -307,12 +308,13 @@ class TestBridgeMerge(unittest.TestCase):
 
     def test_merge_both_sources(self):
         b = self._make_bridge()
+        # Use distinct classes so dedup doesn't collapse them
         b._ugv_latest = _collection(
-            _point_feature(source='ugv', local_id='1'),
-            _point_feature(source='ugv', local_id='2'),
+            _point_feature(source='ugv', local_id='1', cls='fire',    lon=23.72, lat=37.98),
+            _point_feature(source='ugv', local_id='2', cls='debris',  lon=23.73, lat=37.99),
         )
         b._uav_latest = _collection(
-            _point_feature(source='uav', local_id='10'),
+            _point_feature(source='uav', local_id='10', cls='vehicle', lon=23.74, lat=38.00),
         )
         b._dirty = True
         merged = b._merge()
@@ -377,6 +379,45 @@ class TestBridgeOnMessage(unittest.TestCase):
         b._on_message(None, None, msg)
         assert b._ugv_latest is None
 
+    def test_class_names_normalized_to_lowercase(self):
+        """Bridge normalizes class names to lowercase on receipt."""
+        b = self._make_bridge()
+        msg = MagicMock()
+        msg.topic = 'ugv/detections/front/geojson'
+        payload = _collection(_point_feature(cls='Building'))
+        payload['features'][0]['properties']['class'] = 'Building'
+        msg.payload = json.dumps(payload).encode()
+        b._on_message(None, None, msg)
+        stored_class = b._ugv_latest['features'][0]['properties']['class']
+        assert stored_class == 'building', f'Expected lowercase, got {stored_class!r}'
+
+    def test_mixed_case_dedup_after_normalize(self):
+        """UGV 'Fire' and UAV 'FIRE' at same location deduplicate correctly."""
+        b = self._make_bridge()
+        ugv_payload = _collection(
+            _point_feature(source='ugv', cls='fire', lon=23.72, lat=37.98, confidence=0.90),
+        )
+        uav_payload = _collection(
+            _point_feature(source='uav', cls='fire', lon=23.72, lat=37.98, confidence=0.70),
+        )
+        # Simulate arriving with wrong case (bridge must fix it)
+        ugv_payload['features'][0]['properties']['class'] = 'Fire'
+        uav_payload['features'][0]['properties']['class'] = 'FIRE'
+
+        for topic, payload in [
+            ('ugv/detections/front/geojson', ugv_payload),
+            ('triffid/uav/geojson', uav_payload),
+        ]:
+            msg = MagicMock()
+            msg.topic = topic
+            msg.payload = json.dumps(payload).encode()
+            b._on_message(None, None, msg)
+
+        merged = b._merge()
+        assert len(merged['features']) == 1, 'Mixed-case same class should deduplicate'
+        assert merged['features'][0]['properties']['class'] == 'fire'
+        assert merged['features'][0]['properties']['confidence'] == 0.90
+
 
 class TestGeoJSONFieldAlignment(unittest.TestCase):
     """Verify both modules use the same property schema."""
@@ -397,6 +438,125 @@ class TestGeoJSONFieldAlignment(unittest.TestCase):
         uav_keys = set(_point_feature(source='uav')['properties'].keys())
         # All keys should match except 'source' values differ
         assert ugv_keys == uav_keys
+
+
+class TestBridgeCrossPlatformDedup(unittest.TestCase):
+    """Cross-platform deduplication: UGV + UAV same class + nearby → keep higher confidence."""
+
+    def _make_bridge(self):
+        from triffid_telesto.bridge import Bridge
+        b = Bridge.__new__(Bridge)
+        b._lock = threading.Lock()
+        b._ugv_latest = None
+        b._uav_latest = None
+        b._dirty = False
+        return b
+
+    def test_overlapping_same_class_keeps_higher_confidence(self):
+        """UGV fire conf=0.90, UAV fire conf=0.70 at same location → only UGV kept."""
+        b = self._make_bridge()
+        b._ugv_latest = _collection(
+            _point_feature(source='ugv', local_id='u1', cls='fire',
+                           lon=23.720, lat=37.980, confidence=0.90),
+        )
+        b._uav_latest = _collection(
+            _point_feature(source='uav', local_id='a1', cls='fire',
+                           lon=23.720, lat=37.980, confidence=0.70),
+        )
+        b._dirty = True
+        merged = b._merge()
+        assert len(merged['features']) == 1
+        kept = merged['features'][0]
+        assert kept['properties']['source'] == 'ugv'
+        assert kept['properties']['confidence'] == 0.90
+
+    def test_overlapping_different_class_keeps_higher_confidence(self):
+        """UGV fire conf=0.90 and UAV debris conf=0.80 at same location → only UGV kept."""
+        b = self._make_bridge()
+        b._ugv_latest = _collection(
+            _point_feature(source='ugv', local_id='u1', cls='fire',
+                           lon=23.720, lat=37.980, confidence=0.90),
+        )
+        b._uav_latest = _collection(
+            _point_feature(source='uav', local_id='a1', cls='debris',
+                           lon=23.720, lat=37.980, confidence=0.80),
+        )
+        b._dirty = True
+        merged = b._merge()
+        assert len(merged['features']) == 1
+        assert merged['features'][0]['properties']['confidence'] == 0.90
+
+    def test_far_apart_same_class_both_kept(self):
+        """UGV fire and UAV fire 500 m apart → both kept (outside dedup radius)."""
+        b = self._make_bridge()
+        b._ugv_latest = _collection(
+            _point_feature(source='ugv', local_id='u1', cls='fire',
+                           lon=23.720, lat=37.980, confidence=0.90),
+        )
+        b._uav_latest = _collection(
+            # ~0.005° lat ≈ 556 m — well outside 10 m threshold
+            _point_feature(source='uav', local_id='a1', cls='fire',
+                           lon=23.720, lat=37.985, confidence=0.70),
+        )
+        b._dirty = True
+        merged = b._merge()
+        assert len(merged['features']) == 2
+
+    def test_local_frame_ugv_always_passes_through(self):
+        """local_frame=True UGV features are never compared geographically."""
+        b = self._make_bridge()
+        b._ugv_latest = _collection(
+            _point_feature(source='ugv', local_id='u1', cls='fire',
+                           lon=0.0, lat=0.0, confidence=0.70, local_frame=True),
+        )
+        b._uav_latest = _collection(
+            _point_feature(source='uav', local_id='a1', cls='fire',
+                           lon=23.720, lat=37.980, confidence=0.90),
+        )
+        b._dirty = True
+        merged = b._merge()
+        # local_frame feature has (0,0) coords but must not be suppressed
+        assert len(merged['features']) == 2
+        local = next(f for f in merged['features'] if f['properties']['local_frame'])
+        assert local['properties']['source'] == 'ugv'
+
+    def test_uav_wins_when_higher_confidence(self):
+        """UAV has higher confidence → UAV feature is kept, UGV suppressed."""
+        b = self._make_bridge()
+        b._ugv_latest = _collection(
+            _point_feature(source='ugv', local_id='u1', cls='vehicle',
+                           lon=23.720, lat=37.980, confidence=0.55),
+        )
+        b._uav_latest = _collection(
+            _point_feature(source='uav', local_id='a1', cls='vehicle',
+                           lon=23.720, lat=37.980, confidence=0.92),
+        )
+        b._dirty = True
+        merged = b._merge()
+        assert len(merged['features']) == 1
+        assert merged['features'][0]['properties']['source'] == 'uav'
+        assert merged['features'][0]['properties']['confidence'] == 0.92
+
+    def test_multiple_features_mixed_overlap(self):
+        """Realistic scenario: fire overlaps (UGV wins), vehicle is unique."""
+        b = self._make_bridge()
+        b._ugv_latest = _collection(
+            _point_feature(source='ugv', local_id='u1', cls='fire',
+                           lon=23.720, lat=37.980, confidence=0.90),
+        )
+        b._uav_latest = _collection(
+            _point_feature(source='uav', local_id='a1', cls='fire',
+                           lon=23.720, lat=37.980, confidence=0.70),
+            _point_feature(source='uav', local_id='a2', cls='vehicle',
+                           lon=23.750, lat=37.990, confidence=0.85),
+        )
+        b._dirty = True
+        merged = b._merge()
+        assert len(merged['features']) == 2
+        classes = {f['properties']['class'] for f in merged['features']}
+        assert classes == {'fire', 'vehicle'}
+        fire = next(f for f in merged['features'] if f['properties']['class'] == 'fire')
+        assert fire['properties']['source'] == 'ugv'
 
 
 if __name__ == '__main__':
