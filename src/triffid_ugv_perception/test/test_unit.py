@@ -1196,15 +1196,15 @@ class TestFrameConstants:
 
     def test_default_rgb_topic(self):
         from triffid_ugv_perception.ugv_node import DEFAULT_RGB_TOPIC
-        assert DEFAULT_RGB_TOPIC == '/b2/camera/color/image_raw'
+        assert DEFAULT_RGB_TOPIC == '/camera_front_435i/realsense_front_435i/color/image_raw'
 
     def test_default_depth_topic(self):
         from triffid_ugv_perception.ugv_node import DEFAULT_DEPTH_TOPIC
-        assert DEFAULT_DEPTH_TOPIC == '/b2/camera/aligned_depth_to_color/image_raw'
+        assert DEFAULT_DEPTH_TOPIC == '/camera_front_435i/realsense_front_435i/depth/image_rect_raw'
 
     def test_default_camera_info_topic(self):
         from triffid_ugv_perception.ugv_node import DEFAULT_CAMERA_INFO_TOPIC
-        assert DEFAULT_CAMERA_INFO_TOPIC == '/b2/camera/color/camera_info'
+        assert DEFAULT_CAMERA_INFO_TOPIC == '/camera_front_435i/realsense_front_435i/color/camera_info'
 
     def test_max_depth_samples(self):
         from triffid_ugv_perception.ugv_node import _MAX_DEPTH_SAMPLES

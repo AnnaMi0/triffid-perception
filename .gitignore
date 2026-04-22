@@ -6,6 +6,7 @@ rosbag.zip
 new_rosbag/
 predictions_rosbag/
 output_rosbag/
+samples/*
 
 # Large media files
 *.mp4

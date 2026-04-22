@@ -13,4 +13,8 @@ UAV MODULE
 
 FINAL: theoretically UAV and UGV systems will run in parallel, so we want to compare their geoJSONs and fuse the UGV's with the UAV's predictions into one geoJSON that will be published to the TELESTO backend, more details on telesto_backend.txt. Can you help me with that?
 
-Don't forget to update the documentation!
+for geojsons -> both systems
+1. no overlapping predictions if possible (atleast no big overlap) even between different classes, keep best predictions
+2. no capital letters in class names etc
+
+update the documentation!

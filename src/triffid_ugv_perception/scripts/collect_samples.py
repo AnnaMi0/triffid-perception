@@ -36,6 +36,7 @@ import cv2
 import numpy as np
 import rclpy
 from cv_bridge import CvBridge
+from rcl_interfaces.srv import GetParameters
 from rclpy.node import Node
 from rclpy.qos import (
     DurabilityPolicy,
@@ -55,6 +56,7 @@ except ImportError:
 
 OUTDIR = '/ws/samples'
 NUM_RGB_FRAMES = 5
+FALLBACK_RGB_TOPIC = '/camera_front_435i/realsense_front_435i/color/image_raw'
 
 # Spatial deduplication: merge features of the same class whose
 # centroids are closer than this (metres).  1.0 m covers GPS jitter +
@@ -66,10 +68,11 @@ bridge = CvBridge()
 
 
 class SampleCollector(Node):
-    def __init__(self, outdir: str, n_rgb: int):
+    def __init__(self, outdir: str, n_rgb: int, rgb_topic: str):
         super().__init__('sample_collector')
         self.outdir = outdir
         os.makedirs(outdir, exist_ok=True)
+        self.rgb_topic = rgb_topic
 
         self.n_rgb_target = n_rgb
         self.n_rgb_saved = 0
@@ -105,7 +108,7 @@ class SampleCollector(Node):
         # Raw RGB frames from rosbag
         self.create_subscription(
             Image,
-            '/camera_front/raw_image',
+            self.rgb_topic,
             self._cb_rgb,
             sensor_qos,
         )
@@ -143,6 +146,7 @@ class SampleCollector(Node):
         )
 
         self.get_logger().info(f'Sample collector started — saving to {outdir}')
+        self.get_logger().info(f'RGB source topic: {self.rgb_topic}')
 
     def start_mqtt_trace(self, host='localhost', port=1883,
                          topic='ugv/detections/front/geojson'):
@@ -192,6 +196,23 @@ class SampleCollector(Node):
             return
         try:
             cv_img = bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        except Exception:
+            enc = (msg.encoding or '').lower()
+            if enc in ('yuyv', 'yuv422_yuy2'):
+                try:
+                    yuyv = np.frombuffer(msg.data, dtype=np.uint8)
+                    yuyv = yuyv.reshape((msg.height, msg.width, 2))
+                    cv_img = cv2.cvtColor(yuyv, cv2.COLOR_YUV2BGR_YUY2)
+                except Exception as e:
+                    self.get_logger().error(f'RGB save error: {e}')
+                    return
+            else:
+                self.get_logger().error(
+                    f'RGB save error: unsupported encoding {msg.encoding}'
+                )
+                return
+
+        try:
             path = os.path.join(self.outdir, f'rgb_frame_{self.n_rgb_saved}.jpg')
             cv2.imwrite(path, cv_img)
             self.get_logger().info(f'Saved RGB frame → {path}')
@@ -599,6 +620,28 @@ class SampleCollector(Node):
         return '  '.join(parts)
 
 
+def _resolve_rgb_topic(node_name: str, timeout_sec: float = 1.0) -> str:
+    """Resolve RGB topic from ugv_perception_node launch-configured params."""
+    node = Node('sample_collector_topic_resolver')
+    try:
+        client = node.create_client(GetParameters, f'{node_name}/get_parameters')
+        if not client.wait_for_service(timeout_sec=timeout_sec):
+            return FALLBACK_RGB_TOPIC
+        req = GetParameters.Request()
+        req.names = ['rgb_image_topic']
+        future = client.call_async(req)
+        rclpy.spin_until_future_complete(node, future, timeout_sec=timeout_sec)
+        if not future.done() or future.result() is None:
+            return FALLBACK_RGB_TOPIC
+        values = future.result().values
+        if not values:
+            return FALLBACK_RGB_TOPIC
+        topic = values[0].string_value
+        return topic or FALLBACK_RGB_TOPIC
+    finally:
+        node.destroy_node()
+
+
 def main():
     parser = argparse.ArgumentParser(description='Collect pipeline output samples')
     parser.add_argument('--outdir', default=OUTDIR, help='Output directory')
@@ -606,11 +649,26 @@ def main():
                         help='Number of raw RGB frames to save')
     parser.add_argument('--timeout', type=float, default=120.0,
                         help='Max seconds to wait')
+    parser.add_argument('--topic-node', default='/ugv_perception_node',
+                        help='Node to query for rgb_image_topic (default: /ugv_perception_node)')
+    parser.add_argument('--rgb-topic', default='',
+                        help='Override RGB input topic (default: from node params)')
+    parser.add_argument('--mqtt-host', default='localhost',
+                        help='MQTT broker host for trace capture (default: localhost)')
+    parser.add_argument('--mqtt-port', type=int, default=1883,
+                        help='MQTT broker port for trace capture (default: 1883)')
+    parser.add_argument('--mqtt-topic', default='ugv/detections/front/geojson',
+                        help='MQTT topic for trace capture')
     args = parser.parse_args()
 
     rclpy.init()
-    node = SampleCollector(args.outdir, args.n_rgb)
-    node.start_mqtt_trace()  # connects to local broker (best-effort)
+    rgb_topic = args.rgb_topic or _resolve_rgb_topic(args.topic_node)
+    node = SampleCollector(args.outdir, args.n_rgb, rgb_topic)
+    node.start_mqtt_trace(
+        host=args.mqtt_host,
+        port=args.mqtt_port,
+        topic=args.mqtt_topic,
+    )
 
     t0 = time.monotonic()
     last_status = 0.0

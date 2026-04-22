@@ -6,6 +6,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.2.0] — 2026-04-22
+
+### UGV RealSense Robustness
+
+- Added `depth_camera_info_topic` to UGV launch/node parameters and subscribed input set
+- `run.sh start` now forwards resolved depth CameraInfo topic into launch
+- Added YUYV (`yuv422_yuy2`) fallback decoding path for RGB frames when cv_bridge BGR conversion is unavailable
+- Improved legacy-bag support: when RGB/depth resolutions differ, depth sampling uses scaled pixel mapping and depth intrinsics for back-projection instead of dropping the frame
+
+### Validation + Tooling
+
+- `validate_realsense_streams.py`: RGB/depth resolution mismatch now reported as warning (degraded fallback mode) instead of hard failure
+- `collect_samples.py`: RGB sample capture now supports YUYV fallback decode
+
+### Documentation
+
+- Updated `README.md` and `INTERFACE.md` to document preferred aligned mode vs degraded fallback mode
+- Added depth CameraInfo topic to documented required/subscribed topics and parameter tables
+
+---
+
 ## [2.1.0] — 2026-04-13
 
 ### GeoJSON Field Alignment

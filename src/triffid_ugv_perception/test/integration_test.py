@@ -4,6 +4,7 @@ import argparse
 import json
 import math
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -18,8 +19,6 @@ from vision_msgs.msg import Detection3DArray
 from std_msgs.msg import String
 
 from tf2_ros import Buffer, TransformListener
-from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
-from geometry_msgs.msg import TransformStamped
 
 # Constants
 ROSBAG_PATH = '/ws/rosbag'
@@ -34,30 +33,34 @@ OUTPUT_TOPICS = [
     '/ugv/detections/front/segmentation',
 ]
 
-# QoS override file — needed so ros2 bag play publishes /tf_static, with TRANSIENT_LOCAL durability (otherwise TF2 never receives static
-# transforms and frames like f_oc_link are invisible).
+# QoS override file used for ros2 bag play.
 QOS_OVERRIDES = '/ws/src/triffid_ugv_perception/config/bag_qos_overrides.yaml'
 
-# Frame IDs (must match ugv_node.py constants)
-DEPTH_FRAME = 'f_depth_optical_frame'
-RGB_FRAME = 'f_oc_link'
 BASE_FRAME = 'b2/base_link'
 
-# Expected topics with their types (requirement #1)
-EXPECTED_TOPICS = {
-    '/camera_front/raw_image': 'sensor_msgs/msg/Image',
-    '/camera_front/camera_info': 'sensor_msgs/msg/CameraInfo',
-    '/camera_front/realsense_front/depth/image_rect_raw': 'sensor_msgs/msg/Image',
-    '/camera_front/realsense_front/depth/camera_info': 'sensor_msgs/msg/CameraInfo',
-    '/ugv/detections/front/detections_3d': 'vision_msgs/msg/Detection3DArray',
-}
+DEFAULT_RGB_TOPIC = '/camera_front_435i/realsense_front_435i/color/image_raw'
+DEFAULT_DEPTH_TOPIC = '/camera_front_435i/realsense_front_435i/depth/image_rect_raw'
+DEFAULT_CAMERA_INFO_TOPIC = '/camera_front_435i/realsense_front_435i/color/camera_info'
+DEFAULT_DEPTH_CAMERA_INFO_TOPIC = '/camera_front_435i/realsense_front_435i/depth/camera_info'
 
 
 # Test harness node
 class IntegrationTestNode(Node):
 
-    def __init__(self):
+    def __init__(self, rgb_topic, depth_topic, camera_info_topic, depth_camera_info_topic):
         super().__init__('integration_test')
+
+        self.rgb_topic = rgb_topic
+        self.depth_topic = depth_topic
+        self.camera_info_topic = camera_info_topic
+        self.depth_camera_info_topic = depth_camera_info_topic
+        self.expected_topics = {
+            self.rgb_topic: 'sensor_msgs/msg/Image',
+            self.camera_info_topic: 'sensor_msgs/msg/CameraInfo',
+            self.depth_topic: 'sensor_msgs/msg/Image',
+            self.depth_camera_info_topic: 'sensor_msgs/msg/CameraInfo',
+            '/ugv/detections/front/detections_3d': 'vision_msgs/msg/Detection3DArray',
+        }
 
         self.results = {}       # check_name → (pass: bool, detail: str)
         self.received = {}      # topic → list of messages (capped)
@@ -67,10 +70,6 @@ class IntegrationTestNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # Publish known static transforms from the rosbag so the perception pipeline has TF available regardless of DDS
-        # /tf_static delivery race conditions.
-        self._publish_static_transforms()
-
         # Subscribe to everything — BEST_EFFORT + VOLATILE (most permissive)
         sensor_qos = QoSProfile(
             depth=50,
@@ -79,12 +78,12 @@ class IntegrationTestNode(Node):
             history=HistoryPolicy.KEEP_LAST,
         )
 
-        self._sub(Image, '/camera_front/raw_image', sensor_qos)
-        self._sub(Image, '/camera_front/realsense_front/depth/image_rect_raw', sensor_qos)
-        self._sub(CameraInfo, '/camera_front/camera_info',
+        self._sub(Image, self.rgb_topic, sensor_qos)
+        self._sub(Image, self.depth_topic, sensor_qos)
+        self._sub(CameraInfo, self.camera_info_topic,
                   QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                              durability=DurabilityPolicy.VOLATILE))
-        self._sub(CameraInfo, '/camera_front/realsense_front/depth/camera_info',
+        self._sub(CameraInfo, self.depth_camera_info_topic,
                   QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                              durability=DurabilityPolicy.VOLATILE))
         self._sub(Detection3DArray, '/ugv/detections/front/detections_3d', 10)
@@ -102,45 +101,6 @@ class IntegrationTestNode(Node):
 
     def elapsed(self):
         return time.monotonic() - self._start_time
-
-    def _publish_static_transforms(self):
-        # Broadcast the required static TFs extracted from the rosbag so the perception pipeline has TF available regardless of DDS
-        # QoS race conditions (VOLATILE vs TRANSIENT_LOCAL).
-
-        self.static_broadcaster = StaticTransformBroadcaster(self)
-
-        def _make_tf(parent, child, t, q):
-            tf = TransformStamped()
-            tf.header.stamp = self.get_clock().now().to_msg()
-            tf.header.frame_id = parent
-            tf.child_frame_id = child
-            tf.transform.translation.x = t[0]
-            tf.transform.translation.y = t[1]
-            tf.transform.translation.z = t[2]
-            tf.transform.rotation.x = q[0]
-            tf.transform.rotation.y = q[1]
-            tf.transform.rotation.z = q[2]
-            tf.transform.rotation.w = q[3]
-            return tf
-
-        # Key transforms needed by the perception pipeline:
-        # 1. b2/base_link → f_oc_link  (RGB camera)
-        # 2. b2/base_link → f_dc_link  (depth camera base)
-        # 3. f_dc_link → f_depth_frame → f_depth_optical_frame  (depth chain)
-        transforms = [
-            _make_tf('b2/base_link', 'f_oc_link',
-                     (0.3993, 0.0, -0.0158), (0.0, 0.0, 0.0, 1.0)),
-            _make_tf('b2/base_link', 'f_dc_link',
-                     (0.4216, 0.025, 0.0619), (0.0, 0.3827, 0.0, 0.9239)),
-            _make_tf('f_dc_link', 'f_depth_frame',
-                     (0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0)),
-            _make_tf('f_depth_frame', 'f_depth_optical_frame',
-                     (0.0, 0.0, 0.0), (-0.5, 0.5, -0.5, 0.5)),
-        ]
-        self.static_broadcaster.sendTransform(transforms)
-        self.get_logger().info(
-            f'Published {len(transforms)} static transforms '
-            f'(f_oc_link, f_dc_link, f_depth_frame, f_depth_optical_frame)')
 
 # Checks
 
@@ -185,7 +145,7 @@ def check_topic_liveness(node: IntegrationTestNode):
     """Requirement #4: all expected topics receive at least one message."""
     missing = []
     alive = []
-    for topic in EXPECTED_TOPICS:
+    for topic in node.expected_topics:
         count = len(node.received.get(topic, []))
         if count == 0:
             missing.append(topic)
@@ -200,10 +160,10 @@ def check_topic_liveness(node: IntegrationTestNode):
 def check_message_types(node: IntegrationTestNode):
     """Requirement #1: message types match the interface spec."""
     type_map = {
-        '/camera_front/raw_image': Image,
-        '/camera_front/camera_info': CameraInfo,
-        '/camera_front/realsense_front/depth/image_rect_raw': Image,
-        '/camera_front/realsense_front/depth/camera_info': CameraInfo,
+        node.rgb_topic: Image,
+        node.camera_info_topic: CameraInfo,
+        node.depth_topic: Image,
+        node.depth_camera_info_topic: CameraInfo,
         '/ugv/detections/front/detections_3d': Detection3DArray,
     }
     errors = []
@@ -222,7 +182,7 @@ def check_message_types(node: IntegrationTestNode):
 def check_timestamps(node: IntegrationTestNode):
     # Requirement #5: detection timestamps come from input images, not wall clock.
     det_msgs = node.received.get('/ugv/detections/front/detections_3d', [])
-    rgb_msgs = node.received.get('/camera_front/raw_image', [])
+    rgb_msgs = node.received.get(node.rgb_topic, [])
 
     if not det_msgs:
         return False, 'No detections received'
@@ -247,8 +207,7 @@ def check_timestamps(node: IntegrationTestNode):
                        f'({rgb_t:.0f}) by {delta:.0f}s — timestamps likely fabricated')
 
     # Check depth-RGB sync: compare latest stamps
-    depth_msgs = node.received.get(
-        '/camera_front/realsense_front/depth/image_rect_raw', [])
+    depth_msgs = node.received.get(node.depth_topic, [])
 
     sync_detail = ''
     if depth_msgs and rgb_msgs:
@@ -395,66 +354,74 @@ def check_geojson(node: IntegrationTestNode):
 
 
 def check_camera_info(node: IntegrationTestNode):
-    # verify both CameraInfo topics deliver valid intrinsics
-    rgb_infos = node.received.get('/camera_front/camera_info', [])
-    depth_infos = node.received.get(
-        '/camera_front/realsense_front/depth/camera_info', [])
+    # Verify both CameraInfo topics deliver valid intrinsics.
+    rgb_infos = node.received.get(node.camera_info_topic, [])
+    depth_infos = node.received.get(node.depth_camera_info_topic, [])
+    rgb_imgs = node.received.get(node.rgb_topic, [])
+    depth_imgs = node.received.get(node.depth_topic, [])
 
     errors = []
 
-    for label, msgs, expected_frame, expected_wh in [
-        ('RGB', rgb_infos, RGB_FRAME, (1280, 720)),
-        ('Depth', depth_infos, DEPTH_FRAME, (640, 480)),
-    ]:
+    for label, msgs in [('RGB', rgb_infos), ('Depth', depth_infos)]:
         if not msgs:
             errors.append(f'{label} CameraInfo: no messages')
             continue
 
         info = msgs[-1]
 
-        # Frame ID
-        if info.header.frame_id != expected_frame:
-            errors.append(
-                f'{label} frame_id="{info.header.frame_id}", '
-                f'expected "{expected_frame}"')
-
-        # Resolution
-        if (info.width, info.height) != expected_wh:
-            errors.append(
-                f'{label} resolution={info.width}×{info.height}, '
-                f'expected {expected_wh[0]}×{expected_wh[1]}')
-
         # Focal lengths > 0
         fx, fy = info.k[0], info.k[4]
         if fx <= 0 or fy <= 0:
             errors.append(f'{label} focal lengths invalid: fx={fx}, fy={fy}')
 
+    if rgb_infos and rgb_imgs:
+        rgb_info = rgb_infos[-1]
+        rgb_img = rgb_imgs[-1]
+        if (rgb_info.width, rgb_info.height) != (rgb_img.width, rgb_img.height):
+            errors.append(
+                'RGB CameraInfo resolution does not match RGB image '
+                f'({rgb_info.width}×{rgb_info.height} vs {rgb_img.width}×{rgb_img.height})'
+            )
+        if not rgb_info.header.frame_id:
+            errors.append('RGB CameraInfo frame_id is empty')
+
+    if depth_infos and depth_imgs:
+        depth_info = depth_infos[-1]
+        depth_img = depth_imgs[-1]
+        if (depth_info.width, depth_info.height) != (depth_img.width, depth_img.height):
+            errors.append(
+                'Depth CameraInfo resolution does not match depth image '
+                f'({depth_info.width}×{depth_info.height} vs {depth_img.width}×{depth_img.height})'
+            )
+        if not depth_info.header.frame_id:
+            errors.append('Depth CameraInfo frame_id is empty')
+
     if errors:
         return False, '; '.join(errors)
-    return True, 'Both CameraInfo topics valid (frame, resolution, intrinsics)'
+    return True, 'Both CameraInfo topics valid (intrinsics, resolution, frame_id)'
 
 
 def check_tf_tree(node: IntegrationTestNode):
-    # Verify that the two required TF transforms are available: f_depth_optical_frame → f_oc_link  and  f_oc_link → b2/base_link
-    required = [
-        (DEPTH_FRAME, RGB_FRAME),
-        (RGB_FRAME, BASE_FRAME),
-    ]
-    errors = []
-    ok_list = []
-    for source, target in required:
-        try:
-            node.tf_buffer.lookup_transform(
-                target, source,
-                rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=0.5))
-            ok_list.append(f'{source} → {target}')
-        except Exception as e:
-            errors.append(f'{source} → {target}: {e}')
+    # Verify transform from camera frame (from CameraInfo) to BASE_FRAME.
+    infos = node.received.get(node.camera_info_topic, [])
+    if not infos:
+        return False, f'No CameraInfo on {node.camera_info_topic}'
 
-    if errors:
-        return False, f'Missing TF: {"; ".join(errors)}'
-    return True, f'All {len(ok_list)} required transforms available'
+    cam_frame = infos[-1].header.frame_id
+    if not cam_frame:
+        return False, 'CameraInfo frame_id is empty'
+
+    try:
+        node.tf_buffer.lookup_transform(
+            BASE_FRAME,
+            cam_frame,
+            rclpy.time.Time(),
+            timeout=rclpy.duration.Duration(seconds=0.5),
+        )
+    except Exception as e:
+        return False, f'Missing TF {cam_frame} → {BASE_FRAME}: {e}'
+
+    return True, f'TF available: {cam_frame} → {BASE_FRAME}'
 
 
 def check_3d_positions(node: IntegrationTestNode):
@@ -550,18 +517,18 @@ def check_tracking(node: IntegrationTestNode):
 
 
 def check_segmentation(node: IntegrationTestNode):
-    # Verify segmentation overlay images are published and valid.
+    # Verify mono8 segmentation label maps are published and valid.
     seg_msgs = node.received.get('/ugv/detections/front/segmentation', [])
     if not seg_msgs:
         return False, 'No segmentation messages received (is anything subscribed?)'
 
     errors = []
     for i, msg in enumerate(seg_msgs[:5]):
-        if msg.encoding not in ('bgr8', 'rgb8'):
-            errors.append(f'msg[{i}]: encoding={msg.encoding}, expected bgr8/rgb8')
+        if msg.encoding != 'mono8':
+            errors.append(f'msg[{i}]: encoding={msg.encoding}, expected mono8')
         if msg.width == 0 or msg.height == 0:
             errors.append(f'msg[{i}]: zero dimensions {msg.width}x{msg.height}')
-        expected_step = msg.width * 3  # 3 bytes per pixel for bgr8/rgb8
+        expected_step = msg.width  # 1 byte per pixel for mono8
         if msg.step < expected_step:
             errors.append(f'msg[{i}]: step={msg.step} < expected {expected_step}')
         if len(msg.data) == 0:
@@ -633,10 +600,24 @@ def main():
                         help='Skip automatic rosbag playback (assume already playing)')
     parser.add_argument('--no-launch', action='store_true',
                         help='Skip launching perception nodes (assume already running)')
+    parser.add_argument('--rgb-topic', default=DEFAULT_RGB_TOPIC,
+                        help='RGB image topic (default: launch default)')
+    parser.add_argument('--depth-topic', default=DEFAULT_DEPTH_TOPIC,
+                        help='Depth image topic (default: launch default)')
+    parser.add_argument('--camera-info-topic', default=DEFAULT_CAMERA_INFO_TOPIC,
+                        help='Color CameraInfo topic (default: launch default)')
+    parser.add_argument('--depth-camera-info-topic',
+                        default=DEFAULT_DEPTH_CAMERA_INFO_TOPIC,
+                        help='Depth CameraInfo topic (default: launch default)')
     args = parser.parse_args()
 
     rclpy.init()
-    node = IntegrationTestNode()
+    node = IntegrationTestNode(
+        rgb_topic=args.rgb_topic,
+        depth_topic=args.depth_topic,
+        camera_info_topic=args.camera_info_topic,
+        depth_camera_info_topic=args.depth_camera_info_topic,
+    )
 
     results = {}
 
@@ -646,7 +627,10 @@ def main():
         node.get_logger().info('Launching perception nodes (dummy detection mode)...')
         launch_proc = subprocess.Popen(
             ['ros2', 'launch', 'triffid_ugv_perception', 'ugv_perception.launch.py',
-             'use_dummy_detections:=true'],
+             'use_dummy_detections:=true',
+             f'rgb_image_topic:={args.rgb_topic}',
+             f'depth_image_topic:={args.depth_topic}',
+             f'camera_info_topic:={args.camera_info_topic}'],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             preexec_fn=os.setsid,
@@ -656,9 +640,18 @@ def main():
         node.get_logger().info('Perception nodes launched.')
 
     # Start output rosbag recorder
-    import shutil
-    if os.path.isdir(OUTPUT_BAG_PATH):
-        shutil.rmtree(OUTPUT_BAG_PATH)
+    # OUTPUT_BAG_PATH is often a bind-mounted directory; deleting the mount
+    # root itself can fail with "Device or resource busy". Clear contents only.
+    os.makedirs(OUTPUT_BAG_PATH, exist_ok=True)
+    for name in os.listdir(OUTPUT_BAG_PATH):
+        path = os.path.join(OUTPUT_BAG_PATH, name)
+        if os.path.isdir(path) and not os.path.islink(path):
+            shutil.rmtree(path, ignore_errors=True)
+        else:
+            try:
+                os.unlink(path)
+            except FileNotFoundError:
+                pass
     record_proc = subprocess.Popen(
         ['ros2', 'bag', 'record', '-o', OUTPUT_BAG_PATH] + OUTPUT_TOPICS,
         stdout=subprocess.DEVNULL,
@@ -694,7 +687,7 @@ def main():
             # Early exit: if we have data on all topics, no need to wait
             all_populated = all(
                 len(node.received.get(t, [])) > 0
-                for t in EXPECTED_TOPICS
+                for t in node.expected_topics
             )
             if all_populated and node.elapsed() > 5.0:
                 node.get_logger().info('All topics populated — running checks early.')

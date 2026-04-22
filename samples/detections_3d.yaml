@@ -1,10 +1,28 @@
 header:
-  stamp: 1773161657.704615414
+  stamp: 1773161656.003271558
   frame_id: "b2/base_link"
-detections: (1 total)
+detections: (4 total)
   [0]:
-    id: "3"
-    class: "Wall"
-    score: 0.6369
-    position: (1.663, 0.757, -0.508)
-    size: (0.468, 0.212, 0.056)
+    id: "1"
+    class: "Dry tree"
+    score: 0.3670
+    position: (1.796, -0.112, -0.567)
+    size: (1.004, 0.195, 1.004)
+  [1]:
+    id: "49"
+    class: "Building"
+    score: 0.5491
+    position: (1.121, 0.297, -0.608)
+    size: (3.064, 1.319, 3.064)
+  [2]:
+    id: "58"
+    class: "Dry tree"
+    score: 0.8918
+    position: (1.524, -0.726, -0.639)
+    size: (1.258, 0.979, 1.258)
+  [3]:
+    id: "60"
+    class: "Water"
+    score: 0.6829
+    position: (0.977, -0.475, -0.619)
+    size: (0.197, 0.469, 0.197)

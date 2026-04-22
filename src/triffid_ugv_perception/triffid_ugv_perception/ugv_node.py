@@ -17,10 +17,10 @@ Pixel-aligned RGB-D perception pipeline:
   7. Assign persistent tracking ID (IoU tracker on RGB bboxes)
   8. Publish vision_msgs/Detection3DArray in b2/base_link
 
-Topic mapping (placeholders — update when partner topic names are final):
-  IN:  <rgb_image_topic>          (sensor_msgs/Image, bgr8)
-  IN:  <depth_image_topic>        (sensor_msgs/Image, 16UC1 mm, pixel-aligned to RGB)
-  IN:  <camera_info_topic>        (sensor_msgs/CameraInfo, shared intrinsics)
+Topic mapping (RealSense D435i front camera):
+  IN:  /camera_front_435i/realsense_front_435i/color/image_raw   (sensor_msgs/Image, bgr8)
+  IN:  /camera_front_435i/realsense_front_435i/depth/image_rect_raw (sensor_msgs/Image, 16UC1 mm)
+  IN:  /camera_front_435i/realsense_front_435i/color/camera_info (sensor_msgs/CameraInfo)
   IN:  /tf, /tf_static
   OUT: /ugv/detections/front/detections_3d   (vision_msgs/Detection3DArray, frame: b2/base_link)
   OUT: /ugv/detections/front/segmentation    (sensor_msgs/Image, mono8 label map)
@@ -121,12 +121,12 @@ TARGET_CLASSES = {
 # Frame IDs
 BASE_FRAME = 'b2/base_link'
 
-# Default topic names (placeholders — update when partner names are final)
-# TODO(topic-names): Replace these defaults once Ondřej / Angel confirm
-#   the actual RealSense topic names under the /b2/ namespace.
-DEFAULT_RGB_TOPIC = '/b2/camera/color/image_raw'
-DEFAULT_DEPTH_TOPIC = '/b2/camera/aligned_depth_to_color/image_raw'
-DEFAULT_CAMERA_INFO_TOPIC = '/b2/camera/color/camera_info'
+# Default topic names (RealSense D435i front camera)
+# NOTE: topic names are configurable via ROS params and launch file.
+DEFAULT_RGB_TOPIC = '/camera_front_435i/realsense_front_435i/color/image_raw'
+DEFAULT_DEPTH_TOPIC = '/camera_front_435i/realsense_front_435i/depth/image_rect_raw'
+DEFAULT_CAMERA_INFO_TOPIC = '/camera_front_435i/realsense_front_435i/color/camera_info'
+DEFAULT_DEPTH_CAMERA_INFO_TOPIC = '/camera_front_435i/realsense_front_435i/depth/camera_info'
 
 # Maximum number of depth pixels to sample per detection (for efficiency)
 _MAX_DEPTH_SAMPLES = 500
@@ -155,6 +155,7 @@ class UGVPerceptionNode(Node):
         self.declare_parameter('rgb_image_topic', DEFAULT_RGB_TOPIC)
         self.declare_parameter('depth_image_topic', DEFAULT_DEPTH_TOPIC)
         self.declare_parameter('camera_info_topic', DEFAULT_CAMERA_INFO_TOPIC)
+        self.declare_parameter('depth_camera_info_topic', DEFAULT_DEPTH_CAMERA_INFO_TOPIC)
 
         self.model_path = self.get_parameter('model_path').value
         self.conf_thresh = self.get_parameter('confidence_threshold').value
@@ -171,6 +172,7 @@ class UGVPerceptionNode(Node):
         self.rgb_topic = self.get_parameter('rgb_image_topic').value
         self.depth_topic = self.get_parameter('depth_image_topic').value
         self.camera_info_topic = self.get_parameter('camera_info_topic').value
+        self.depth_camera_info_topic = self.get_parameter('depth_camera_info_topic').value
 
         # ── YOLO model ──────────────────────────────────────────────
         if _HAS_YOLO:
@@ -186,8 +188,10 @@ class UGVPerceptionNode(Node):
 
         # ── State ───────────────────────────────────────────────────
         self.bridge = CvBridge()
-        self.camera_info = None          # shared CameraInfo (pixel-aligned)
-        self.camera_frame = None         # read from CameraInfo header.frame_id
+        self.camera_info = None          # RGB camera intrinsics
+        self.depth_camera_info = None    # depth camera intrinsics
+        self.camera_frame = None         # read from RGB CameraInfo header.frame_id
+        self.depth_camera_frame = None   # read from depth CameraInfo or depth image
         self.depth_image = None          # latest depth frame (uint16, mm)
         self.depth_stamp = None
         self.tracker = ByteTracker(
@@ -238,6 +242,12 @@ class UGVPerceptionNode(Node):
             self.camera_info_callback,
             reliable_qos,
         )
+        self.sub_depth_camera_info = self.create_subscription(
+            CameraInfo,
+            self.depth_camera_info_topic,
+            self.depth_camera_info_callback,
+            reliable_qos,
+        )
 
         # ── Publishers ───────────────────────────────────────────────
         self.pub_det3d = self.create_publisher(
@@ -259,7 +269,8 @@ class UGVPerceptionNode(Node):
         self.get_logger().info('UGV Perception node started (pixel-aligned RGB-D pipeline).')
         self.get_logger().info(f'  RGB topic:       {self.rgb_topic}')
         self.get_logger().info(f'  Depth topic:     {self.depth_topic}')
-        self.get_logger().info(f'  CameraInfo topic: {self.camera_info_topic}')
+        self.get_logger().info(f'  RGB CameraInfo topic: {self.camera_info_topic}')
+        self.get_logger().info(f'  Depth CameraInfo topic: {self.depth_camera_info_topic}')
         self.get_logger().info(f'  Output topic:    /ugv/detections/front/detections_3d  (frame: {self.target_frame})')
         self.get_logger().info(f'  Seg topic:       /ugv/detections/front/segmentation  (mono8 label map)')
         self.get_logger().info(f'  Debug topic:     /ugv/detections/front/debug_image  (RGB+ID overlay)')
@@ -272,13 +283,23 @@ class UGVPerceptionNode(Node):
     # ─── Callbacks ──────────────────────────────────────────────────
 
     def camera_info_callback(self, msg: CameraInfo):
-        """Store shared camera intrinsics (pixel-aligned RGB-D)."""
+        """Store RGB camera intrinsics."""
         if self.camera_info is None:
             self.get_logger().info(
-                f'CameraInfo received: {msg.width}x{msg.height}, '
+                f'RGB CameraInfo received: {msg.width}x{msg.height}, '
                 f'frame={msg.header.frame_id}')
         self.camera_info = msg
         self.camera_frame = msg.header.frame_id
+
+    def depth_camera_info_callback(self, msg: CameraInfo):
+        """Store depth camera intrinsics (used for non-aligned fallback)."""
+        if self.depth_camera_info is None:
+            self.get_logger().info(
+                f'Depth CameraInfo received: {msg.width}x{msg.height}, '
+                f'frame={msg.header.frame_id}')
+        self.depth_camera_info = msg
+        if msg.header.frame_id:
+            self.depth_camera_frame = msg.header.frame_id
 
     def depth_callback(self, msg: Image):
         """Store latest depth image (16UC1, millimetres)."""
@@ -287,6 +308,8 @@ class UGVPerceptionNode(Node):
                 msg, desired_encoding='passthrough'
             )
             self.depth_stamp = msg.header.stamp
+            if msg.header.frame_id:
+                self.depth_camera_frame = msg.header.frame_id
         except Exception as e:
             self.get_logger().error(f'Depth conversion failed: {e}')
 
@@ -307,22 +330,28 @@ class UGVPerceptionNode(Node):
             return
 
         # Convert RGB image
-        try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        except Exception as e:
-            self.get_logger().error(f'RGB conversion failed: {e}')
-            return
-
-        # Check pixel alignment: depth and RGB should share resolution
-        depth_h, depth_w = self.depth_image.shape[:2]
-        rgb_h, rgb_w = cv_image.shape[:2]
-        if (depth_h, depth_w) != (rgb_h, rgb_w):
-            self.get_logger().warn(
-                f'Depth ({depth_w}×{depth_h}) and RGB ({rgb_w}×{rgb_h}) '
-                f'resolutions differ — depth is not pixel-aligned!',
-                throttle_duration_sec=10.0,
+        cv_image = self._decode_rgb(msg)
+        if cv_image is None:
+            self.get_logger().error(
+                f'RGB conversion failed for encoding={msg.encoding}',
+                throttle_duration_sec=5.0,
             )
             return
+
+        # Check pixel alignment: depth and RGB should share resolution.
+        # For legacy bags, keep running with a scaled fallback mapping.
+        depth_h, depth_w = self.depth_image.shape[:2]
+        rgb_h, rgb_w = cv_image.shape[:2]
+        depth_scale_x = 1.0
+        depth_scale_y = 1.0
+        if (depth_h, depth_w) != (rgb_h, rgb_w):
+            depth_scale_x = float(depth_w) / float(rgb_w)
+            depth_scale_y = float(depth_h) / float(rgb_h)
+            self.get_logger().warn(
+                f'Depth ({depth_w}×{depth_h}) and RGB ({rgb_w}×{rgb_h}) '
+                f'resolutions differ — using scaled depth sampling fallback.',
+                throttle_duration_sec=10.0,
+            )
 
         # ── Step 1: YOLO detection on RGB ────────────────────────────
         if self.use_dummy:
@@ -334,17 +363,34 @@ class UGVPerceptionNode(Node):
             self._publish_debug_overlay(cv_image, [], msg.header)
             return
 
-        # Camera intrinsics (shared for pixel-aligned RGB-D)
-        fx = self.camera_info.k[0]
-        fy = self.camera_info.k[4]
-        cx = self.camera_info.k[2]
-        cy = self.camera_info.k[5]
+        # Use RGB intrinsics in aligned mode; otherwise use depth intrinsics.
+        use_depth_intrinsics = (depth_h, depth_w) != (rgb_h, rgb_w)
+        if use_depth_intrinsics and self.depth_camera_info is not None:
+            active_info = self.depth_camera_info
+            active_frame = self.depth_camera_frame or self.camera_frame
+        else:
+            if use_depth_intrinsics and self.depth_camera_info is None:
+                self.get_logger().warn(
+                    'Depth CameraInfo missing in fallback mode; using RGB intrinsics '
+                    'for depth back-projection (reduced accuracy).',
+                    throttle_duration_sec=10.0,
+                )
+            active_info = self.camera_info
+            active_frame = self.camera_frame
+
+        fx = active_info.k[0]
+        fy = active_info.k[4]
+        cx = active_info.k[2]
+        cy = active_info.k[5]
         if fx == 0 or fy == 0:
             self.get_logger().warn(
                 'CameraInfo has zero focal length', throttle_duration_sec=5.0)
             return
 
-        camera_frame = self.camera_frame
+        camera_frame = active_frame
+        if not camera_frame:
+            self.get_logger().warn('Camera frame not available yet.', throttle_duration_sec=5.0)
+            return
 
         # ── Step 2–4: For each detection, sample depth & back-project ─
         detections_3d = []
@@ -356,6 +402,10 @@ class UGVPerceptionNode(Node):
             # Sample depth at detection pixels (pixel-aligned: same coords)
             matched_pts = self._sample_depth_for_detection(
                 det, self.depth_image, fx, fy, cx, cy,
+                depth_scale_x=depth_scale_x,
+                depth_scale_y=depth_scale_y,
+                rgb_shape=(rgb_h, rgb_w),
+                backproject_on_depth_pixels=use_depth_intrinsics,
             )
             if matched_pts is None or len(matched_pts) == 0:
                 continue
@@ -460,6 +510,23 @@ class UGVPerceptionNode(Node):
             )
 
     # ─── YOLO detection ────────────────────────────────────────────
+
+    def _decode_rgb(self, msg: Image):
+        """Decode RGB message to BGR ndarray with YUYV fallback support."""
+        try:
+            return self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        except Exception:
+            pass
+
+        enc = (msg.encoding or '').lower()
+        if enc in ('yuyv', 'yuv422_yuy2'):
+            try:
+                yuyv = np.frombuffer(msg.data, dtype=np.uint8)
+                yuyv = yuyv.reshape((msg.height, msg.width, 2))
+                return cv2.cvtColor(yuyv, cv2.COLOR_YUV2BGR_YUY2)
+            except Exception:
+                return None
+        return None
 
     def _detect(self, cv_image):
         """Run YOLO-seg on a BGR image.
@@ -585,66 +652,101 @@ class UGVPerceptionNode(Node):
 
     # ─── Cross-camera depth → RGB-frame geometry ───────────────────
 
-    def _sample_depth_for_detection(self, det, depth_img, fx, fy, cx, cy):
+    def _sample_depth_for_detection(
+        self,
+        det,
+        depth_img,
+        fx,
+        fy,
+        cx,
+        cy,
+        depth_scale_x=1.0,
+        depth_scale_y=1.0,
+        rgb_shape=None,
+        backproject_on_depth_pixels=False,
+    ):
         """Sample depth at detection pixels and back-project to 3D.
 
-        For a pixel-aligned RGB-D camera the depth image shares the
-        same pixel grid and intrinsics as the RGB image, so we sample
-        depth directly at the detection's mask (or bbox) pixels.
+        In the nominal path depth and RGB are pixel-aligned, so depth is
+        sampled directly at RGB detection pixels. For legacy bags where
+        resolutions differ, RGB pixels are scaled onto depth indices for
+        lookup. Back-projection can then be performed either with RGB
+        pixels (aligned mode) or depth pixels (legacy/non-aligned mode).
 
         Returns:
             np.ndarray (M, 3) in camera_optical_frame
             (X=right, Y=down, Z=forward), or None.
         """
-        h, w = depth_img.shape[:2]
+        depth_h, depth_w = depth_img.shape[:2]
+        if rgb_shape is None:
+            rgb_h, rgb_w = depth_h, depth_w
+        else:
+            rgb_h, rgb_w = rgb_shape
+
         mask = det.get('mask')
         x1, y1, x2, y2 = det['bbox']
 
         if mask is not None:
-            ys, xs = np.where(mask)
-            if len(xs) == 0:
+            ys_rgb, xs_rgb = np.where(mask)
+            if len(xs_rgb) == 0:
                 return None
-            if len(xs) > _MAX_DEPTH_SAMPLES:
-                step = max(1, len(xs) // _MAX_DEPTH_SAMPLES)
-                xs = xs[::step]
-                ys = ys[::step]
+            xs_rgb = xs_rgb.astype(np.float64)
+            ys_rgb = ys_rgb.astype(np.float64)
         else:
             # Bbox grid fallback (dummy mode / no mask)
-            ix1 = max(0, min(int(x1), w - 1))
-            ix2 = max(ix1 + 1, min(int(x2), w))
-            iy1 = max(0, min(int(y1), h - 1))
-            iy2 = max(iy1 + 1, min(int(y2), h))
+            ix1 = max(0, min(int(x1), rgb_w - 1))
+            ix2 = max(ix1 + 1, min(int(x2), rgb_w))
+            iy1 = max(0, min(int(y1), rgb_h - 1))
+            iy2 = max(iy1 + 1, min(int(y2), rgb_h))
             side = max(1, min(ix2 - ix1, iy2 - iy1) // 10)
             xs_g, ys_g = np.meshgrid(
                 np.arange(ix1, ix2, max(1, side)),
                 np.arange(iy1, iy2, max(1, side)),
             )
-            xs = xs_g.ravel()
-            ys = ys_g.ravel()
-            if len(xs) > _MAX_DEPTH_SAMPLES:
-                step = max(1, len(xs) // _MAX_DEPTH_SAMPLES)
-                xs = xs[::step]
-                ys = ys[::step]
+            xs_rgb = xs_g.ravel().astype(np.float64)
+            ys_rgb = ys_g.ravel().astype(np.float64)
 
-        # Clip to image bounds
-        ok = (xs >= 0) & (xs < w) & (ys >= 0) & (ys < h)
-        xs, ys = xs[ok], ys[ok]
-        if len(xs) == 0:
+        if len(xs_rgb) > _MAX_DEPTH_SAMPLES:
+            step = max(1, len(xs_rgb) // _MAX_DEPTH_SAMPLES)
+            xs_rgb = xs_rgb[::step]
+            ys_rgb = ys_rgb[::step]
+
+        # Map RGB sampling coords to depth pixel indices.
+        xs_depth = np.rint(xs_rgb * depth_scale_x).astype(np.int32)
+        ys_depth = np.rint(ys_rgb * depth_scale_y).astype(np.int32)
+
+        # Clip to depth image bounds
+        ok = (
+            (xs_depth >= 0) & (xs_depth < depth_w) &
+            (ys_depth >= 0) & (ys_depth < depth_h)
+        )
+        xs_depth = xs_depth[ok]
+        ys_depth = ys_depth[ok]
+        xs_rgb = xs_rgb[ok]
+        ys_rgb = ys_rgb[ok]
+        if len(xs_depth) == 0:
             return None
 
         # Read depth (uint16 mm)
-        z_mm = depth_img[ys, xs].astype(np.float64)
+        z_mm = depth_img[ys_depth, xs_depth].astype(np.float64)
         valid = z_mm > 0
         if not np.any(valid):
             return None
 
-        xs = xs[valid].astype(np.float64)
-        ys = ys[valid].astype(np.float64)
+        xs_rgb = xs_rgb[valid]
+        ys_rgb = ys_rgb[valid]
         z_m = z_mm[valid] / 1000.0
 
+        if backproject_on_depth_pixels:
+            proj_x = xs_depth[valid].astype(np.float64)
+            proj_y = ys_depth[valid].astype(np.float64)
+        else:
+            proj_x = xs_rgb
+            proj_y = ys_rgb
+
         # Pinhole back-projection → camera_optical_frame
-        X = (xs - cx) * z_m / fx
-        Y = (ys - cy) * z_m / fy
+        X = (proj_x - cx) * z_m / fx
+        Y = (proj_y - cy) * z_m / fy
         Z = z_m
         return np.column_stack([X, Y, Z])
 

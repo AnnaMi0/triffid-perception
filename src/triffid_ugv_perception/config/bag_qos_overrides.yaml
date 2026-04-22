@@ -10,25 +10,25 @@
   reliability: reliable
   durability: transient_local
 
-/camera_front/raw_image:
+/camera_front_435i/realsense_front_435i/color/image_raw:
   history: keep_last
   depth: 5
   reliability: reliable
   durability: volatile
 
-/camera_front/camera_info:
+/camera_front_435i/realsense_front_435i/color/camera_info:
   history: keep_last
   depth: 10
   reliability: reliable
   durability: volatile
 
-/camera_front/realsense_front/depth/image_rect_raw:
+/camera_front_435i/realsense_front_435i/depth/image_rect_raw:
   history: keep_last
   depth: 5
   reliability: reliable
   durability: volatile
 
-/camera_front/realsense_front/depth/camera_info:
+/camera_front_435i/realsense_front_435i/depth/camera_info:
   history: keep_last
   depth: 10
   reliability: reliable

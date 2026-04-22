@@ -45,13 +45,16 @@ Uses a pixel-aligned RGB-D camera (Intel RealSense with depth aligned to colour)
  │  Depth aligned to colour     │
  │  Shared intrinsics & grid    │
  │                              │
- │  RGB: /b2/camera/color/      │
- │       image_raw (bgr8)       │
- │  Depth: /b2/camera/          │
- │    aligned_depth_to_color/   │
- │    image_raw (16UC1, mm)     │
- │  Info: /b2/camera/color/     │
- │        camera_info            │
+ │  RGB: /camera_front_435i/    │
+ │    realsense_front_435i/     │
+ │    color/image_raw (bgr8)    │
+ │  Depth: /camera_front_435i/  │
+ │    realsense_front_435i/     │
+ │    depth/image_rect_raw      │
+ │    (16UC1, mm)               │
+ │  Info: /camera_front_435i/   │
+ │    realsense_front_435i/     │
+ │    color/camera_info         │
  └──────────────┬───────────────┘
                 │
                 ▼
@@ -88,21 +91,23 @@ Uses a pixel-aligned RGB-D camera (Intel RealSense with depth aligned to colour)
 
 ## Hardware Assumptions
 
-The UGV platform uses an Intel RealSense camera with **depth aligned to colour** (`aligned_depth_to_color`). Both streams share the same pixel grid, resolution, and intrinsics — no cross-camera projection is needed.
+The UGV platform is tuned for Intel RealSense with **depth aligned to colour** (`aligned_depth_to_color`).
+If RGB/depth streams are not aligned in current datasets, the node runs a degraded fallback mode so tests and sample collection can still execute end-to-end.
 
 | Property | Value |
 |---|---|
 | **Camera** | Intel RealSense (RGB-D, depth aligned to colour) |
-| **RGB topic** | `/b2/camera/color/image_raw` (configurable) |
-| **Depth topic** | `/b2/camera/aligned_depth_to_color/image_raw` (configurable) |
-| **CameraInfo topic** | `/b2/camera/color/camera_info` (configurable) |
+| **RGB topic** | `/camera_front_435i/realsense_front_435i/color/image_raw` (configurable) |
+| **Depth topic** | `/camera_front_435i/realsense_front_435i/depth/image_rect_raw` (configurable) |
+| **CameraInfo topic** | `/camera_front_435i/realsense_front_435i/color/camera_info` (configurable) |
+| **Depth CameraInfo topic** | `/camera_front_435i/realsense_front_435i/depth/camera_info` (configurable) |
 | **Resolution** | Shared (e.g. 1280 × 720) |
 | **RGB encoding** | `bgr8` |
 | **Depth encoding** | `16UC1` (millimetres) |
 | **TF frame** | Read dynamically from `CameraInfo.header.frame_id` (e.g. `b2/camera_optical_frame`) |
 | **Intrinsics** | Shared K matrix from the single `CameraInfo` topic |
 
-Because depth is pixel-aligned to the colour image, the pipeline samples depth directly at detection pixels — there is no separate depth camera frame, no grid sampling, and no cross-camera TF transform.
+In aligned mode, depth is sampled directly at detection pixels. In fallback mode (mismatched RGB/depth resolution), RGB sampling pixels are scaled onto depth pixels and depth intrinsics are used for back-projection.
 
 The robot also publishes `/tf_static` with the transform chain (including `camera_optical_frame → b2/base_link`), `/dog_odom`, `/dog_imu_raw`, and various Unitree topics. Only the camera, CameraInfo, and TF topics are consumed by this package.
 
@@ -114,14 +119,15 @@ The robot also publishes `/tf_static` with the transform chain (including `camer
 
 | Topic | Type | Rate | Description |
 |---|---|---|---|
-| `/b2/camera/color/image_raw` | `sensor_msgs/Image` | ~15 Hz | RGB image (bgr8) |
-| `/b2/camera/aligned_depth_to_color/image_raw` | `sensor_msgs/Image` | ~15 Hz | Pixel-aligned depth image (16UC1, mm) |
-| `/b2/camera/color/camera_info` | `sensor_msgs/CameraInfo` | ~15 Hz | Shared intrinsics matrix K |
+| `/camera_front_435i/realsense_front_435i/color/image_raw` | `sensor_msgs/Image` | ~15 Hz | RGB image (bgr8) |
+| `/camera_front_435i/realsense_front_435i/depth/image_rect_raw` | `sensor_msgs/Image` | ~15 Hz | Pixel-aligned depth image (16UC1, mm) |
+| `/camera_front_435i/realsense_front_435i/color/camera_info` | `sensor_msgs/CameraInfo` | ~15 Hz | Shared intrinsics matrix K |
+| `/camera_front_435i/realsense_front_435i/depth/camera_info` | `sensor_msgs/CameraInfo` | ~15 Hz | Depth intrinsics (fallback mode) |
 | `/tf`, `/tf_static` | `tf2_msgs/TFMessage` | — | Transform tree (see below) |
 | `/fix` | `sensor_msgs/NavSatFix` | ~0.4 Hz | GPS fix (optional, for GeoJSON GPS coords) |
 | `/dog_odom` | `nav_msgs/Odometry` | ~500 Hz | Odometry with magnetometer-fused heading (optional, for GeoJSON heading rotation) |
 
-> **Note**: Topic names are configurable via ROS parameters (`rgb_image_topic`, `depth_image_topic`, `camera_info_topic`). The defaults above use the `/b2/camera/` namespace.
+> **Note**: Topic names are configurable via ROS parameters (`rgb_image_topic`, `depth_image_topic`, `camera_info_topic`, `depth_camera_info_topic`). The defaults above use the launch-file namespace `/camera_front_435i/realsense_front_435i/`.
 
 ### Published (Output)
 
@@ -186,9 +192,9 @@ The core processing runs on every RGB frame in `rgb_callback`:
 
 1. **YOLO Detection** — Run the fine-tuned YOLOv11l-seg model on the RGB image. The model detects 63 disaster-response classes (see `classes.txt`): people (citizens, first responders, military personnel), vehicles (civilian, police, army, fire truck, ambulance, excavator), hazards (flame, smoke, debris, destroyed buildings), terrain (roads, grass, mud), equipment (helmets, SCBA, fire hose, extinguisher), and more. Or use a full-image dummy bbox for testing without YOLO.
 
-2. **Pixel-aligned Depth Sampling** — For each detection, sample depth at the instance mask pixels (or bbox pixels if no mask). Because the depth image is aligned to the colour image (same resolution, same pixel grid, shared intrinsics), depth is read directly at the detection's pixel coordinates — no grid sampling, no cross-camera TF transform, no pinhole projection. Large masks are sub-sampled to a maximum of 500 depth samples for efficiency. Zero-depth pixels (no reading) are discarded.
+2. **Depth Sampling** — For each detection, sample depth at the instance mask pixels (or bbox pixels if no mask). In aligned mode (same RGB/depth resolution), depth is read directly at detection pixels. In fallback mode (mismatched resolutions), detection pixels are scaled to depth indices and back-projected with depth intrinsics. Large masks are sub-sampled to a maximum of 500 depth samples for efficiency. Zero-depth pixels (no reading) are discarded.
 
-3. **Back-project to 3D** — Using the shared intrinsics from the single `CameraInfo` topic, back-project the valid depth samples to 3D points in **camera_optical_frame** (X=right, Y=down, Z=forward).
+3. **Back-project to 3D** — Back-project valid depth samples to 3D points in **camera_optical_frame** (X=right, Y=down, Z=forward), using RGB intrinsics in aligned mode and depth intrinsics in fallback mode.
 
 4. **Median 3D Position** — Take the median of the back-projected 3D points as the detection's position in camera_optical_frame. Transform this point to `b2/base_link` via TF.
 
@@ -210,9 +216,10 @@ The core pipeline node. Subscribes to RGB, depth, CameraInfo, and TF. Publishes 
 - Segmentation masks used for pixel-precise depth sampling (depth read at mask pixels, not via grid)
 - Publishes semantic segmentation label map on `/ugv/detections/front/segmentation` (mono8, only when subscribed)
 - 3D NMS deduplication: overlapping detections at the same 3D position are merged (highest confidence kept)
-- Pixel-aligned RGB-D: single camera with shared intrinsics, no cross-camera TF required
+- Preferred aligned RGB-D mode with degraded scaled-depth fallback for legacy bags
 - Camera frame read dynamically from `CameraInfo.header.frame_id`
-- Configurable topic names via ROS parameters (default `/b2/camera/` namespace)
+- RGB conversion supports cv_bridge BGR path and explicit YUYV fallback decode
+- Configurable topic names via ROS parameters (default `/camera_front_435i/realsense_front_435i/` namespace)
 - ByteTrack-style tracker (Kalman + Hungarian + class gate + majority-vote class + 3D gate) for persistent object IDs
 - Frame synchronisation: uses latest available depth image when an RGB frame arrives (not strict time-sync)
 
@@ -239,9 +246,10 @@ All parameters are declared on `ugv_node` and configurable via the launch file:
 | `model_path` | `/ws/best.pt` | YOLO model weights file (mounted from host) |
 | `confidence_threshold` | `0.35` | Minimum YOLO confidence to accept a detection |
 | `target_frame` | `b2/base_link` | Output frame for 3D positions |
-| `rgb_image_topic` | `/b2/camera/color/image_raw` | RGB image topic name |
-| `depth_image_topic` | `/b2/camera/aligned_depth_to_color/image_raw` | Depth image topic name |
-| `camera_info_topic` | `/b2/camera/color/camera_info` | CameraInfo topic name (shared intrinsics) |
+| `rgb_image_topic` | `/camera_front_435i/realsense_front_435i/color/image_raw` | RGB image topic name |
+| `depth_image_topic` | `/camera_front_435i/realsense_front_435i/depth/image_rect_raw` | Depth image topic name |
+| `camera_info_topic` | `/camera_front_435i/realsense_front_435i/color/camera_info` | CameraInfo topic name (shared intrinsics) |
+| `depth_camera_info_topic` | `/camera_front_435i/realsense_front_435i/depth/camera_info` | Depth CameraInfo topic name (fallback mode) |
 | `use_dummy_detections` | `false` | Bypass YOLO with a full-image dummy bbox (for testing) |
 | `yolo_imgsz` | `1280` | YOLO input resolution (pixels) |
 | `tracker_iou_threshold` | `0.30` | High-confidence IoU threshold for first-pass matching |
@@ -308,9 +316,10 @@ cd ~/hua_ws
 ./run.sh logs           # Tail node logs
 ./run.sh sample [SEC]   # Collect output samples + merged GeoJSON (default: 15s)
 ./run.sh test           # Run integration test
+./run.sh streams [SEC]  # Validate active RealSense streams against ugv_node assumptions
 ./run.sh unit           # Run unit tests
 ./run.sh shell          # Open a bash shell in the container
-./run.sh status         # Check topic rates
+./run.sh status         # Check running processes + ROS topics
 ```
 
 Environment variables: `BAG_RATE` (default 1.0), `BAG_START` (offset sec), `YOLO_IMGSZ` (default 1280), `TIMEOUT` (test timeout).
@@ -443,12 +452,13 @@ The rosbag is not included in the repository (17+ GB binary). Mount it via `dock
 
 ### Required topics in the bag
 
-- `/b2/camera/color/image_raw` — RGB frames
-- `/b2/camera/color/camera_info` — Camera intrinsics (shared)
-- `/b2/camera/aligned_depth_to_color/image_raw` — Pixel-aligned depth frames
+- `/camera_front_435i/realsense_front_435i/color/image_raw` — RGB frames
+- `/camera_front_435i/realsense_front_435i/color/camera_info` — RGB camera intrinsics
+- `/camera_front_435i/realsense_front_435i/depth/camera_info` — Depth camera intrinsics (fallback mode)
+- `/camera_front_435i/realsense_front_435i/depth/image_rect_raw` — Pixel-aligned depth frames
 - `/tf_static` — Static transforms (camera_optical_frame → base_link)
 
-> **Legacy bags**: Older rosbags with separate RGB/depth camera topics (`/camera_front/raw_image`, `/camera_front/realsense_front/depth/...`) are no longer compatible. Use topic remapping or re-record with the new sensor configuration.
+> **Legacy bags**: Older rosbags with separate RGB/depth camera topics can run through fallback mode when topics are remapped correctly, but 3D geometry quality is lower than aligned-depth mode.
 
 ### Note on YOLO detection
 

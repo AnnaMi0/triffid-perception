@@ -3,36 +3,202 @@
   "features": [
     {
       "type": "Feature",
-      "id": "3",
+      "id": "1",
       "geometry": {
-        "type": "LineString",
+        "type": "Polygon",
         "coordinates": [
           [
-            13.351551981883784,
-            49.72627800880592
-          ],
-          [
-            13.351558269628278,
-            49.72627909154249
+            [
+              13.351593658169648,
+              49.72629973264448
+            ],
+            [
+              13.351592641014348,
+              49.726302346145616
+            ],
+            [
+              13.35160616526518,
+              49.72630454569463
+            ],
+            [
+              13.35160718242048,
+              49.72630193219349
+            ],
+            [
+              13.351593658169648,
+              49.72629973264448
+            ]
           ]
         ]
       },
       "properties": {
-        "class": "Wall",
-        "id": "3",
-        "confidence": 0.6368874907493591,
+        "class": "Dry tree",
+        "id": "1",
+        "confidence": 0.36695364117622375,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "altitude_m": 396.38,
+        "height_m": 1.0,
+        "marker-color": "#daa520",
+        "marker-size": "medium",
+        "marker-symbol": "marker",
+        "stroke": "#daa520",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "49",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351591992968842,
+              49.72629094889026
+            ],
+            [
+              13.351587520762612,
+              49.72630243987505
+            ],
+            [
+              13.351628816032212,
+              49.7263091560304
+            ],
+            [
+              13.351633288238444,
+              49.726297665045614
+            ],
+            [
+              13.351591992968842,
+              49.72629094889026
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Building",
+        "id": "49",
+        "confidence": 0.5491323471069336,
         "category": "infrastructure",
         "detection_type": "seg",
         "source": "ugv",
         "local_frame": false,
-        "gnss_altitude_m": 395.27,
-        "height_m": 0.06,
-        "marker-color": "#808080",
+        "altitude_m": 396.34,
+        "height_m": 3.06,
+        "marker-color": "#708090",
+        "marker-size": "medium",
+        "marker-symbol": "building",
+        "stroke": "#708090",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#708090",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "58",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.35159468432568,
+              49.726302438385304
+            ],
+            [
+              13.351591366564229,
+              49.72631096311435
+            ],
+            [
+              13.351608320693726,
+              49.72631372048992
+            ],
+            [
+              13.351611638455177,
+              49.72630519576087
+            ],
+            [
+              13.35159468432568,
+              49.726302438385304
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Dry tree",
+        "id": "58",
+        "confidence": 0.8917844891548157,
+        "category": "nature",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "altitude_m": 396.31,
+        "height_m": 1.26,
+        "marker-color": "#daa520",
         "marker-size": "medium",
         "marker-symbol": "marker",
-        "stroke": "#808080",
+        "stroke": "#daa520",
         "stroke-width": 2,
-        "stroke-opacity": 1.0
+        "stroke-opacity": 1.0,
+        "fill": "#daa520",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "60",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13.351608492993325,
+              49.726304724724336
+            ],
+            [
+              13.351606902693742,
+              49.72630881087497
+            ],
+            [
+              13.35161094561019,
+              49.726309468404395
+            ],
+            [
+              13.351612535909771,
+              49.72630538225376
+            ],
+            [
+              13.351608492993325,
+              49.726304724724336
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "class": "Water",
+        "id": "60",
+        "confidence": 0.6829395294189453,
+        "category": "obstacle",
+        "detection_type": "seg",
+        "source": "ugv",
+        "local_frame": false,
+        "altitude_m": 396.33,
+        "height_m": 0.2,
+        "marker-color": "#00bfff",
+        "marker-size": "medium",
+        "marker-symbol": "water",
+        "stroke": "#00bfff",
+        "stroke-width": 2,
+        "stroke-opacity": 1.0,
+        "fill": "#00bfff",
+        "fill-opacity": 0.25
       }
     }
   ]
